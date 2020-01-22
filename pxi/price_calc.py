@@ -95,9 +95,9 @@ def apply_price_rule(item):
         elif basis == PriceBasis.RRP_EXCL_TAX:
             base_price = price_region_item.rrp_excl_tax
         if not base_price:
-            raise Exception("no base price for price region {}, inventory item {}".format(
-                price_region_item.code,
-                inventory_item.code,
+            raise Exception("no base price for {}, {}".format(
+                price_region_item,
+                inventory_item,
             ))
         price = base_price * factor
         rounded_price = round_price(price)
