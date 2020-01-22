@@ -94,6 +94,16 @@ def apply_price_rule(item):
             base_price = inventory_item.replacement_cost
         elif basis == PriceBasis.RRP_EXCL_TAX:
             base_price = price_region_item.rrp_excl_tax
+        elif basis == PriceBasis.EXISTING_PRICE_0:
+            base_price = price_region_item.price_0
+        elif basis == PriceBasis.EXISTING_PRICE_1:
+            base_price = price_region_item.price_1
+        elif basis == PriceBasis.EXISTING_PRICE_2:
+            base_price = price_region_item.price_2
+        elif basis == PriceBasis.EXISTING_PRICE_3:
+            base_price = price_region_item.price_3
+        elif basis == PriceBasis.EXISTING_PRICE_4:
+            base_price = price_region_item.price_4
         if not base_price:
             raise Exception("no base price for {}, {}".format(
                 price_region_item,
