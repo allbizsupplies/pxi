@@ -32,7 +32,7 @@ class ExporterTests(DatabaseTestCase):
 
     def test_export_price_changes_report(self):
         """Export price updates to XLSX report."""
-        report_filepath = "tmp/test_report.xlsx"
+        report_filepath = "tmp/test_price_changes_report.xlsx"
         item_count = 5
         price_region_items = random_pricelist(items=item_count)
         price_changes = recalculate_sell_prices(price_region_items)
@@ -143,3 +143,4 @@ class ExporterTests(DatabaseTestCase):
             expected_item_code = warehouse_stock_items[i].inventory_item.code
             self.assertEqual(item_code, expected_item_code)
         os.remove(tickets_list_filepath)
+        
