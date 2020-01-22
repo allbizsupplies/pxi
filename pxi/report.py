@@ -2,6 +2,7 @@
 from openpyxl.cell import Cell
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, NamedStyle
+from openpyxl.utils import get_column_letter
 import re
 
 
@@ -54,11 +55,11 @@ class ReportWriter:
             ws.append(row)
 
         # apply column widths
-        for index, field in enumerate(fields):
+        for i, field in enumerate(fields):
             # get the alphabetical column index
-            c = chr(index + 65)
+            alpha_index = get_column_letter(i + 1)
             # set the column width
-            ws.column_dimensions[c].width = field["width"]
+            ws.column_dimensions[alpha_index].width = field["width"]
         
     def save(self):
         # save the file
