@@ -29,7 +29,6 @@ class ExporterTests(DatabaseTestCase):
 
     def tearDown(self):
         super().tearDown()
-        # shutil.rmtree("tmp")
 
     def test_export_price_changes_report(self):
         """Export price updates to XLSX report."""
