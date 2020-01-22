@@ -61,30 +61,18 @@ ROUNDING_RULES = [
 
 class PriceChange:
 
-    def __init__(self, item_was, item_now):
-        assert(isinstance(item_was, PriceRegionItem))
-        assert(isinstance(item_now, PriceRegionItem))
-        self.item_was = item_was
-        self.item_now = item_now
-
-    def price_diffs(self):
-        """Get the price differences."""
-        prices_differ = False
-        price_diffs = []
-        for i in range(5):
-            price_was = getattr(self.item_was, "price_{}".format(i))
-            price_now = getattr(self.item_now, "price_{}".format(i))
-            price_diff = price_now - price_was
-            if price_diff != 0:
-                prices_differ = True
-            price_diffs.append(price_diff)
-        return price_diffs if prices_differ else None
+    def __init__(self, price_region_item, price_diffs):
+        assert(isinstance(price_region_item, PriceRegionItem))
+        self.price_region_item = price_region_item
+        self.price_diffs = price_diffs
 
 
 def apply_price_rule(price_region_item):
     """Recalculate prices for price region."""
     inventory_item = price_region_item.inventory_item
     price_rule = price_region_item.price_rule
+    price_diffs = []
+    price_has_changed = False
     for i in range(5):
         basis = getattr(price_rule, "price_{}_basis".format(i))
         factor = getattr(price_rule, "price_{}_factor".format(i))
@@ -110,16 +98,22 @@ def apply_price_rule(price_region_item):
             ))
         price = base_price * factor
         rounded_price = round_price(price)
+        price_was = getattr(price_region_item, "price_{}".format(i))
+        price_diff = rounded_price - price_was
+        if abs(price_diff) >= Decimal("0.005"):
+            price_has_changed = True
+        price_diffs.append(price_diff)
         setattr(price_region_item, "price_{}".format(i), rounded_price)
+    if price_has_changed:
+        return PriceChange(price_region_item, price_diffs)
 
 
-def recalculate_sell_prices(price_region_items):
+def recalculate_sell_prices(price_region_items, db_session):
     price_changes = []
     for price_region_item in price_region_items:
-        old_price_region_item = copy(price_region_item)
-        apply_price_rule(price_region_item)
-        price_change = PriceChange(old_price_region_item, price_region_item)
-        if price_change.price_diffs():
+        price_change = apply_price_rule(price_region_item)
+        db_session.commit()
+        if price_change.price_diffs:
             price_changes.append(price_change)
     return price_changes
 
@@ -135,13 +129,14 @@ def recalculate_contract_prices(price_changes, db_session):
             setattr(contract_item, price_field, price_now)
 
     for price_change in price_changes:
-        inventory_item = price_change.item_now.inventory_item
+        inventory_item = price_change.price_region_item.inventory_item
         contract_items = db_session.query(ContractItem).filter(
             ContractItem.inventory_item == inventory_item
         ).all()
         # Adjust the contract prices in proportion to the retail price change.
-        price_now = price_change.item_now.price_0
-        price_was = price_change.item_was.price_0
+        price_now = price_change.price_region_item.price_0
+        price_diff = price_change.price_diffs[0]
+        price_was = price_now - price_diff
         price_ratio = (price_now / price_was).quantize(price_now)
         for contract_item in contract_items:
             multiply_prices(contract_item, price_ratio)

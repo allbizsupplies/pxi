@@ -81,9 +81,8 @@ def export_price_changes_report(filepath, price_changes):
         ))
 
     def item_to_row(price_change):
-        price_region_item = price_change.item_now
-        price_region_item_was = price_change.item_was
-        price_diffs = price_change.price_diffs()
+        price_region_item = price_change.price_region_item
+        price_diffs = price_change.price_diffs
         inventory_item = price_region_item.inventory_item
         price_rule = price_region_item.price_rule
         description = inventory_item.description_line_1
@@ -101,9 +100,11 @@ def export_price_changes_report(filepath, price_changes):
         for i in range(5):
             if i > 0:
                 row["quantity_{}".format(i)] = getattr(price_region_item, "quantity_{}".format(i))
-            row["price_{}_was".format(i)] = getattr(price_region_item_was, "price_{}".format(i))
-            row["price_{}_now".format(i)] = getattr(price_region_item, "price_{}".format(i))
-            row["price_{}_diff".format(i)] = price_diffs[i]
+            price_now = getattr(price_region_item, "price_{}".format(i))
+            price_diff = price_diffs[i]
+            row["price_{}_was".format(i)] = price_now - price_diff
+            row["price_{}_now".format(i)] = price_now
+            row["price_{}_diff".format(i)] = price_diff
         return row
 
     rows = [item_to_row(price_change) for price_change in price_changes]

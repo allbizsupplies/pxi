@@ -101,7 +101,7 @@ class PriceCalcTests(DatabaseTestCase):
         )
         self.session.add(price_region_item)
 
-        apply_price_rule(price_region_item)
+        price_changes = apply_price_rule(price_region_item)
 
         calculated_prices = [
             price_region_item.price_0,
@@ -124,11 +124,11 @@ class PriceCalcTests(DatabaseTestCase):
         """Calculate new prices for items and return a list of changes."""
         price_region_items = random_pricelist(items=5)
         [self.session.add(item) for item in price_region_items]
-        price_changes = recalculate_sell_prices(price_region_items)
+        price_changes = recalculate_sell_prices(price_region_items, self.session)
         self.assertIsInstance(price_changes, list)
         for price_change in price_changes:
             self.assertIsInstance(price_change, PriceChange)
-            self.assertNotEqual(price_change.item_was, price_change.item_now)
+            self.assertIsNotNone(price_change.price_diffs)
 
     def test_recalculate_contract_prices(self):
         """Calculate new prices for contract items."""
@@ -140,6 +140,6 @@ class PriceCalcTests(DatabaseTestCase):
             contract_item = random_contract_item(inventory_item)
             self.session.add(price_region_item)
             contract_items.append(contract_item)
-        price_changes = recalculate_sell_prices(price_region_items)
+        price_changes = recalculate_sell_prices(price_region_items, self.session)
         updated_contract_items = recalculate_contract_prices(price_changes, self.session)
         self.assertEqual(len(updated_contract_items), item_count)
