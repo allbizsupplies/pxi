@@ -27,9 +27,6 @@ class ExporterTests(DatabaseTestCase):
         super().setUp()
         pathlib.Path("tmp").mkdir(parents=True, exist_ok=True)
 
-    def tearDown(self):
-        super().tearDown()
-
     def test_export_price_changes_report(self):
         """Export price updates to XLSX report."""
         report_filepath = "tmp/test_price_changes_report.xlsx"
@@ -143,4 +140,3 @@ class ExporterTests(DatabaseTestCase):
             expected_item_code = warehouse_stock_items[i].inventory_item.code
             self.assertEqual(item_code, expected_item_code)
         os.remove(tickets_list_filepath)
-        
