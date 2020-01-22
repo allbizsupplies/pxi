@@ -24,29 +24,6 @@ class User(Base):
             self.name, self.fullname, self.nickname)
 
 
-class ContractItem(Base):
-    __tablename__ = "contract_items"
-
-    id = Column(Integer, primary_key=True)
-    code = Column(String(16), nullable=False)
-    inventory_item_id = Column(Integer, 
-        ForeignKey("inventory_items.id"), nullable=False)
-    price_1 = Column(Numeric(precision=10, scale=4), nullable=False)
-    price_2 = Column(Numeric(precision=10, scale=4), nullable=False)
-    price_3 = Column(Numeric(precision=10, scale=4), nullable=False)
-    price_4 = Column(Numeric(precision=10, scale=4), nullable=False)
-    price_5 = Column(Numeric(precision=10, scale=4), nullable=False)
-    price_6 = Column(Numeric(precision=10, scale=4), nullable=False)
-
-    __table_args__ = (
-        UniqueConstraint("code", "inventory_item_id"),
-    )
-
-    inventory_item = relationship("InventoryItem",
-        back_populates="contract_items")
-
-
-
 class InventoryItem(Base):
     __tablename__ = "inventory_items"
 
@@ -138,6 +115,31 @@ class PriceRegionItem(Base):
 
     def __repr__(self):
         return "<PriceRegionItem(code='{}')>".format(self.code)
+
+
+class ContractItem(Base):
+    __tablename__ = "contract_items"
+
+    id = Column(Integer, primary_key=True)
+    code = Column(String(16), nullable=False)
+    inventory_item_id = Column(Integer, 
+        ForeignKey("inventory_items.id"), nullable=False)
+    price_1 = Column(Numeric(precision=10, scale=4), nullable=False)
+    price_2 = Column(Numeric(precision=10, scale=4), nullable=False)
+    price_3 = Column(Numeric(precision=10, scale=4), nullable=False)
+    price_4 = Column(Numeric(precision=10, scale=4), nullable=False)
+    price_5 = Column(Numeric(precision=10, scale=4), nullable=False)
+    price_6 = Column(Numeric(precision=10, scale=4), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("code", "inventory_item_id"),
+    )
+
+    inventory_item = relationship("InventoryItem",
+        back_populates="contract_items")
+
+    def __repr__(self):
+        return "<ContractItem(code='{}')>".format(self.code)
 
 
 class WarehouseStockItem(Base):

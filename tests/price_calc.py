@@ -6,12 +6,14 @@ from pxi.models import PriceRegionItem
 from pxi.price_calc import (
     PriceChange,
     apply_price_rule,
+    recalculate_contract_prices,
     recalculate_sell_prices,
     round_price,
     incl_tax,
     excl_tax)
 from tests import DatabaseTestCase
 from tests.fixtures.models import (
+    random_contract_item,
     random_inventory_item,
     random_price_rule,
     random_pricelist)
@@ -118,7 +120,6 @@ class PriceCalcTests(DatabaseTestCase):
 
         self.assertListEqual(expected_prices, calculated_prices)
 
-
     def test_recalculate_sell_prices(self):
         """Calculate new prices for items and return a list of changes."""
         price_region_items = random_pricelist(items=5)
@@ -129,8 +130,16 @@ class PriceCalcTests(DatabaseTestCase):
             self.assertIsInstance(price_change, PriceChange)
             self.assertNotEqual(price_change.item_was, price_change.item_now)
 
-
     def test_recalculate_contract_prices(self):
         """Calculate new prices for contract items."""
-        # TODO write test 
-        pass
+        item_count = 5
+        contract_items = []
+        price_region_items = random_pricelist(items=item_count)
+        for price_region_item in price_region_items:
+            inventory_item = price_region_item.inventory_item
+            contract_item = random_contract_item(inventory_item)
+            self.session.add(price_region_item)
+            contract_items.append(contract_item)
+        price_changes = recalculate_sell_prices(price_region_items)
+        updated_contract_items = recalculate_contract_prices(price_changes, self.session)
+        self.assertEqual(len(updated_contract_items), item_count)

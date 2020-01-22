@@ -4,7 +4,7 @@ from math import ceil
 from decimal import Decimal
 
 from pxi.enum import PriceBasis
-from pxi.models import PriceRegionItem
+from pxi.models import ContractItem, PriceRegionItem
 
 
 def d(amount):
@@ -113,6 +113,32 @@ def recalculate_sell_prices(price_region_items):
         if price_change.price_diffs():
             price_changes.append(price_change)
     return price_changes
+
+
+def recalculate_contract_prices(price_changes, db_session):
+    updated_contract_items = []
+
+    def multiply_prices(contract_item, price_ratio):
+        for i in range(1, 7):
+            price_field = "price_{}".format(i)
+            price_was = getattr(contract_item, price_field)
+            price_now = (price_was * price_ratio).quantize(price_was)
+            setattr(contract_item, price_field, price_now)
+
+    for price_change in price_changes:
+        inventory_item = price_change.item_now.inventory_item
+        contract_items = db_session.query(ContractItem).filter(
+            ContractItem.inventory_item == inventory_item
+        ).all()
+        # Adjust the contract prices in proportion to the retail price change.
+        price_now = price_change.item_now.price_0
+        price_was = price_change.item_was.price_0
+        price_ratio = (price_now / price_was).quantize(price_now)
+        for contract_item in contract_items:
+            multiply_prices(contract_item, price_ratio)
+            db_session.commit()
+            updated_contract_items.append(contract_item)
+    return updated_contract_items
 
 
 def round_price(price_excl):
