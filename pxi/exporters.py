@@ -79,6 +79,11 @@ def export_price_changes_report(filepath, price_changes):
             "price_{}_diff".format(i),
             "Price {} Diff".format(i)
         ))
+        fields.append(number_field(
+            "price_{}_diff_percentage".format(i),
+            "Price {} Diff %".format(i),
+            number_format="0%"
+        ))
 
     def item_to_row(price_change):
         price_region_item = price_change.price_region_item
@@ -102,11 +107,13 @@ def export_price_changes_report(filepath, price_changes):
                 row["quantity_{}".format(i)] = getattr(price_region_item, "quantity_{}".format(i))
             price_now = getattr(price_region_item, "price_{}".format(i))
             price_diff = price_diffs[i]
+            price_was = price_now - price_diff
+            price_diff_percentage = (price_diff / price_was).quantize(price_now)
             row["price_{}_was".format(i)] = price_now - price_diff
             row["price_{}_now".format(i)] = price_now
             row["price_{}_diff".format(i)] = price_diff
+            row["price_{}_diff_percentage".format(i)] = price_diff_percentage
         return row
-
     rows = [item_to_row(price_change) for price_change in price_changes]
 
     report_writer.write_sheet("Price Changes", fields, rows)

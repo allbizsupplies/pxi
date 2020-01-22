@@ -44,6 +44,8 @@ class ExporterTests(DatabaseTestCase):
         ] + [
             "price_{}_diff".format(i) for i in range(5)
         ] + [
+            "price_{}_diff_%".format(i) for i in range(5)
+        ] + [
             "quantity_{}".format(i) for i in range(1, 5)
         ]
         for fieldname in fieldnames:
@@ -55,7 +57,7 @@ class ExporterTests(DatabaseTestCase):
         for row in data:
             for value in row.values():
                 self.assertIsNotNone(value)
-        os.remove(report_filepath)
+        # os.remove(report_filepath)
 
     def test_export_pricelist(self):
         """Export price region items to Pronto pricelist import file."""
