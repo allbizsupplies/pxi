@@ -24,7 +24,6 @@ class ImporterTests(DatabaseTestCase):
         contract_items = self.session.query(ContractItem).all()
         self.assertEqual(len(contract_items), expected_item_count)
 
-
     def test_import_inventory_items(self):
         """Import Inventory Items from Pronto datagrid."""
         expected_item_count = 10
