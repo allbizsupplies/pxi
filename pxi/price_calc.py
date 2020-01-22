@@ -81,9 +81,8 @@ class PriceChange:
         return price_diffs if prices_differ else None
 
 
-def apply_price_rule(item):
+def apply_price_rule(price_region_item):
     """Recalculate prices for price region."""
-    price_region_item = copy(item)
     inventory_item = price_region_item.inventory_item
     price_rule = price_region_item.price_rule
     for i in range(5):
@@ -112,14 +111,14 @@ def apply_price_rule(item):
         price = base_price * factor
         rounded_price = round_price(price)
         setattr(price_region_item, "price_{}".format(i), rounded_price)
-    return price_region_item
 
 
 def recalculate_sell_prices(price_region_items):
     price_changes = []
-    for item in price_region_items:
-        new_item = apply_price_rule(item)
-        price_change = PriceChange(item, new_item)
+    for price_region_item in price_region_items:
+        old_price_region_item = copy(price_region_item)
+        apply_price_rule(price_region_item)
+        price_change = PriceChange(old_price_region_item, price_region_item)
         if price_change.price_diffs():
             price_changes.append(price_change)
     return price_changes

@@ -101,14 +101,14 @@ class PriceCalcTests(DatabaseTestCase):
         )
         self.session.add(price_region_item)
 
-        new_price_region_item = apply_price_rule(price_region_item)
+        apply_price_rule(price_region_item)
 
         calculated_prices = [
-            new_price_region_item.price_0,
-            new_price_region_item.price_1,
-            new_price_region_item.price_2,
-            new_price_region_item.price_3,
-            new_price_region_item.price_4,
+            price_region_item.price_0,
+            price_region_item.price_1,
+            price_region_item.price_2,
+            price_region_item.price_3,
+            price_region_item.price_4,
         ]
         expected_prices = [
             Decimal("59.9545"), # 65.95 incl tax
