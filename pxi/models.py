@@ -139,8 +139,8 @@ class WarehouseStockItem(Base):
     on_hand = Column(Integer, nullable=False)
     minimum = Column(Integer, nullable=False)
     maximum = Column(Integer, nullable=False)
-    bin_location = String(8)
-    bulk_location = String(8)
+    bin_location = Column(String(8))
+    bulk_location = Column(String(8))
 
     __table_args__ = (
         UniqueConstraint("code", "inventory_item_id"),
