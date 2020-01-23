@@ -97,9 +97,9 @@ class operations:
                 inventory_item = price_region_item.inventory_item
                 warehouse_stock_items = inventory_item.warehouse_stock_items
                 for warehouse_stock_item in warehouse_stock_items:
-                    if warehouse_stock_item.on_hand:
+                    if warehouse_stock_item.on_hand > 0:
                         yield warehouse_stock_item
-                    elif warehouse_stock_item.minimum:
+                    elif warehouse_stock_item.minimum > 0:
                         yield warehouse_stock_item
                     elif warehouse_stock_item.bin_location:
                         yield warehouse_stock_item
