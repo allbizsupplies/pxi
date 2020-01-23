@@ -19,6 +19,8 @@ def import_contract_items(filepath, db_session):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
+        if not inventory_item:
+            continue
         contract_item = ContractItem(
             inventory_item=inventory_item,
             code=row["contract_no"],
