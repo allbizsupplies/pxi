@@ -119,6 +119,7 @@ class PriceCalcTests(DatabaseTestCase):
         ]
 
         self.assertListEqual(expected_prices, calculated_prices)
+        self.assertIsNotNone(price_changes)
 
     def test_recalculate_sell_prices(self):
         """Calculate new prices for items and return a list of changes."""
