@@ -21,4 +21,3 @@ class OperationTests(DatabaseTestCase):
             contract_item_task="tmp/contract_item_task.txt",
             tickets_list="tmp/tickets_list.txt"
         )
-        # raise Exception("Unfinished test.")
