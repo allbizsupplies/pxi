@@ -140,7 +140,9 @@ def recalculate_contract_prices(price_changes, db_session):
         price_now = price_change.price_region_item.price_0
         price_diff = price_change.price_diffs[0]
         price_was = price_now - price_diff
-        price_ratio = (price_now / price_was).quantize(price_now)
+        price_ratio = None
+        if price_was > 0:
+            price_ratio = (price_now / price_was).quantize(price_now)
         for contract_item in contract_items:
             multiply_prices(contract_item, price_ratio)
             db_session.commit()
