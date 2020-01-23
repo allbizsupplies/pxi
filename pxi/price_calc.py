@@ -93,11 +93,10 @@ def apply_price_rule(price_region_item):
             base_price = price_region_item.price_3
         elif basis == PriceBasis.EXISTING_PRICE_4:
             base_price = price_region_item.price_4
-        if not base_price:
-            raise Exception("no base price for {}, {}, {}".format(
-                price_region_item,
-                price_region_item.price_rule,
+        if base_price is None:
+            raise Exception("no base price for {}, {}".format(
                 inventory_item,
+                price_region_item
             ))
         price = base_price * factor
         tax_exempt = price_region_item.tax_code == TaxCode.EXEMPT
