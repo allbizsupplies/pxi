@@ -81,6 +81,8 @@ def apply_price_rule(price_region_item):
             base_price = inventory_item.replacement_cost
         elif basis == PriceBasis.RRP_EXCL_TAX:
             base_price = price_region_item.rrp_excl_tax
+        elif basis == PriceBasis.RRP_INCL_TAX:
+            base_price = price_region_item.rrp_incl_tax
         elif basis == PriceBasis.EXISTING_PRICE_0:
             base_price = price_region_item.price_0
         elif basis == PriceBasis.EXISTING_PRICE_1:
@@ -92,8 +94,9 @@ def apply_price_rule(price_region_item):
         elif basis == PriceBasis.EXISTING_PRICE_4:
             base_price = price_region_item.price_4
         if not base_price:
-            raise Exception("no base price for {}, {}".format(
+            raise Exception("no base price for {}, {}, {}".format(
                 price_region_item,
+                price_region_item.price_rule,
                 inventory_item,
             ))
         price = base_price * factor
@@ -114,7 +117,7 @@ def recalculate_sell_prices(price_region_items, db_session):
     for price_region_item in price_region_items:
         price_change = apply_price_rule(price_region_item)
         db_session.commit()
-        if price_change.price_diffs:
+        if price_change:
             price_changes.append(price_change)
     return price_changes
 
