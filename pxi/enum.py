@@ -11,7 +11,8 @@ class ItemType(Enum):
 
 
 class ItemCondition(Enum):
-    NORMAL = None
+    NONE = None
+    NORMAL = "A"
     PURCHASE_STOP = "C"
     FREIGHT = "F"
     NO_BACKORDERS = "L"
