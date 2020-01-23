@@ -2,6 +2,12 @@
 import argparse
 import os
 from pxi.operations import operations
+import sys
+
+# Suppress warnings.
+if not sys.warnoptions:
+    import warnings
+    warnings.simplefilter("ignore")
 
 # Get the commandline arguments.
 parser = argparse.ArgumentParser(
