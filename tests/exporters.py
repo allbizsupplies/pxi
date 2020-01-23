@@ -57,7 +57,7 @@ class ExporterTests(DatabaseTestCase):
         for row in data:
             for value in row.values():
                 self.assertIsNotNone(value)
-        # os.remove(report_filepath)
+        os.remove(report_filepath)
 
     def test_export_pricelist(self):
         """Export price region items to Pronto pricelist import file."""
