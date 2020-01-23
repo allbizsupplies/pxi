@@ -55,6 +55,7 @@ def export_price_changes_report(filepath, price_changes):
 
     fields = [
         string_field("item_code", "Item Code", 20),
+        string_field("region", "Region", 4),
         string_field("brand", "Brand", 7),
         string_field("apn", "APN", 20),
         string_field("description", "Description", 20),
@@ -97,6 +98,7 @@ def export_price_changes_report(filepath, price_changes):
             description += " " + inventory_item.description_line_3
         row = {
             "item_code": inventory_item.code,
+            "region": price_region_item.code,
             "brand": inventory_item.brand,
             "apn": inventory_item.apn,
             "description": description,

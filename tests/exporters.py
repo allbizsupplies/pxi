@@ -36,7 +36,7 @@ class ExporterTests(DatabaseTestCase):
         export_price_changes_report(report_filepath, price_changes)
         report_reader = ReportReader(report_filepath)
         fieldnames = [
-            "item_code", "brand", "apn", "description", "price_rule",
+            "item_code", "region", "brand", "apn", "description", "price_rule",
         ] + [
             "price_{}_was".format(i) for i in range(5)
         ] + [
