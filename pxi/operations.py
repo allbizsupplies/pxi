@@ -102,7 +102,8 @@ class operations:
                     elif warehouse_stock_item.minimum > 0:
                         yield warehouse_stock_item
                     elif warehouse_stock_item.bin_location:
-                        yield warehouse_stock_item
+                        if warehouse_stock_item.bin_location not in ["OWNUSE"]:
+                            yield warehouse_stock_item
 
         print("Exporting price changes report...")
         export_price_changes_report(price_changes_report, price_changes)
