@@ -170,7 +170,6 @@ def export_contract_item_task(filepath, contract_items):
         fieldnames = ["contract", "item_code"]
         for i in range(1, 7):
             fieldnames.append("price_{}".format(i))
-            fieldnames.append("quantity_{}".format(i))
         writer = csv.DictWriter(file, fieldnames, dialect="excel-tab")
         writer.writeheader()
         writer.writerows(rows)
