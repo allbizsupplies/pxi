@@ -52,10 +52,15 @@ class operations:
         tickets_list="data/export/tickets_list.txt"
     ):
         session = db_session()
+        print("Importing inventory items...")
         import_inventory_items(inventory_items_datagrid, session)
+        print("Importing warehouse stock items...")
         import_warehouse_stock_items(inventory_items_datagrid, session)
+        print("Importing price rules...")
         import_price_rules(price_rules_datagrid, session)
+        print("Importing price region items...")
         import_price_region_items(pricelist_datagrid, session)
+        print("Importing contract items...")
         import_contract_items(contract_items_datagrid, session)
 
         price_region_items = session.query(PriceRegionItem).join(
@@ -72,10 +77,12 @@ class operations:
             InventoryItem.item_type != ItemType.INDENT_ITEM
         ).all()
         
+        print("Recalculating sell prices...")
         price_changes = recalculate_sell_prices(price_region_items, session)
         updated_price_region_items = [
             price_change.price_region_item for price_change in price_changes
         ]
+        print("Recalculating contract prices...")
         updated_contract_items = recalculate_contract_prices(
             price_changes, session)
 
@@ -97,8 +104,14 @@ class operations:
                     elif warehouse_stock_item.bin_location:
                         yield warehouse_stock_item
 
+        print("Exporting price changes report...")
         export_price_changes_report(price_changes_report, price_changes)
+        print("Exporting pricelist...")
         export_pricelist(pricelist, updated_price_region_items)
+        print("Exporting product price task...")
         export_product_price_task(product_price_task, updated_price_region_items)
+        print("Exporting contract item task...")
         export_contract_item_task(contract_item_task, updated_contract_items)
+        print("Exporting tickets list...")
         export_tickets_list(tickets_list, warehouse_stock_items_needing_tickets())
+        print("Done.")
