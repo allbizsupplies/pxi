@@ -109,7 +109,7 @@ class ExporterTests(DatabaseTestCase):
         os.remove(task_filepath)
 
     def test_export_contract_item_task(self):
-        """Export product price update task to file."""
+        """Export contract item task to file."""
         task_filepath = "tmp/test_contract_item_task.txt"
         item_count = 5
         contract_items = random_contract(items=item_count)
@@ -126,7 +126,7 @@ class ExporterTests(DatabaseTestCase):
         os.remove(task_filepath)
 
     def test_export_tickets_list(self):
-        """Export product price update task to file."""
+        """Export tickets list to file."""
         tickets_list_filepath = "tmp/test_tickets_list.txt"
         item_count = 5
         warehouse_stock_items = []
