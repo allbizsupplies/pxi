@@ -3,7 +3,7 @@ from copy import copy
 from math import ceil
 from decimal import Decimal
 
-from pxi.enum import PriceBasis
+from pxi.enum import PriceBasis, TaxCode
 from pxi.models import ContractItem, PriceRegionItem
 
 
@@ -97,7 +97,8 @@ def apply_price_rule(price_region_item):
                 inventory_item,
             ))
         price = base_price * factor
-        rounded_price = round_price(price)
+        tax_exempt = price_region_item.tax_code == TaxCode.EXEMPT
+        rounded_price = round_price(price, tax_exempt=tax_exempt)
         price_was = getattr(price_region_item, "price_{}".format(i))
         price_diff = rounded_price - price_was
         if abs(price_diff) >= Decimal("0.005"):
@@ -145,7 +146,7 @@ def recalculate_contract_prices(price_changes, db_session):
     return updated_contract_items
 
 
-def round_price(price_excl):
+def round_price(price_excl, tax_exempt=False):
     """Calculate rounded price."""
 
     def round_to_step(price, step):
@@ -158,7 +159,9 @@ def round_price(price_excl):
         return rounded_price
 
     # Get the rounded price, including tax.
-    price_incl = incl_tax(price_excl)
+    price_incl = price_excl
+    if not tax_exempt:
+        price_incl = incl_tax(price_excl)
     selected_rule = None
     for rule in ROUNDING_RULES:
         if selected_rule:
@@ -187,7 +190,9 @@ def round_price(price_excl):
         rounded_price_incl = min
 
     # Return new price ex GST.
-    rounded_price_excl = excl_tax(rounded_price_incl)
+    rounded_price_excl = rounded_price_incl
+    if not tax_exempt:
+        rounded_price_excl = excl_tax(rounded_price_incl)
     return rounded_price_excl
 
 
