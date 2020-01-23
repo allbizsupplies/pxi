@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+from pxi.enum import ItemType
 from pxi.exporters import (
     export_contract_item_task,
     export_price_changes_report,
@@ -17,7 +18,12 @@ from pxi.importers import (
     import_price_rules,
     import_warehouse_stock_items
 )
-from pxi.models import Base, PriceRegionItem, PriceRule
+from pxi.models import (
+    Base,
+    InventoryItem,
+    PriceRegionItem,
+    PriceRule
+)
 from pxi.price_calc import (
     recalculate_contract_prices,
     recalculate_sell_prices
@@ -52,8 +58,18 @@ class operations:
         import_price_region_items(pricelist_datagrid, session)
         import_contract_items(contract_items_datagrid, session)
 
-        price_region_items = session.query(PriceRegionItem).filter(
-            PriceRegionItem.price_rule_id.isnot(None)
+        price_region_items = session.query(PriceRegionItem).join(
+            PriceRegionItem.inventory_item
+        ).join(
+            PriceRegionItem.price_rule
+        ).filter(
+            PriceRegionItem.price_rule_id.isnot(None),
+            ~PriceRule.code.in_([
+                "", "MR", "MRAL", "MRCP", "MRKI", "NA", "OU"
+            ]),
+            InventoryItem.item_type != ItemType.CROSS_REFERENCE,
+            InventoryItem.item_type != ItemType.LABOUR,
+            InventoryItem.item_type != ItemType.INDENT_ITEM
         ).all()
         
         price_changes = recalculate_sell_prices(price_region_items, session)
