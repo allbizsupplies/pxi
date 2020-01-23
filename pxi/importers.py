@@ -56,6 +56,8 @@ def import_price_region_items(filepath, db_session):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
+        if not inventory_item:
+            continue
         price_rule = None
         if row["rule"]:
             price_rule = db_session.query(PriceRule).filter(
