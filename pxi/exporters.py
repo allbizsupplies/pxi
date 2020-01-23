@@ -7,6 +7,10 @@ from pxi.report import ReportWriter
 def export_pricelist(filepath, price_region_items):
     """Export pricelist to file."""
     effective_date = date.today().strftime("%d-%b-%Y")
+    price_list_field = "0"
+    last_change_date = ""
+    reason_code = ""
+    price_type_code = ""
     def price_region_item_to_row(price_region_item):
         inventory_item = price_region_item.inventory_item
         return [
@@ -23,9 +27,11 @@ def export_pricelist(filepath, price_region_items):
             str(price_region_item.price_4),
             str(price_region_item.rrp_excl_tax),
             str(price_region_item.rrp_incl_tax),
-            "",
+            price_list_field,
+            last_change_date,
             effective_date,
-            "",
+            price_type_code,
+            reason_code,
         ]
     rows = [price_region_item_to_row(item) for item in price_region_items]
     with open(filepath, "w") as file:
