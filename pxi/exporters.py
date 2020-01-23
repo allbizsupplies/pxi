@@ -108,7 +108,9 @@ def export_price_changes_report(filepath, price_changes):
             price_now = getattr(price_region_item, "price_{}".format(i))
             price_diff = price_diffs[i]
             price_was = price_now - price_diff
-            price_diff_percentage = (price_diff / price_was).quantize(price_now)
+            price_diff_percentage = None
+            if price_was > 0:
+                price_diff_percentage = (price_diff / price_was).quantize(price_now)
             row["price_{}_was".format(i)] = price_now - price_diff
             row["price_{}_now".format(i)] = price_now
             row["price_{}_diff".format(i)] = price_diff
