@@ -64,7 +64,7 @@ def export_price_changes_report(filepath, price_changes):
         string_field("region", "Region", 4),
         string_field("brand", "Brand", 7),
         string_field("apn", "APN", 20),
-        string_field("description", "Description", 20),
+        string_field("description", "Description", 80),
         string_field("price_rule", "Price Rule", 7),
     ]
     for i in range(5):
