@@ -76,8 +76,6 @@ def export_price_changes_report(filepath, price_changes):
         number_field("retail_price_diff_percentage", "Price Diff %", 
             number_format="0%"),
     ]
-    contract_item_fields.append(number_field(
-        "retail_price", "Retail Price 0"))
     for i in range(1, 7):
         contract_item_fields.append(number_field(
             "price_{}".format(i), "Price {}".format(i)))
@@ -125,14 +123,12 @@ def contract_item_rows(price_changes):
         if not contract_items:
             continue
         for contract_item in contract_items:
-
             price_now = price_region_item.price_0
             price_diff = price_diffs[0]
             price_was = price_now - price_diff
             price_diff_percentage = None
             if price_was > 0:
                 price_diff_percentage = (price_diff / price_was).quantize(price_now)
-
             row = {
                 "contract": contract_item.code,
                 "item_code": inventory_item.code,
