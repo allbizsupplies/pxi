@@ -42,23 +42,6 @@ def export_price_changes_report(filepath, price_changes):
     """Export report to file."""
     report_writer = ReportWriter(filepath)
 
-    def string_field(name, title, width):
-        return {
-            "name": name,
-            "title": title, 
-            "width": width,
-            "align": "left",
-        }
-
-    def number_field(name, title, number_format="0.0000"):
-        return {
-            "name": name,
-            "title": title,
-            "width": 16,
-            "align": "right",
-            "number_format": number_format,
-        }
-
     fields = [
         string_field("item_code", "Item Code", 20),
         string_field("region", "Region", 4),
@@ -91,7 +74,6 @@ def export_price_changes_report(filepath, price_changes):
             "Price {} Diff %".format(i),
             number_format="0%"
         ))
-
     def item_to_row(price_change):
         price_region_item = price_change.price_region_item
         price_diffs = price_change.price_diffs
@@ -125,8 +107,8 @@ def export_price_changes_report(filepath, price_changes):
             row["price_{}_diff_percentage".format(i)] = price_diff_percentage
         return row
     rows = [item_to_row(price_change) for price_change in price_changes]
-
     report_writer.write_sheet("Price Changes", fields, rows)
+    
     report_writer.save()
 
 
@@ -199,3 +181,22 @@ def sell_price_change(product):
     now_sell_price = product.sell_prices[0]
     diff = now_sell_price - was_sell_price
     return diff / was_sell_price
+
+
+def string_field(name, title, width):
+    return {
+        "name": name,
+        "title": title, 
+        "width": width,
+        "align": "left",
+    }
+
+
+def number_field(name, title, number_format="0.0000"):
+    return {
+        "name": name,
+        "title": title,
+        "width": 16,
+        "align": "right",
+        "number_format": number_format,
+    }
