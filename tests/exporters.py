@@ -86,8 +86,10 @@ class ExporterTests(DatabaseTestCase):
                 str(price_region_item.price_4),
                 str(price_region_item.rrp_excl_tax),
                 str(price_region_item.rrp_incl_tax),
+                "0",
                 "",
                 expected_date,
+                "",
                 "",
             ]
             self.assertListEqual(data, expected_data)
