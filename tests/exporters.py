@@ -52,11 +52,6 @@ class ExporterTests(DatabaseTestCase):
             self.assertIn(fieldname, report_reader.fieldnames)
         data = report_reader.load()
         self.assertEqual(item_count, len(data))
-        # TODO assert that row data matches some expected values.
-        # TODO expect contract items worksheet as well.
-        for row in data:
-            for value in row.values():
-                self.assertIsNotNone(value)
         os.remove(report_filepath)
 
     def test_export_pricelist(self):
