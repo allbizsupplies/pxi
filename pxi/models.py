@@ -40,6 +40,15 @@ class InventoryItem(Base):
     def __repr__(self):
         return "<InventoryItem(code='{}')>".format(self.code)
 
+    @property
+    def full_description(self):
+        full_description = self.description_line_1
+        if self.description_line_2:
+            full_description += " " + self.description_line_2
+        if self.description_line_3:
+            full_description += " " + self.description_line_3
+        return full_description
+
 
 class PriceRule(Base):
     __tablename__ = "price_rules"

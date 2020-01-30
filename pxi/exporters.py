@@ -92,17 +92,12 @@ def price_change_rows(price_changes):
         price_diffs = price_change.price_diffs
         inventory_item = price_region_item.inventory_item
         price_rule = price_region_item.price_rule
-        description = inventory_item.description_line_1
-        if inventory_item.description_line_2:
-            description += " " + inventory_item.description_line_2
-        if inventory_item.description_line_3:
-            description += " " + inventory_item.description_line_3
         row = {
             "item_code": inventory_item.code,
             "region": price_region_item.code,
             "brand": inventory_item.brand,
             "apn": inventory_item.apn,
-            "description": description,
+            "description": inventory_item.full_description,
             "price_rule": price_rule.code
         }
         for i in range(5):
@@ -131,12 +126,6 @@ def contract_item_rows(price_changes):
             continue
         for contract_item in contract_items:
 
-            description = inventory_item.description_line_1
-            if inventory_item.description_line_2:
-                description += " " + inventory_item.description_line_2
-            if inventory_item.description_line_3:
-                description += " " + inventory_item.description_line_3
-
             price_now = price_region_item.price_0
             price_diff = price_diffs[0]
             price_was = price_now - price_diff
@@ -147,7 +136,7 @@ def contract_item_rows(price_changes):
             row = {
                 "contract": contract_item.code,
                 "item_code": inventory_item.code,
-                "description": description,
+                "description": inventory_item.full_description,
                 "retail_price": price_region_item.price_0,
                 "retail_price_diff": price_diff,
                 "retail_price_diff_percentage": price_diff_percentage,
