@@ -70,7 +70,7 @@ class operations:
         ).filter(
             PriceRegionItem.price_rule_id.isnot(None),
             ~PriceRule.code.in_([
-                "", "MR", "MRAL", "MRCP", "MRKI", "NA", "OU"
+                "", "MR", "MRAL", "MRCP", "MRKI", "NA", "OU", "SH"
             ]),
             InventoryItem.item_type != ItemType.CROSS_REFERENCE,
             InventoryItem.item_type != ItemType.LABOUR,
