@@ -121,7 +121,6 @@ class ExporterTests(DatabaseTestCase):
         expected_fieldnames = ["contract", "item_code"]
         for i in range(1, 7):
             expected_fieldnames.append("price_{}".format(i))
-            expected_fieldnames.append("quantity_{}".format(i))
         self.assertListEqual(csv_reader.fieldnames, expected_fieldnames)
         file.close()
         # TODO validate values in rows.
