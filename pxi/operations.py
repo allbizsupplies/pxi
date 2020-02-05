@@ -30,6 +30,11 @@ from pxi.price_calc import (
 )
 
 
+IGNORED_PRICE_RULES = [
+    "", "MR", "MRAL", "MRCP", "MRKI", "NA", "OU", "RRP", "SH"
+]
+
+
 def db_session():
     db = create_engine('sqlite://')
     Base.metadata.create_all(db)
@@ -69,9 +74,7 @@ class operations:
             PriceRegionItem.price_rule
         ).filter(
             PriceRegionItem.price_rule_id.isnot(None),
-            ~PriceRule.code.in_([
-                "", "MR", "MRAL", "MRCP", "MRKI", "NA", "OU", "SH"
-            ]),
+            ~PriceRule.code.in_(IGNORED_PRICE_RULES),
             InventoryItem.item_type != ItemType.CROSS_REFERENCE,
             InventoryItem.item_type != ItemType.LABOUR,
             InventoryItem.item_type != ItemType.INDENT_ITEM
