@@ -37,6 +37,9 @@ class InventoryItem(Base):
     warehouse_stock_items = relationship("WarehouseStockItem", 
         back_populates="inventory_item")
 
+    supplier_items = relationship("SupplierItem", 
+        back_populates="inventory_item")
+
     def __repr__(self):
         return "<InventoryItem(code='{}')>".format(self.code)
 
@@ -160,3 +163,29 @@ class WarehouseStockItem(Base):
 
     def __repr__(self):
         return "<WarehouseStockItem(code='{}')>".format(self.code)
+
+
+class SupplierItem(Base):
+    __tablename__ = "supplier_items"
+
+    id = Column(Integer, primary_key=True)
+    code = Column(String(2), nullable=False)
+    inventory_item_id = Column(Integer,
+        ForeignKey("inventory_items.id"), nullable=False)
+    item_code = Column(String(2), nullable=False)
+    priority = Column(Integer, nullable=False)
+    uom = Column(String(4), nullable=False)
+    conv_factor = Column(Numeric(precision=13, scale=7), nullable=False)
+    pack_quantity = Column(Integer, nullable=False)
+    moq = Column(Integer, nullable=False)
+    buy_price = Column(Numeric(precision=10, scale=4), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("code", "inventory_item_id"),
+    )
+
+    inventory_item = relationship("InventoryItem",
+        back_populates="supplier_items")
+
+    def __repr__(self):
+        return "<SupplierItem(code='{}')>".format(self.code)

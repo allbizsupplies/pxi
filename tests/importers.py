@@ -4,6 +4,7 @@ from pxi.importers import (
     import_inventory_items,
     import_price_region_items,
     import_price_rules,
+    import_supplier_items,
     import_warehouse_stock_items
 )
 from pxi.models import (
@@ -11,6 +12,7 @@ from pxi.models import (
     InventoryItem,
     PriceRegionItem,
     PriceRule,
+    SupplierItem,
     WarehouseStockItem)
 from tests import DatabaseTestCase
 
@@ -55,3 +57,12 @@ class ImporterTests(DatabaseTestCase):
         import_price_region_items("tests/fixtures/pricelist.xlsx", self.session)
         price_region_items = self.session.query(PriceRegionItem).all()
         self.assertEqual(len(price_region_items), expected_item_count)
+
+    def test_import_supplier_items(self):
+        """Import Supplier Items from Pronto datagrid."""
+        expected_item_count = 10
+        datagrid_filepath = "tests/fixtures/supplier_items.xlsx"
+        import_inventory_items("tests/fixtures/inventory_items.xlsx", self.session)
+        import_supplier_items(datagrid_filepath, self.session)
+        supplier_items = self.session.query(SupplierItem).all()
+        self.assertEqual(len(supplier_items), expected_item_count)

@@ -11,6 +11,7 @@ from pxi.models import (
     InventoryItem,
     PriceRegionItem,
     PriceRule,
+    SupplierItem,
     WarehouseStockItem)
 
 
@@ -123,3 +124,22 @@ def import_warehouse_stock_items(filepath, db_session):
             bulk_location=row["bulk_loc"]
         )
         db_session.add(warehouse_stock_item)
+
+
+def import_supplier_items(filepath, db_session):
+    for row in load_rows(filepath):
+        inventory_item = db_session.query(InventoryItem).filter(
+            InventoryItem.code == row["item_code"]
+        ).scalar()
+        supplier_item = SupplierItem(
+            inventory_item=inventory_item,
+            code=row["supplier"],
+            item_code=row["item_code"],
+            priority=row["priority"],
+            uom=row["unit"],
+            conv_factor=row["conv_factor"],
+            pack_quantity=row["pack_qty"],
+            moq=row["eoq"],
+            buy_price=row["current_buy_price"],
+        )
+        db_session.add(supplier_item)
