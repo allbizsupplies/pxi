@@ -169,7 +169,7 @@ class SupplierItem(Base):
     __tablename__ = "supplier_items"
 
     id = Column(Integer, primary_key=True)
-    code = Column(String(2), nullable=False)
+    code = Column(String(10), nullable=False)
     inventory_item_id = Column(Integer,
         ForeignKey("inventory_items.id"), nullable=False)
     item_code = Column(String(2), nullable=False)
