@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from pxi.enum import ItemType
+from pxi.enum import ItemCondition, ItemType
 from pxi.exporters import (
     export_contract_item_task,
     export_price_changes_report,
@@ -75,6 +75,8 @@ class operations:
         ).filter(
             PriceRegionItem.price_rule_id.isnot(None),
             ~PriceRule.code.in_(IGNORED_PRICE_RULES),
+            InventoryItem.condition != ItemCondition.DISCONTINUED,
+            InventoryItem.condition != ItemCondition.INACTIVE,
             InventoryItem.item_type != ItemType.CROSS_REFERENCE,
             InventoryItem.item_type != ItemType.LABOUR,
             InventoryItem.item_type != ItemType.INDENT_ITEM
