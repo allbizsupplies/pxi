@@ -9,6 +9,7 @@ from pxi.enum import (
 from pxi.models import (
     ContractItem,
     InventoryItem,
+    GTINItem,
     PriceRegionItem,
     PriceRule,
     SupplierItem,
@@ -143,3 +144,17 @@ def import_supplier_items(filepath, db_session):
             buy_price=row["current_buy_price"],
         )
         db_session.add(supplier_item)
+
+
+def import_gtin_items(filepath, db_session):
+    for row in load_rows(filepath):
+        inventory_item = db_session.query(InventoryItem).filter(
+            InventoryItem.code == row["item_code"]
+        ).scalar()
+        gtin_item = GTINItem(
+            inventory_item=inventory_item,
+            code=row["gtin"],
+            uom=row["uom"],
+            conv_factor=row["conversion"]
+        )
+        db_session.add(gtin_item)

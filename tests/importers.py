@@ -2,6 +2,7 @@
 from pxi.importers import (
     import_contract_items,
     import_inventory_items,
+    import_gtin_items,
     import_price_region_items,
     import_price_rules,
     import_supplier_items,
@@ -10,6 +11,7 @@ from pxi.importers import (
 from pxi.models import (
     ContractItem,
     InventoryItem,
+    GTINItem,
     PriceRegionItem,
     PriceRule,
     SupplierItem,
@@ -66,3 +68,12 @@ class ImporterTests(DatabaseTestCase):
         import_supplier_items(datagrid_filepath, self.session)
         supplier_items = self.session.query(SupplierItem).all()
         self.assertEqual(len(supplier_items), expected_item_count)
+
+    def test_import_gtin_items(self):
+        """Import GTIN Items from Pronto datagrid."""
+        expected_item_count = 10
+        datagrid_filepath = "tests/fixtures/gtin_items.xlsx"
+        import_inventory_items("tests/fixtures/inventory_items.xlsx", self.session)
+        import_gtin_items(datagrid_filepath, self.session)
+        gtin_items = self.session.query(GTINItem).all()
+        self.assertEqual(len(gtin_items), expected_item_count)
