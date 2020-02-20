@@ -132,6 +132,8 @@ def import_supplier_items(filepath, db_session):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
+        if not inventory_item:
+            continue
         supplier_item = SupplierItem(
             inventory_item=inventory_item,
             code=row["supplier"],
