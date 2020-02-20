@@ -153,6 +153,8 @@ def import_gtin_items(filepath, db_session):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
+        if not inventory_item:
+            continue
         gtin_item = GTINItem(
             inventory_item=inventory_item,
             code=row["gtin"],
