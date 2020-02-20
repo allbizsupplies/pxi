@@ -198,14 +198,14 @@ class GTINItem(Base):
     __tablename__ = "gtin_items"
 
     id = Column(Integer, primary_key=True)
-    code = Column(String(2), nullable=False)
+    code = Column(String(2))
     inventory_item_id = Column(Integer,
         ForeignKey("inventory_items.id"), nullable=False)
     uom = Column(String(4), nullable=False)
     conv_factor = Column(Numeric(precision=13, scale=7), nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("code", "inventory_item_id"),
+        UniqueConstraint("code", "inventory_item_id", "uom"),
     )
 
     inventory_item = relationship("InventoryItem",
