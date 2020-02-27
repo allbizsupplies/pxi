@@ -86,15 +86,25 @@ class operations:
             InventoryItem.item_type != ItemType.LABOUR,
             InventoryItem.item_type != ItemType.INDENT_ITEM
         ).all()
+
+        print("{} price region items selected for price calculation.".format(
+            len(price_region_items)
+        ))
         
         print("Recalculating sell prices...")
         price_changes = recalculate_sell_prices(price_region_items, session)
         updated_price_region_items = [
             price_change.price_region_item for price_change in price_changes
         ]
+        print("{} price region items have been updated.".format(
+            len(updated_price_region_items)
+        ))
         print("Recalculating contract prices...")
         updated_contract_items = recalculate_contract_prices(
             price_changes, session)
+        print("{} contract items have been updated.".format(
+            len(updated_contract_items)
+        ))
 
         def updated_default_price_regions():
             for price_change in price_changes:
