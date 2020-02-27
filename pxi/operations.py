@@ -58,15 +58,20 @@ class operations:
     ):
         session = db_session()
         print("Importing inventory items...")
-        import_inventory_items(inventory_items_datagrid, session)
+        count = import_inventory_items(inventory_items_datagrid, session)
+        print("{} inventory items imported".format(count))
         print("Importing warehouse stock items...")
-        import_warehouse_stock_items(inventory_items_datagrid, session)
+        count = import_warehouse_stock_items(inventory_items_datagrid, session)
+        print("{} warehouse stock items imported".format(count))
         print("Importing price rules...")
-        import_price_rules(price_rules_datagrid, session)
+        count = import_price_rules(price_rules_datagrid, session)
+        print("{} price rules imported".format(count))
         print("Importing price region items...")
-        import_price_region_items(pricelist_datagrid, session)
+        count = import_price_region_items(pricelist_datagrid, session)
+        print("{} price region items imported".format(count))
         print("Importing contract items...")
-        import_contract_items(contract_items_datagrid, session)
+        count = import_contract_items(contract_items_datagrid, session)
+        print("{} contract items imported".format(count))
 
         price_region_items = session.query(PriceRegionItem).join(
             PriceRegionItem.inventory_item

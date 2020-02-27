@@ -17,6 +17,7 @@ from pxi.models import (
 
 
 def import_contract_items(filepath, db_session):
+    count = 0
     for row in load_rows(filepath):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
@@ -34,9 +35,12 @@ def import_contract_items(filepath, db_session):
             price_6=row["price_6"],
         )
         db_session.add(contract_item)
+        count += 1
+    return count
 
 
 def import_inventory_items(filepath, db_session):
+    count = 0
     for row in load_rows(filepath):
         inventory_item = InventoryItem(
             code=row["item_code"],
@@ -53,9 +57,12 @@ def import_inventory_items(filepath, db_session):
             replacement_cost=row["replacement_cost"]
         )
         db_session.add(inventory_item)
+        count += 1
+    return count
 
 
 def import_price_region_items(filepath, db_session):
+    count = 0
     for row in load_rows(filepath):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
@@ -85,9 +92,12 @@ def import_price_region_items(filepath, db_session):
             rrp_incl_tax=row["rrp_inc_tax"]
         )
         db_session.add(price_region_item)
+        count += 1
+    return count
 
 
 def import_price_rules(filepath, db_session):
+    count = 0
     for row in load_rows(filepath):
         price_rule = PriceRule(
             code=row["rule"],
@@ -108,9 +118,12 @@ def import_price_rules(filepath, db_session):
             rrp_incl_factor=row["rrp_inc_tax_factor"]
         )
         db_session.add(price_rule)
+        count += 1
+    return count
 
 
 def import_warehouse_stock_items(filepath, db_session):
+    count = 0
     for row in load_rows(filepath):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
@@ -125,9 +138,12 @@ def import_warehouse_stock_items(filepath, db_session):
             bulk_location=row["bulk_loc"]
         )
         db_session.add(warehouse_stock_item)
+        count += 1
+    return count
 
 
 def import_supplier_items(filepath, db_session):
+    count = 0
     for row in load_rows(filepath):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
@@ -146,9 +162,11 @@ def import_supplier_items(filepath, db_session):
             buy_price=row["current_buy_price"],
         )
         db_session.add(supplier_item)
-
+        count += 1
+    return count
 
 def import_gtin_items(filepath, db_session):
+    count = 0
     for row in load_rows(filepath):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
@@ -162,3 +180,5 @@ def import_gtin_items(filepath, db_session):
             conv_factor=row["conversion"]
         )
         db_session.add(gtin_item)
+        count += 1
+    return count
