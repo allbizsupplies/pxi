@@ -141,6 +141,7 @@ def recalculate_contract_prices(price_changes, db_session):
         price_diff = price_change.price_diffs[0]
         price_was = price_now - price_diff
         price_ratio = None
+        # TODO handle case where price was zero i.e. 100% increase.
         if price_was > 0:
             price_ratio = (price_now / price_was).quantize(price_now)
         for contract_item in contract_items:
