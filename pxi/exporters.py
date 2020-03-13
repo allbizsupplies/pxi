@@ -2,6 +2,7 @@ import csv
 from datetime import date
 
 from pxi.report import ReportWriter
+from pxi.spl_update import SPL_FIELDNAMES
 
 
 def export_pricelist(filepath, price_region_items):
@@ -185,6 +186,30 @@ def export_contract_item_task(filepath, contract_items):
             fieldnames.append("price_{}".format(i))
         writer = csv.DictWriter(file, fieldnames, dialect="excel-tab")
         writer.writeheader()
+        writer.writerows(rows)
+
+
+def export_supplier_pricelist(filepath, supplier_items):
+    """Export supplier items to Pronto SPL file."""
+    def supplier_item_to_row(supplier_item):
+        inventory_item = supplier_item.inventory_item
+        row = {
+            "supplier_code": supplier_item.code,
+            "supp_item_code": supplier_item.item_code,
+            "desc_line_1": inventory_item.description_line_1,
+            "desc_line_2": inventory_item.description_line_2,
+            "supp_uom": supplier_item.uom,
+            "supp_eoq": supplier_item.moq,
+            "supp_conv_factor": supplier_item.conv_factor,
+            "supp_price_1": supplier_item.buy_price,
+            "item_code": inventory_item.code,
+        }
+        return row
+    rows = [supplier_item_to_row(item) for item in supplier_items]
+
+    with open(filepath, "w") as file:
+        fieldnames = SPL_FIELDNAMES
+        writer = csv.DictWriter(file, fieldnames, dialect="excel")
         writer.writerows(rows)
 
 

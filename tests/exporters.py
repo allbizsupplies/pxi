@@ -9,14 +9,17 @@ from pxi.exporters import (
     export_pricelist,
     export_product_price_task,
     export_contract_item_task,
+    export_supplier_pricelist,
     export_tickets_list)
 from pxi.price_calc import recalculate_sell_prices
 from pxi.report import ReportReader
+from pxi.spl_update import SPL_FIELDNAMES
 from tests import DatabaseTestCase
 from tests.fixtures.models import (
     random_contract,
     random_inventory_item,
     random_pricelist,
+    random_supplier_item,
     random_warehouse_stock_item
 )
 
@@ -138,3 +141,34 @@ class ExporterTests(DatabaseTestCase):
             expected_item_code = warehouse_stock_items[i].inventory_item.code
             self.assertEqual(item_code, expected_item_code)
         os.remove(tickets_list_filepath)
+
+    def test_export_supplier_pricelist(self):
+        """Export supplier pricelist to file."""
+        supplier_pricelist_filepath = "tmp/test_supplier_pricelist.csv"
+        item_count = 5
+        supplier_items = []
+        for i in range(item_count):
+            inventory_item = random_inventory_item()
+            self.session.add(inventory_item)
+            supplier_item = random_supplier_item(inventory_item)
+            self.session.add(supplier_item)
+            supplier_items.append(supplier_item)
+        export_supplier_pricelist(supplier_pricelist_filepath, supplier_items)
+        file = open(supplier_pricelist_filepath)
+        supplier_pricelist_reader = csv.DictReader(file, SPL_FIELDNAMES)
+        supplier_pricelist_items = list(supplier_pricelist_reader)
+        for i, supplier_pricelist_item in enumerate(supplier_pricelist_items):
+            supplier_item = supplier_items[i]
+            expected_item_values = {
+                "supplier_code": supplier_item.code,
+                "supp_item_code": supplier_item.item_code,
+                "item_code": supplier_item.inventory_item.code,
+                "supp_price_1": str(supplier_item.buy_price),
+            }
+            for key, expected_value in expected_item_values.items():
+                value = supplier_pricelist_item[key]
+                self.assertEqual(expected_value, value, "'{}' != '{}' for key: {}".format(
+                    expected_value, value, key
+                ))
+        file.close()
+        os.remove(supplier_pricelist_filepath)
