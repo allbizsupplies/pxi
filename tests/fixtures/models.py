@@ -13,6 +13,7 @@ from pxi.models import (
     PriceRule,
     PriceRegionItem,
     InventoryItem,
+    SupplierItem,
     WarehouseStockItem)
 
 
@@ -123,6 +124,22 @@ def random_string(length=10):
     """Generate a random string of fixed length """
     letters = string.ascii_uppercase
     return ''.join(random.choice(letters) for i in range(length))
+
+
+def random_supplier_item(inventory_item):
+    """Generate supplier item with randomised fields."""
+    pack_qty = random.randint(1, 12)
+    return SupplierItem(
+        code=random_string(3),
+        inventory_item=inventory_item,
+        item_code=random_string(16),
+        priority=random.randint(1, 9),
+        uom="EACH",
+        conv_factor=Decimal(1),
+        pack_quantity=pack_qty,
+        moq=pack_qty,
+        buy_price=Decimal(random.randint(200, 400)) / 100,
+    )
 
 
 def random_warehouse_stock_item(inventory_item):
