@@ -65,6 +65,36 @@ def export_price_changes_report(filepath, price_changes):
         price_change_fields.append(number_field(
             "price_{}_diff_percentage".format(i), "Price {} Diff %".format(i),
             number_format="0%"))
+
+    def price_change_rows(price_changes):
+        for price_change in price_changes:
+            price_region_item = price_change.price_region_item
+            price_diffs = price_change.price_diffs
+            inventory_item = price_region_item.inventory_item
+            price_rule = price_region_item.price_rule
+            row = {
+                "item_code": inventory_item.code,
+                "region": price_region_item.code,
+                "brand": inventory_item.brand,
+                "apn": inventory_item.apn,
+                "description": inventory_item.full_description,
+                "price_rule": price_rule.code
+            }
+            for i in range(5):
+                if i > 0:
+                    row["quantity_{}".format(i)] = getattr(price_region_item, "quantity_{}".format(i))
+                price_now = getattr(price_region_item, "price_{}".format(i))
+                price_diff = price_diffs[i]
+                price_was = price_now - price_diff
+                price_diff_percentage = None
+                if price_was > 0:
+                    price_diff_percentage = (price_diff / price_was).quantize(price_now)
+                row["price_{}_was".format(i)] = price_now - price_diff
+                row["price_{}_now".format(i)] = price_now
+                row["price_{}_diff".format(i)] = price_diff
+                row["price_{}_diff_percentage".format(i)] = price_diff_percentage
+            yield row
+
     report_writer.write_sheet("Price Changes", price_change_fields,
         price_change_rows(price_changes))
 
@@ -85,34 +115,46 @@ def export_price_changes_report(filepath, price_changes):
     report_writer.save()
 
 
-def price_change_rows(price_changes):
-    for price_change in price_changes:
-        price_region_item = price_change.price_region_item
-        price_diffs = price_change.price_diffs
-        inventory_item = price_region_item.inventory_item
-        price_rule = price_region_item.price_rule
-        row = {
-            "item_code": inventory_item.code,
-            "region": price_region_item.code,
-            "brand": inventory_item.brand,
-            "apn": inventory_item.apn,
-            "description": inventory_item.full_description,
-            "price_rule": price_rule.code
-        }
-        for i in range(5):
-            if i > 0:
-                row["quantity_{}".format(i)] = getattr(price_region_item, "quantity_{}".format(i))
-            price_now = getattr(price_region_item, "price_{}".format(i))
-            price_diff = price_diffs[i]
+def export_supplier_price_changes_report(filepath, price_changes):
+    """Export supplier price report to file."""
+    report_writer = ReportWriter(filepath)
+
+    price_change_fields = [
+        string_field("item_code", "Item Code", 20),
+        string_field("supplier", "Supplier", 8),
+        string_field("brand", "Brand", 7),
+        string_field("apn", "APN", 20),
+        string_field("description", "Description", 80),
+        number_field("price_was", "Price Was", number_format="0.00"),
+        number_field("price_now", "Price Now", number_format="0.00"),
+        number_field("price_diff", "Price Diff", number_format="0.00"),
+        number_field("price_diff_percentage", "Price Diff %", number_format="0%"),
+    ]
+
+    def price_change_rows(price_changes):
+        for price_change in price_changes:
+            supplier_item = price_change["supplier_item"]
+            price_diff = price_change["price_diff"]
+            price_now = supplier_item.buy_price
             price_was = price_now - price_diff
-            price_diff_percentage = None
-            if price_was > 0:
-                price_diff_percentage = (price_diff / price_was).quantize(price_now)
-            row["price_{}_was".format(i)] = price_now - price_diff
-            row["price_{}_now".format(i)] = price_now
-            row["price_{}_diff".format(i)] = price_diff
-            row["price_{}_diff_percentage".format(i)] = price_diff_percentage
-        yield row
+            price_diff_percentage = price_diff / price_now
+            inventory_item = supplier_item.inventory_item
+            row = {
+                "item_code": inventory_item.code,
+                "supplier": supplier_item.code,
+                "brand": inventory_item.brand,
+                "apn": inventory_item.apn,
+                "description": inventory_item.full_description,
+                "price_was": price_was,
+                "price_now": price_now,
+                "price_diff": price_diff,
+                "price_diff_percentage": price_diff_percentage,
+            }
+            yield row
+
+    report_writer.write_sheet("Price Changes", price_change_fields,
+        price_change_rows(price_changes))
+    report_writer.save()
 
 
 def contract_item_rows(price_changes):

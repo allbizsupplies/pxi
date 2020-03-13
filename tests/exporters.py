@@ -1,7 +1,9 @@
 import csv
 from datetime import date
+from decimal import Decimal
 import os
 import pathlib
+import random
 
 
 from pxi.exporters import (
@@ -10,6 +12,7 @@ from pxi.exporters import (
     export_product_price_task,
     export_contract_item_task,
     export_supplier_pricelist,
+    export_supplier_price_changes_report,
     export_tickets_list)
 from pxi.price_calc import recalculate_sell_prices
 from pxi.report import ReportReader
@@ -172,3 +175,31 @@ class ExporterTests(DatabaseTestCase):
                 ))
         file.close()
         os.remove(supplier_pricelist_filepath)
+
+    def test_export_supplier_price_changes_report(self):
+        """Export supplier price updates to XLSX report."""
+        report_filepath = "tmp/test_supplier_price_changes_report.xlsx"
+        item_count = 5
+        price_changes = []
+        for i in range(item_count):
+            inventory_item = random_inventory_item()
+            self.session.add(inventory_item)
+            supplier_item = random_supplier_item(inventory_item)
+            self.session.add(supplier_item)
+            price_changes.append({
+                "supplier_item": supplier_item,
+                # Create price difference between +/- 10%.
+                "price_diff": supplier_item.buy_price * Decimal(random.randint(-10, 10)) / 100,
+            })
+
+        export_supplier_price_changes_report(report_filepath, price_changes)
+        report_reader = ReportReader(report_filepath)
+        fieldnames = [
+            "item_code", "supplier", "brand", "apn", "description",
+            "price_was", "price_now", "price_diff", "price_diff_%",
+        ]
+        for fieldname in fieldnames:
+            self.assertIn(fieldname, report_reader.fieldnames)
+        data = report_reader.load()
+        self.assertEqual(item_count, len(data))
+        os.remove(report_filepath)
