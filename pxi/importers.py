@@ -155,7 +155,7 @@ def import_supplier_items(filepath, db_session):
         supplier_item = SupplierItem(
             inventory_item=inventory_item,
             code=row["supplier"],
-            item_code=row["item_code"],
+            item_code=row["supplier_item"],
             priority=row["priority"],
             uom=row["unit"],
             conv_factor=row["conv_factor"],
