@@ -64,9 +64,7 @@ def update_supplier_items(supplier_pricelist_items, session):
         supplier_code = item["supplier_code"]
         item_code = item["supp_item_code"]
         buy_price = Decimal(item["supp_price_1"]).quantize(Decimal("0.01"))
-        supplier_items = session.query(SupplierItem).join(
-            SupplierItem.inventory_item
-        ).filter(
+        supplier_items = session.query(SupplierItem).filter(
             SupplierItem.code == supplier_code,
             SupplierItem.item_code == item_code,
         ).all()
