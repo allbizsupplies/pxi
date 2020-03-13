@@ -9,6 +9,8 @@ from pxi.exporters import (
     export_price_changes_report,
     export_pricelist,
     export_product_price_task,
+    export_supplier_price_changes_report,
+    export_supplier_pricelist,
     export_tickets_list
 )
 from pxi.importers import (
@@ -16,17 +18,23 @@ from pxi.importers import (
     import_inventory_items,
     import_price_region_items,
     import_price_rules,
+    import_supplier_items,
+    import_supplier_pricelist_items,
     import_warehouse_stock_items
 )
 from pxi.models import (
     Base,
     InventoryItem,
     PriceRegionItem,
-    PriceRule
+    PriceRule,
+    SupplierItem
 )
 from pxi.price_calc import (
     recalculate_contract_prices,
     recalculate_sell_prices
+)
+from pxi.spl_update import (
+    update_supplier_items
 )
 
 
@@ -135,4 +143,43 @@ class operations:
         export_contract_item_task(contract_item_task, updated_contract_items)
         print("Exporting tickets list...")
         export_tickets_list(tickets_list, warehouse_stock_items_needing_tickets())
+        print("Done.")
+
+    @staticmethod
+    def generate_spl(
+        inventory_items_datagrid="data/import/inventory_items.xlsx",
+        supplier_items_datagrid="data/import/supplier_items.xlsx",
+        supplier_pricelist="data/import/supplier_pricelist.csv",
+        supplier_price_changes_report="data/export/supplier_price_changes_report.xlsx",
+        updated_supplier_pricelist="data/export/supplier_pricelist.csv"
+    ):
+        session = db_session()
+        print("Importing inventory items...")
+        count = import_inventory_items(inventory_items_datagrid, session)
+        print("{} inventory items imported.".format(count))
+        print("Importing supplier items...")
+        count = import_supplier_items(supplier_items_datagrid, session)
+        print("{} supplier items imported.".format(count))
+        print("Importing supplier pricelist items...")
+        supplier_pricelist_items = import_supplier_pricelist_items(supplier_pricelist)
+        print("{} supplier pricelist items imported.".format(len(
+            supplier_pricelist_items
+        )))
+
+        # DEBUG
+        supplier_items = session.query(SupplierItem).all()
+        print(supplier_items)
+
+        supplier_price_changes = update_supplier_items(supplier_pricelist_items, session)
+        updated_supplier_items = [
+            price_change["supplier_item"] for price_change in supplier_price_changes
+        ]
+        print("{} supplier items have been updated.".format(
+            len(updated_supplier_items)
+        ))
+
+        print("Exporting supplier price changes report...")
+        export_supplier_price_changes_report(supplier_price_changes_report, supplier_price_changes)
+        print("Exporting supplier pricelist...")
+        export_supplier_pricelist(updated_supplier_pricelist, updated_supplier_items)
         print("Done.")

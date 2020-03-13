@@ -32,3 +32,16 @@ class OperationTests(DatabaseTestCase):
         os.remove(product_price_task)
         os.remove(contract_item_task)
         os.remove(tickets_list)
+
+    def test_generate_spl(self):
+        supplier_price_changes_report="tmp/supplier_price_changes_report.xlsx"
+        updated_supplier_pricelist="tmp/supplier_pricelist.csv"
+        operations.generate_spl(
+            inventory_items_datagrid="tests/fixtures/inventory_items.xlsx",
+            supplier_items_datagrid="tests/fixtures/supplier_items.xlsx",
+            supplier_pricelist="tests/fixtures/supplier_pricelist.csv",
+            supplier_price_changes_report=supplier_price_changes_report,
+            updated_supplier_pricelist=updated_supplier_pricelist
+        )
+        os.remove(supplier_price_changes_report)
+        os.remove(updated_supplier_pricelist)
