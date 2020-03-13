@@ -55,6 +55,7 @@ SPL_FIELDNAMES = [
     "status",
     "product_class",
     "product_group",
+    "legacy_item_code",
 ]
 
 
