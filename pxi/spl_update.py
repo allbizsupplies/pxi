@@ -72,7 +72,7 @@ def update_supplier_items(supplier_pricelist_items, session):
         if len(supplier_items) == 0:
             continue
         for supplier_item in supplier_items:
-            price_diff = supplier_item.buy_price - buy_price
+            price_diff = buy_price - supplier_item.buy_price
             if abs(price_diff) > 0:
                 supplier_item.buy_price = buy_price
                 session.commit()
