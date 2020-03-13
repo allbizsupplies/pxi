@@ -6,6 +6,7 @@ from pxi.importers import (
     import_price_region_items,
     import_price_rules,
     import_supplier_items,
+    import_supplier_pricelist_items,
     import_warehouse_stock_items
 )
 from pxi.models import (
@@ -68,6 +69,13 @@ class ImporterTests(DatabaseTestCase):
         import_supplier_items(datagrid_filepath, self.session)
         supplier_items = self.session.query(SupplierItem).all()
         self.assertEqual(len(supplier_items), expected_item_count)
+
+    def test_import_supplier_pricelist_items(self):
+        """Import Supplier Pricelist Items from CSV."""
+        expected_item_count = 10
+        supplier_pricelist_items = import_supplier_pricelist_items(
+            "tests/fixtures/supplier_pricelist.csv")
+        self.assertEqual(len(supplier_pricelist_items), expected_item_count)
 
     def test_import_gtin_items(self):
         """Import GTIN Items from Pronto datagrid."""

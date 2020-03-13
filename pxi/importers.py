@@ -1,3 +1,4 @@
+import csv
 from datetime import date
 
 from pxi.datagrid import load_rows
@@ -14,6 +15,7 @@ from pxi.models import (
     PriceRule,
     SupplierItem,
     WarehouseStockItem)
+from pxi.spl_update import SPL_FIELDNAMES
 
 
 def import_contract_items(filepath, db_session):
@@ -182,3 +184,9 @@ def import_gtin_items(filepath, db_session):
         db_session.add(gtin_item)
         count += 1
     return count
+
+
+def import_supplier_pricelist_items(filepath):
+    file = open(filepath, "r")
+    supplier_pricelist_reader = csv.DictReader(file, SPL_FIELDNAMES)
+    return list(supplier_pricelist_reader)
