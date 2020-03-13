@@ -5,6 +5,7 @@ from tests.exporters import ExporterTests
 from tests.importers import ImporterTests
 from tests.operations import OperationTests
 from tests.price_calc import PriceCalcTests
+from tests.spl_update import SPLUpdateTests
 
 testloader = unittest.TestLoader()
 
@@ -13,6 +14,7 @@ testcases = [
     ImporterTests,
     ExporterTests,
     OperationTests,
+    SPLUpdateTests,
 ]
 
 testsuites = [
