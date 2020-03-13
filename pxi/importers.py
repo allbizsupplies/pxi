@@ -189,6 +189,6 @@ def import_gtin_items(filepath, db_session):
 
 
 def import_supplier_pricelist_items(filepath):
-    file = open(filepath, "r")
+    file = open(filepath, "r", encoding="iso8859-14")
     supplier_pricelist_reader = csv.DictReader(file, SPL_FIELDNAMES)
     return list(supplier_pricelist_reader)
