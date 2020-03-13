@@ -147,6 +147,8 @@ def import_warehouse_stock_items(filepath, db_session):
 def import_supplier_items(filepath, db_session):
     count = 0
     for row in load_rows(filepath):
+        if not row["supplier_item"]:
+            continue
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
