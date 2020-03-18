@@ -166,6 +166,7 @@ class operations:
             supplier_pricelist_items
         )))
 
+        print("Updating supplier prices...")
         supplier_price_changes = update_supplier_items(supplier_pricelist_items, session)
         updated_supplier_items = [
             price_change["supplier_item"] for price_change in supplier_price_changes
