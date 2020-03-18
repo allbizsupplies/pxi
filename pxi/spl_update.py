@@ -1,7 +1,8 @@
 import csv
 from decimal import Decimal
+from sqlalchemy import or_
 
-from pxi.models import SupplierItem
+from pxi.models import SupplierItem, InventoryItem
 
 
 SPL_FIELDNAMES = [
@@ -63,11 +64,17 @@ def update_supplier_items(supplier_pricelist_items, session):
     price_changes = []
     for item in supplier_pricelist_items:
         supplier_code = item["supplier_code"]
-        item_code = item["supp_item_code"]
+        item_code = item["item_code"]
+        supp_item_code = item["supp_item_code"]
         buy_price = Decimal(item["supp_price_1"]).quantize(Decimal("0.01"))
-        supplier_items = session.query(SupplierItem).filter(
-            SupplierItem.code == supplier_code,
-            SupplierItem.item_code == item_code,
+        supplier_items = session.query(SupplierItem).join(
+            SupplierItem.inventory_item
+        ).filter(
+            or_(
+                SupplierItem.code == supplier_code,
+                InventoryItem.code == item_code
+            ),
+            SupplierItem.item_code == supp_item_code,
         ).all()
         if len(supplier_items) == 0:
             continue
