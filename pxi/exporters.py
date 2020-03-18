@@ -137,7 +137,10 @@ def export_supplier_price_changes_report(filepath, price_changes):
             price_diff = price_change["price_diff"]
             price_now = supplier_item.buy_price
             price_was = price_now - price_diff
-            price_diff_percentage = price_diff / price_now
+            if price_was:
+                price_diff_percentage = price_diff / price_was
+            else:
+                price_diff_percentage = 1
             inventory_item = supplier_item.inventory_item
             row = {
                 "item_code": inventory_item.code,
