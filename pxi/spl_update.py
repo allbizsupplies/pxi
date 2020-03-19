@@ -70,11 +70,11 @@ def update_supplier_items(supplier_pricelist_items, session):
         supplier_items = session.query(SupplierItem).join(
             SupplierItem.inventory_item
         ).filter(
+            SupplierItem.code == supplier_code,
             or_(
-                SupplierItem.code == supplier_code,
+                SupplierItem.item_code == supp_item_code,
                 InventoryItem.code == item_code
             ),
-            SupplierItem.item_code == supp_item_code,
         ).all()
         if len(supplier_items) == 0:
             continue
