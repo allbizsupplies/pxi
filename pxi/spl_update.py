@@ -81,10 +81,18 @@ def update_supplier_items(supplier_pricelist_items, session):
         for supplier_item in supplier_items:
             price_diff = buy_price - supplier_item.buy_price
             if abs(price_diff) > 0:
+                price_now = buy_price
+                price_was = supplier_item.buy_price
+                price_diff_percentage = 1
+                if price_was:
+                    price_diff_percentage = price_diff / price_was
                 supplier_item.buy_price = buy_price
                 session.commit()
                 price_changes.append({
                     "supplier_item": supplier_item,
+                    "price_was": price_was,
+                    "price_now": price_now,
                     "price_diff": price_diff,
+                    "price_diff_percentage": price_diff_percentage,
                 })
     return price_changes
