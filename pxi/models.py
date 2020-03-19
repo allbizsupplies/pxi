@@ -191,8 +191,8 @@ class SupplierItem(Base):
         back_populates="supplier_items")
 
     def __repr__(self):
-        return "<SupplierItem(code='{}', item_code='{}')>".format(
-            self.code, self.item_code)
+        return "<SupplierItem(code='{}', item_code='{}', inventory_item.code='{}')>".format(
+            self.code, self.item_code, self.inventory_item.code)
 
 
 class GTINItem(Base):
