@@ -1,4 +1,4 @@
-
+from decimal import Decimal
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -117,8 +117,13 @@ class operations:
         def updated_default_price_regions():
             for price_change in price_changes:
                 price_region_item = price_change.price_region_item
-                if price_region_item.code == "":
-                    yield price_region_item
+                # Ignore items without a price rule.
+                if price_region_item.code != "":
+                    continue
+                # Ignore items that have an unchanged level 0 price.
+                if price_change.price_diffs[0] < Decimal("0.005"):
+                    continue
+                yield price_region_item
 
         def warehouse_stock_items_needing_tickets():
             for price_region_item in updated_default_price_regions():
