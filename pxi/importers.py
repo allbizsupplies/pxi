@@ -190,12 +190,16 @@ def import_gtin_items(filepath, db_session):
 
 def import_supplier_pricelist_items(filepath):
     file = open(filepath, "r", encoding="iso8859-14")
-    imported_item_codes = []
+    imported_item_codes = {}
     supplier_pricelist_reader = csv.DictReader(file, SPL_FIELDNAMES)
     supplier_pricelist_items = []
     for row in supplier_pricelist_reader:
         item_code = row["item_code"]
-        if item_code not in imported_item_codes:
-            imported_item_codes.append(item_code)
-            supplier_pricelist_items.append(row)
+        supplier_code = row["supplier_code"]
+        if item_code not in imported_item_codes.keys():
+            imported_item_codes[item_code] = supplier_code
+        # Skip record if this item code already has a record for this supplier.
+        elif supplier_code in imported_item_codes[item_code]:
+            continue
+        supplier_pricelist_items.append(row)
     return supplier_pricelist_items
