@@ -205,5 +205,5 @@ def import_supplier_pricelist_items(filepath):
         else:
             duplicate_supplier_pricelist_items.append(row)
     if len(duplicate_supplier_pricelist_items) > 0:
-        print("Warning: Skipped {} duplicate records".format(len(duplicate_supplier_pricelist_items)))
+        print("  Warning: Skipped {} duplicate records".format(len(duplicate_supplier_pricelist_items)))
     return supplier_pricelist_items
