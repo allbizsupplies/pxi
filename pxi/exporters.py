@@ -233,7 +233,16 @@ def export_contract_item_task(filepath, contract_items):
 
 def export_supplier_pricelist(filepath, supplier_items):
     """Export supplier items to Pronto SPL file."""
+
+    exported_item_codes = []
+    duplicate_supplier_pricelist_items = []
+
     def supplier_item_to_row(supplier_item):
+        item_code = supplier_item.item_code
+        if item_code not in exported_item_codes:
+            exported_item_codes.append(item_code)
+        else:
+            duplicate_supplier_pricelist_items.append(supplier_item)
         inventory_item = supplier_item.inventory_item
         row = {
             "supplier_code": supplier_item.code,
@@ -248,6 +257,9 @@ def export_supplier_pricelist(filepath, supplier_items):
         }
         return row
     rows = [supplier_item_to_row(item) for item in supplier_items]
+
+    if len(duplicate_supplier_pricelist_items) > 0:
+        print("  Warning: {} exported records will be overridden on import.".format(len(duplicate_supplier_pricelist_items)))
 
     with open(filepath, "w") as file:
         fieldnames = SPL_FIELDNAMES
