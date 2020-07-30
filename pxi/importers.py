@@ -190,20 +190,24 @@ def import_gtin_items(filepath, db_session):
 
 def import_supplier_pricelist_items(filepath):
     file = open(filepath, "r", encoding="iso8859-14")
-    imported_item_codes = {}
     supplier_pricelist_reader = csv.DictReader(file, SPL_FIELDNAMES)
-    supplier_pricelist_items = []
-    duplicate_supplier_pricelist_items = []
+    supplier_pricelist_items = {}
+    overridden_supplier_items_count = 0
+    # Collect supplier pricelist items. If an item has the same item code
+    # and supplier code as a previous item then it will override it.
     for row in supplier_pricelist_reader:
         item_code = row["item_code"]
         supplier_code = row["supplier_code"]
-        if item_code not in imported_item_codes.keys():
-            imported_item_codes[item_code] = []    
-        if supplier_code not in imported_item_codes[item_code]:
-            supplier_pricelist_items.append(row)
-            imported_item_codes[item_code].append(supplier_code)
-        else:
-            duplicate_supplier_pricelist_items.append(row)
-    if len(duplicate_supplier_pricelist_items) > 0:
-        print("  Warning: Skipped {} duplicate records".format(len(duplicate_supplier_pricelist_items)))
-    return supplier_pricelist_items
+        if item_code not in supplier_pricelist_items.keys():
+            supplier_pricelist_items[item_code] = {}
+        if supplier_code in supplier_pricelist_items[item_code].keys():
+            overridden_supplier_items_count += 1
+        supplier_pricelist_items[item_code][supplier_code] = row
+    # Flatten the list of items.
+    supplier_pricelist_items_flattened = []
+    for rows in supplier_pricelist_items.values():
+        for row in rows.values():
+            supplier_pricelist_items_flattened.append(row)
+    if overridden_supplier_items_count > 1:
+        print("  Warning: {} records were overridden.".format(overridden_supplier_items_count))
+    return supplier_pricelist_items_flattened
