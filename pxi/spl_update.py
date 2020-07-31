@@ -1,6 +1,7 @@
 import csv
 from decimal import Decimal
 from sqlalchemy import or_
+from progressbar import progressbar
 
 from pxi.models import SupplierItem, InventoryItem
 
@@ -62,7 +63,7 @@ SPL_FIELDNAMES = [
 
 def update_supplier_items(supplier_pricelist_items, session):
     price_changes = []
-    for item in supplier_pricelist_items:
+    for item in progressbar(supplier_pricelist_items):
         supplier_code = item["supplier_code"]
         item_code = item["item_code"]
         supp_item_code = item["supp_item_code"]

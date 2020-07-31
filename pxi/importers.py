@@ -1,5 +1,6 @@
 import csv
 from datetime import date
+from progressbar import progressbar
 
 from pxi.datagrid import load_rows
 from pxi.enum import (
@@ -43,7 +44,7 @@ def import_contract_items(filepath, db_session):
 
 def import_inventory_items(filepath, db_session):
     count = 0
-    for row in load_rows(filepath):
+    for row in progressbar(load_rows(filepath)):
         inventory_item = InventoryItem(
             code=row["item_code"],
             description_line_1=row["item_description"],
@@ -65,7 +66,7 @@ def import_inventory_items(filepath, db_session):
 
 def import_price_region_items(filepath, db_session):
     count = 0
-    for row in load_rows(filepath):
+    for row in progressbar(load_rows(filepath)):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
@@ -100,7 +101,7 @@ def import_price_region_items(filepath, db_session):
 
 def import_price_rules(filepath, db_session):
     count = 0
-    for row in load_rows(filepath):
+    for row in progressbar(load_rows(filepath)):
         price_rule = PriceRule(
             code=row["rule"],
             description=row["comments"],
@@ -126,7 +127,7 @@ def import_price_rules(filepath, db_session):
 
 def import_warehouse_stock_items(filepath, db_session):
     count = 0
-    for row in load_rows(filepath):
+    for row in progressbar(load_rows(filepath)):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
@@ -146,7 +147,7 @@ def import_warehouse_stock_items(filepath, db_session):
 
 def import_supplier_items(filepath, db_session):
     count = 0
-    for row in load_rows(filepath):
+    for row in progressbar(load_rows(filepath)):
         if not row["supplier_item"]:
             continue
         inventory_item = db_session.query(InventoryItem).filter(
@@ -171,7 +172,7 @@ def import_supplier_items(filepath, db_session):
 
 def import_gtin_items(filepath, db_session):
     count = 0
-    for row in load_rows(filepath):
+    for row in progressbar(load_rows(filepath)):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
@@ -195,7 +196,7 @@ def import_supplier_pricelist_items(filepath):
     overridden_supplier_items_count = 0
     # Collect supplier pricelist items. If an item has the same item code
     # and supplier code as a previous item then it will override it.
-    for row in supplier_pricelist_reader:
+    for row in progressbar(supplier_pricelist_reader):
         item_code = row["item_code"]
         supplier_code = row["supplier_code"]
         if item_code not in supplier_pricelist_items.keys():
