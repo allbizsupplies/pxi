@@ -196,7 +196,7 @@ def import_supplier_pricelist_items(filepath):
     overridden_supplier_items_count = 0
     # Collect supplier pricelist items. If an item has the same item code
     # and supplier code as a previous item then it will override it.
-    for row in progressbar(supplier_pricelist_reader):
+    for row in supplier_pricelist_reader:
         item_code = row["item_code"]
         supplier_code = row["supplier_code"]
         if item_code not in supplier_pricelist_items.keys():
