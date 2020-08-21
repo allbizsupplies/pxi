@@ -115,7 +115,7 @@ def export_price_changes_report(filepath, price_changes):
     report_writer.save()
 
 
-def export_supplier_price_changes_report(filepath, price_changes):
+def export_supplier_price_changes_report(filepath, price_changes, uom_errors):
     """Export supplier price report to file."""
     report_writer = ReportWriter(filepath)
 
@@ -154,6 +154,37 @@ def export_supplier_price_changes_report(filepath, price_changes):
 
     report_writer.write_sheet("Price Changes", price_change_fields,
         price_change_rows(price_changes))
+
+    uom_error_fields = [
+        string_field("item_code", "Item Code", 20),
+        string_field("supplier", "Supplier", 8),
+        string_field("brand", "Brand", 7),
+        string_field("apn", "APN", 20),
+        string_field("description", "Description", 80),
+        string_field("message", "Error", 48),
+        string_field("expected", "Expected", 20),
+        string_field("actual", "Actual", 20),
+    ]
+
+    def uom_error_rows(uom_errors):
+        for uom_error in uom_errors:
+            supplier_item = uom_error["supplier_item"]
+            inventory_item = supplier_item.inventory_item
+            row = {
+                "item_code": inventory_item.code,
+                "supplier": supplier_item.code,
+                "brand": inventory_item.brand,
+                "apn": inventory_item.apn,
+                "description": inventory_item.full_description,
+                "message": uom_error["message"],
+                "expected": uom_error["expected"],
+                "actual": uom_error["actual"],
+            }
+            yield row
+
+    report_writer.write_sheet("UOM Errors", uom_error_fields,
+        uom_error_rows(uom_errors))
+
     report_writer.save()
 
 

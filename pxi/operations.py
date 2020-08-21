@@ -172,16 +172,20 @@ class operations:
         )))
 
         print("Updating supplier prices...")
-        supplier_price_changes = update_supplier_items(supplier_pricelist_items, session)
+        supplier_price_changes, uom_errors = update_supplier_items(supplier_pricelist_items, session)
         updated_supplier_items = [
             price_change["supplier_item"] for price_change in supplier_price_changes
         ]
         print("{} supplier items have been updated.".format(
             len(updated_supplier_items)
         ))
+        if len(uom_errors) > 0:
+            print("{} supplier items have UOM errors.".format(
+                len(uom_errors)
+            ))
 
         print("Exporting supplier price changes report...")
-        export_supplier_price_changes_report(supplier_price_changes_report, supplier_price_changes)
+        export_supplier_price_changes_report(supplier_price_changes_report, supplier_price_changes, uom_errors)
         print("Exporting supplier pricelist...")
         export_supplier_pricelist(updated_supplier_pricelist, updated_supplier_items)
         print("Done.")
