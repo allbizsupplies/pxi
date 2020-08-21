@@ -22,7 +22,7 @@ class DatabaseTestCase(PXITestCase):
         self.db = create_engine('sqlite://')
         Base.metadata.create_all(self.db)
         self.session = sessionmaker(bind=self.db)()
-        
+
     def tearDown(self):
         super().tearDown()
         for tbl in reversed(Base.metadata.sorted_tables):

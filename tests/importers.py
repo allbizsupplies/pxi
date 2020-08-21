@@ -19,20 +19,24 @@ from pxi.models import (
     WarehouseStockItem)
 from tests import DatabaseTestCase
 
+
 class ImporterTests(DatabaseTestCase):
 
     def test_import_contract_items(self):
         """Import Contract Items from Pronto datagrid."""
         expected_item_count = 10
-        import_inventory_items("tests/fixtures/inventory_items.xlsx", self.session)
-        import_contract_items("tests/fixtures/contract_items.xlsx", self.session)
+        import_inventory_items(
+            "tests/fixtures/inventory_items.xlsx", self.session)
+        import_contract_items(
+            "tests/fixtures/contract_items.xlsx", self.session)
         contract_items = self.session.query(ContractItem).all()
         self.assertEqual(len(contract_items), expected_item_count)
 
     def test_import_inventory_items(self):
         """Import Inventory Items from Pronto datagrid."""
         expected_item_count = 10
-        import_inventory_items("tests/fixtures/inventory_items.xlsx", self.session)
+        import_inventory_items(
+            "tests/fixtures/inventory_items.xlsx", self.session)
         inventory_items = self.session.query(InventoryItem).all()
         self.assertEqual(len(inventory_items), expected_item_count)
 
@@ -55,9 +59,11 @@ class ImporterTests(DatabaseTestCase):
     def test_import_price_regions(self):
         """Import Price Regions from Pronto datagrid."""
         expected_item_count = 10
-        import_inventory_items("tests/fixtures/inventory_items.xlsx", self.session)
+        import_inventory_items(
+            "tests/fixtures/inventory_items.xlsx", self.session)
         import_price_rules("tests/fixtures/price_rules.xlsx", self.session)
-        import_price_region_items("tests/fixtures/pricelist.xlsx", self.session)
+        import_price_region_items(
+            "tests/fixtures/pricelist.xlsx", self.session)
         price_region_items = self.session.query(PriceRegionItem).all()
         self.assertEqual(len(price_region_items), expected_item_count)
 
@@ -65,7 +71,8 @@ class ImporterTests(DatabaseTestCase):
         """Import Supplier Items from Pronto datagrid."""
         expected_item_count = 10
         datagrid_filepath = "tests/fixtures/supplier_items.xlsx"
-        import_inventory_items("tests/fixtures/inventory_items.xlsx", self.session)
+        import_inventory_items(
+            "tests/fixtures/inventory_items.xlsx", self.session)
         import_supplier_items(datagrid_filepath, self.session)
         supplier_items = self.session.query(SupplierItem).all()
         self.assertEqual(len(supplier_items), expected_item_count)
@@ -81,7 +88,8 @@ class ImporterTests(DatabaseTestCase):
         """Import GTIN Items from Pronto datagrid."""
         expected_item_count = 10
         datagrid_filepath = "tests/fixtures/gtin_items.xlsx"
-        import_inventory_items("tests/fixtures/inventory_items.xlsx", self.session)
+        import_inventory_items(
+            "tests/fixtures/inventory_items.xlsx", self.session)
         import_gtin_items(datagrid_filepath, self.session)
         gtin_items = self.session.query(GTINItem).all()
         self.assertEqual(len(gtin_items), expected_item_count)

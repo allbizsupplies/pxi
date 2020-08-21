@@ -28,20 +28,20 @@ class InventoryItem(Base):
     created = Column(DateTime, nullable=False)
     replacement_cost = Column(Numeric(precision=15, scale=4), nullable=False)
 
-    contract_items = relationship("ContractItem", 
-        back_populates="inventory_item")
+    contract_items = relationship("ContractItem",
+                                  back_populates="inventory_item")
 
-    price_region_items = relationship("PriceRegionItem", 
-        back_populates="inventory_item")
+    price_region_items = relationship("PriceRegionItem",
+                                      back_populates="inventory_item")
 
-    warehouse_stock_items = relationship("WarehouseStockItem", 
-        back_populates="inventory_item")
+    warehouse_stock_items = relationship("WarehouseStockItem",
+                                         back_populates="inventory_item")
 
-    supplier_items = relationship("SupplierItem", 
-        back_populates="inventory_item")
+    supplier_items = relationship("SupplierItem",
+                                  back_populates="inventory_item")
 
-    gtin_items = relationship("GTINItem", 
-        back_populates="inventory_item")
+    gtin_items = relationship("GTINItem",
+                              back_populates="inventory_item")
 
     def __repr__(self):
         return "<InventoryItem(code='{}')>".format(self.code)
@@ -77,8 +77,8 @@ class PriceRule(Base):
     rrp_excl_factor = Column(Numeric(precision=15, scale=4), nullable=False)
     rrp_incl_factor = Column(Numeric(precision=15, scale=4), nullable=False)
 
-    price_region_items = relationship("PriceRegionItem", 
-        back_populates="price_rule")
+    price_region_items = relationship("PriceRegionItem",
+                                      back_populates="price_rule")
 
     def __repr__(self):
         return "<PriceRule(code='{}')>".format(self.code)
@@ -89,8 +89,8 @@ class PriceRegionItem(Base):
 
     id = Column(Integer, primary_key=True)
     code = Column(String(2), nullable=False)
-    inventory_item_id = Column(Integer, 
-        ForeignKey("inventory_items.id"), nullable=False)
+    inventory_item_id = Column(Integer,
+                               ForeignKey("inventory_items.id"), nullable=False)
     price_rule_id = Column(Integer, ForeignKey("price_rules.id"))
     tax_code = Column(Enum(TaxCode))
     quantity_1 = Column(Numeric(precision=13, scale=4), nullable=False)
@@ -110,10 +110,10 @@ class PriceRegionItem(Base):
     )
 
     inventory_item = relationship("InventoryItem",
-        back_populates="price_region_items")
+                                  back_populates="price_region_items")
 
     price_rule = relationship("PriceRule",
-        back_populates="price_region_items")
+                              back_populates="price_region_items")
 
     def __repr__(self):
         return "<PriceRegionItem(code='{}')>".format(self.code)
@@ -124,8 +124,8 @@ class ContractItem(Base):
 
     id = Column(Integer, primary_key=True)
     code = Column(String(16), nullable=False)
-    inventory_item_id = Column(Integer, 
-        ForeignKey("inventory_items.id"), nullable=False)
+    inventory_item_id = Column(Integer,
+                               ForeignKey("inventory_items.id"), nullable=False)
     price_1 = Column(Numeric(precision=10, scale=4), nullable=False)
     price_2 = Column(Numeric(precision=10, scale=4), nullable=False)
     price_3 = Column(Numeric(precision=10, scale=4), nullable=False)
@@ -138,7 +138,7 @@ class ContractItem(Base):
     )
 
     inventory_item = relationship("InventoryItem",
-        back_populates="contract_items")
+                                  back_populates="contract_items")
 
     def __repr__(self):
         return "<ContractItem(code='{}')>".format(self.code)
@@ -150,7 +150,7 @@ class WarehouseStockItem(Base):
     id = Column(Integer, primary_key=True)
     code = Column(String(2), nullable=False)
     inventory_item_id = Column(Integer,
-        ForeignKey("inventory_items.id"), nullable=False)
+                               ForeignKey("inventory_items.id"), nullable=False)
     on_hand = Column(Integer, nullable=False)
     minimum = Column(Integer, nullable=False)
     maximum = Column(Integer, nullable=False)
@@ -162,7 +162,7 @@ class WarehouseStockItem(Base):
     )
 
     inventory_item = relationship("InventoryItem",
-        back_populates="warehouse_stock_items")
+                                  back_populates="warehouse_stock_items")
 
     def __repr__(self):
         return "<WarehouseStockItem(code='{}')>".format(self.code)
@@ -174,7 +174,7 @@ class SupplierItem(Base):
     id = Column(Integer, primary_key=True)
     code = Column(String(10), nullable=False)
     inventory_item_id = Column(Integer,
-        ForeignKey("inventory_items.id"), nullable=False)
+                               ForeignKey("inventory_items.id"), nullable=False)
     item_code = Column(String(2), nullable=False)
     priority = Column(Integer, nullable=False)
     uom = Column(String(4), nullable=False)
@@ -188,7 +188,7 @@ class SupplierItem(Base):
     )
 
     inventory_item = relationship("InventoryItem",
-        back_populates="supplier_items")
+                                  back_populates="supplier_items")
 
     def __repr__(self):
         return "<SupplierItem(code='{}', item_code='{}', inventory_item.code='{}')>".format(
@@ -201,7 +201,7 @@ class GTINItem(Base):
     id = Column(Integer, primary_key=True)
     code = Column(String(2))
     inventory_item_id = Column(Integer,
-        ForeignKey("inventory_items.id"), nullable=False)
+                               ForeignKey("inventory_items.id"), nullable=False)
     uom = Column(String(4), nullable=False)
     conv_factor = Column(Numeric(precision=13, scale=7), nullable=False)
 
@@ -210,7 +210,7 @@ class GTINItem(Base):
     )
 
     inventory_item = relationship("InventoryItem",
-        back_populates="gtin_items")
+                                  back_populates="gtin_items")
 
     def __repr__(self):
         return "<GTINItem(code='{}')>".format(self.code)

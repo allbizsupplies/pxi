@@ -19,7 +19,7 @@ def load_rows(filepath):
     workbook.close()
     return rows
 
-    
+
 def get_fieldnames(worksheet):
     """Parse snakecase fieldnames from first row of sheet."""
     fieldnames = []

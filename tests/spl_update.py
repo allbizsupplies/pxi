@@ -26,14 +26,16 @@ class SPLUpdateTests(DatabaseTestCase):
             supplier_code = supplier_item.code
             item_code = supplier_item.item_code
             # Mock a price increase by multiplying the existing buy price.
-            buy_price = supplier_item.buy_price * Decimal(random.randint(200, 400)) / 100
+            buy_price = supplier_item.buy_price * \
+                Decimal(random.randint(200, 400)) / 100
             return {
                 "supplier_code": supplier_code,
                 "supp_item_code": item_code,
                 "supp_price_1": buy_price,
             }
         supplier_pricelist_items = [random_supplier_pricelist_item(item)
-            for item in supplier_items]
+                                    for item in supplier_items]
 
-        price_changes = update_supplier_items(supplier_pricelist_items, self.session)
+        price_changes = update_supplier_items(
+            supplier_pricelist_items, self.session)
         self.assertEqual(10, len(price_changes))

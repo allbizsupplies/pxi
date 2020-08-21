@@ -12,7 +12,7 @@ class ReportWriter:
     TYPEFACE = "Calibri"
     FONT_SIZE = 11
     DEFAULT_ALIGNMENT = "left"
-    
+
     def __init__(self, filepath):
         # Create the workbook and remove the default sheet.
         self.workbook = Workbook()
@@ -21,7 +21,7 @@ class ReportWriter:
         self.filepath = filepath
         self.currentRow = dict()
         self.columnStyles = dict()
-    
+
     def write_sheet(self, name, fields, rows):
         # add the sheet to the workbook
         ws = self.workbook.create_sheet(title=name)
@@ -43,7 +43,8 @@ class ReportWriter:
             for field in fields:
                 cell = Cell(ws, value=data[field["name"]])
                 # pylint: disable=assigning-non-slot
-                cell.alignment = Alignment(horizontal=ReportWriter.DEFAULT_ALIGNMENT)
+                cell.alignment = Alignment(
+                    horizontal=ReportWriter.DEFAULT_ALIGNMENT)
                 if "align" in field.keys():
                     cell.alignment = Alignment(horizontal=field["align"])
                 cell.font = Font(
@@ -60,7 +61,7 @@ class ReportWriter:
             alpha_index = get_column_letter(i + 1)
             # set the column width
             ws.column_dimensions[alpha_index].width = field["width"]
-        
+
     def save(self):
         # save the file
         self.workbook.save(self.filepath)

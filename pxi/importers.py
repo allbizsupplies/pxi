@@ -170,6 +170,7 @@ def import_supplier_items(filepath, db_session):
         count += 1
     return count
 
+
 def import_gtin_items(filepath, db_session):
     count = 0
     for row in progressbar(load_rows(filepath)):
@@ -216,7 +217,9 @@ def import_supplier_pricelist_items(filepath):
             supplier_pricelist_items_flattened.append(row)
     # Report warnings.
     if invalid_record_count > 0:
-        print("  Warning: {} invalid records were skipped.".format(invalid_record_count))
+        print("  Warning: {} invalid records were skipped.".format(
+            invalid_record_count))
     if overridden_supplier_items_count > 0:
-        print("  Warning: {} records were overridden.".format(overridden_supplier_items_count))
+        print("  Warning: {} records were overridden.".format(
+            overridden_supplier_items_count))
     return supplier_pricelist_items_flattened

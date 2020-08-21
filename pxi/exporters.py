@@ -12,6 +12,7 @@ def export_pricelist(filepath, price_region_items):
     last_change_date = ""
     reason_code = ""
     price_type_code = ""
+
     def price_region_item_to_row(price_region_item):
         inventory_item = price_region_item.inventory_item
         return [
@@ -82,21 +83,24 @@ def export_price_changes_report(filepath, price_changes):
             }
             for i in range(5):
                 if i > 0:
-                    row["quantity_{}".format(i)] = getattr(price_region_item, "quantity_{}".format(i))
+                    row["quantity_{}".format(i)] = getattr(
+                        price_region_item, "quantity_{}".format(i))
                 price_now = getattr(price_region_item, "price_{}".format(i))
                 price_diff = price_diffs[i]
                 price_was = price_now - price_diff
                 price_diff_percentage = None
                 if price_was > 0:
-                    price_diff_percentage = (price_diff / price_was).quantize(price_now)
+                    price_diff_percentage = (
+                        price_diff / price_was).quantize(price_now)
                 row["price_{}_was".format(i)] = price_now - price_diff
                 row["price_{}_now".format(i)] = price_now
                 row["price_{}_diff".format(i)] = price_diff
-                row["price_{}_diff_percentage".format(i)] = price_diff_percentage
+                row["price_{}_diff_percentage".format(
+                    i)] = price_diff_percentage
             yield row
 
     report_writer.write_sheet("Price Changes", price_change_fields,
-        price_change_rows(price_changes))
+                              price_change_rows(price_changes))
 
     contract_item_fields = [
         string_field("contract", "Contract", 20),
@@ -104,14 +108,14 @@ def export_price_changes_report(filepath, price_changes):
         string_field("description", "Description", 80),
         number_field("retail_price", "Retail Price"),
         number_field("retail_price_diff", "Price Diff"),
-        number_field("retail_price_diff_percentage", "Price Diff %", 
-            number_format="0%"),
+        number_field("retail_price_diff_percentage", "Price Diff %",
+                     number_format="0%"),
     ]
     for i in range(1, 7):
         contract_item_fields.append(number_field(
             "price_{}".format(i), "Price {}".format(i)))
     report_writer.write_sheet("Contract Changes", contract_item_fields,
-        contract_item_rows(price_changes))
+                              contract_item_rows(price_changes))
     report_writer.save()
 
 
@@ -128,7 +132,8 @@ def export_supplier_price_changes_report(filepath, price_changes, uom_errors):
         number_field("price_was", "Price Was", number_format="0.00"),
         number_field("price_now", "Price Now", number_format="0.00"),
         number_field("price_diff", "Price Diff", number_format="0.00"),
-        number_field("price_diff_percentage", "Price Diff %", number_format="0%"),
+        number_field("price_diff_percentage",
+                     "Price Diff %", number_format="0%"),
     ]
 
     def price_change_rows(price_changes):
@@ -153,7 +158,7 @@ def export_supplier_price_changes_report(filepath, price_changes, uom_errors):
             yield row
 
     report_writer.write_sheet("Price Changes", price_change_fields,
-        price_change_rows(price_changes))
+                              price_change_rows(price_changes))
 
     uom_error_fields = [
         string_field("item_code", "Item Code", 20),
@@ -183,7 +188,7 @@ def export_supplier_price_changes_report(filepath, price_changes, uom_errors):
             yield row
 
     report_writer.write_sheet("UOM Errors", uom_error_fields,
-        uom_error_rows(uom_errors))
+                              uom_error_rows(uom_errors))
 
     report_writer.save()
 
@@ -202,7 +207,8 @@ def contract_item_rows(price_changes):
             price_was = price_now - price_diff
             price_diff_percentage = None
             if price_was > 0:
-                price_diff_percentage = (price_diff / price_was).quantize(price_now)
+                price_diff_percentage = (
+                    price_diff / price_was).quantize(price_now)
             row = {
                 "contract": contract_item.code,
                 "item_code": inventory_item.code,
@@ -290,7 +296,8 @@ def export_supplier_pricelist(filepath, supplier_items):
     rows = [supplier_item_to_row(item) for item in supplier_items]
 
     if len(duplicate_supplier_pricelist_items) > 0:
-        print("  Warning: {} exported records will be overridden on import.".format(len(duplicate_supplier_pricelist_items)))
+        print("  Warning: {} exported records will be overridden on import.".format(
+            len(duplicate_supplier_pricelist_items)))
 
     with open(filepath, "w") as file:
         fieldnames = SPL_FIELDNAMES
@@ -327,7 +334,7 @@ def sell_price_change(product):
 def string_field(name, title, width):
     return {
         "name": name,
-        "title": title, 
+        "title": title,
         "width": width,
         "align": "left",
     }

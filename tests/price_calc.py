@@ -67,7 +67,7 @@ class PriceCalcTests(DatabaseTestCase):
             price_rd_excl = round_price(price_excl)
             expected_price_rd_excl = excl_tax(expected_price_rd_incl)
             self.assertEqual(price_rd_excl, expected_price_rd_excl)
-        
+
     def test_apply_price_rule(self):
         """Recalculate sell prices on an item."""
         price_rule = random_price_rule()
@@ -111,11 +111,11 @@ class PriceCalcTests(DatabaseTestCase):
             price_region_item.price_4,
         ]
         expected_prices = [
-            Decimal("59.9545"), # 65.95 incl tax
-            Decimal("49.9545"), # 54.95 incl tax
-            Decimal("39.9545"), # 43.95 incl tax
-            Decimal("29.9545"), # 32.95 incl tax
-            Decimal("20.0000"), # 22.00 incl tax
+            Decimal("59.9545"),  # 65.95 incl tax
+            Decimal("49.9545"),  # 54.95 incl tax
+            Decimal("39.9545"),  # 43.95 incl tax
+            Decimal("29.9545"),  # 32.95 incl tax
+            Decimal("20.0000"),  # 22.00 incl tax
         ]
 
         self.assertListEqual(expected_prices, calculated_prices)
@@ -125,7 +125,8 @@ class PriceCalcTests(DatabaseTestCase):
         """Calculate new prices for items and return a list of changes."""
         price_region_items = random_pricelist(items=5)
         [self.session.add(item) for item in price_region_items]
-        price_changes = recalculate_sell_prices(price_region_items, self.session)
+        price_changes = recalculate_sell_prices(
+            price_region_items, self.session)
         self.assertIsInstance(price_changes, list)
         for price_change in price_changes:
             self.assertIsInstance(price_change, PriceChange)
@@ -141,6 +142,8 @@ class PriceCalcTests(DatabaseTestCase):
             contract_item = random_contract_item(inventory_item)
             self.session.add(price_region_item)
             contract_items.append(contract_item)
-        price_changes = recalculate_sell_prices(price_region_items, self.session)
-        updated_contract_items = recalculate_contract_prices(price_changes, self.session)
+        price_changes = recalculate_sell_prices(
+            price_region_items, self.session)
+        updated_contract_items = recalculate_contract_prices(
+            price_changes, self.session)
         self.assertEqual(len(updated_contract_items), item_count)

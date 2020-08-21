@@ -4,6 +4,7 @@ import os
 from pxi.operations import operations
 from tests import DatabaseTestCase
 
+
 class OperationTests(DatabaseTestCase):
 
     def setUp(self):
@@ -11,11 +12,11 @@ class OperationTests(DatabaseTestCase):
         pathlib.Path("tmp").mkdir(parents=True, exist_ok=True)
 
     def test_price_calc(self):
-        price_changes_report="tmp/price_changes_report.xlsx"
-        pricelist="tmp/pricelist.csv"
-        product_price_task="tmp/product_price_task.txt"
-        contract_item_task="tmp/contract_item_task.txt"
-        tickets_list="tmp/tickets_list.txt"
+        price_changes_report = "tmp/price_changes_report.xlsx"
+        pricelist = "tmp/pricelist.csv"
+        product_price_task = "tmp/product_price_task.txt"
+        contract_item_task = "tmp/contract_item_task.txt"
+        tickets_list = "tmp/tickets_list.txt"
         operations.price_calc(
             inventory_items_datagrid="tests/fixtures/inventory_items.xlsx",
             price_rules_datagrid="tests/fixtures/price_rules.xlsx",
@@ -34,8 +35,8 @@ class OperationTests(DatabaseTestCase):
         os.remove(tickets_list)
 
     def test_generate_spl(self):
-        supplier_price_changes_report="tmp/supplier_price_changes_report.xlsx"
-        updated_supplier_pricelist="tmp/supplier_pricelist.csv"
+        supplier_price_changes_report = "tmp/supplier_price_changes_report.xlsx"
+        updated_supplier_pricelist = "tmp/supplier_pricelist.csv"
         operations.generate_spl(
             inventory_items_datagrid="tests/fixtures/inventory_items.xlsx",
             supplier_items_datagrid="tests/fixtures/supplier_items.xlsx",

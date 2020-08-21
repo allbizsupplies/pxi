@@ -38,7 +38,8 @@ class ExporterTests(DatabaseTestCase):
         report_filepath = "tmp/test_price_changes_report.xlsx"
         item_count = 5
         price_region_items = random_pricelist(items=item_count)
-        price_changes = recalculate_sell_prices(price_region_items, self.session)
+        price_changes = recalculate_sell_prices(
+            price_region_items, self.session)
         export_price_changes_report(report_filepath, price_changes)
         report_reader = ReportReader(report_filepath)
         fieldnames = [

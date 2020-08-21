@@ -51,7 +51,7 @@ def db_session():
 
 
 class operations:
-        
+
     @staticmethod
     def price_calc(
         inventory_items_datagrid="data/import/inventory_items.xlsx",
@@ -98,7 +98,7 @@ class operations:
         print("{} price region items selected for price calculation.".format(
             len(price_region_items)
         ))
-        
+
         print("Recalculating sell prices...")
         price_changes = recalculate_sell_prices(price_region_items, session)
         updated_price_region_items = [
@@ -143,11 +143,13 @@ class operations:
         print("Exporting pricelist...")
         export_pricelist(pricelist, updated_price_region_items)
         print("Exporting product price task...")
-        export_product_price_task(product_price_task, updated_price_region_items)
+        export_product_price_task(
+            product_price_task, updated_price_region_items)
         print("Exporting contract item task...")
         export_contract_item_task(contract_item_task, updated_contract_items)
         print("Exporting tickets list...")
-        export_tickets_list(tickets_list, warehouse_stock_items_needing_tickets())
+        export_tickets_list(
+            tickets_list, warehouse_stock_items_needing_tickets())
         print("Done.")
 
     @staticmethod
@@ -166,13 +168,15 @@ class operations:
         count = import_supplier_items(supplier_items_datagrid, session)
         print("{} supplier items imported.".format(count))
         print("Importing supplier pricelist items...")
-        supplier_pricelist_items = import_supplier_pricelist_items(supplier_pricelist)
+        supplier_pricelist_items = import_supplier_pricelist_items(
+            supplier_pricelist)
         print("{} supplier pricelist items imported.".format(len(
             supplier_pricelist_items
         )))
 
         print("Updating supplier prices...")
-        supplier_price_changes, uom_errors = update_supplier_items(supplier_pricelist_items, session)
+        supplier_price_changes, uom_errors = update_supplier_items(
+            supplier_pricelist_items, session)
         updated_supplier_items = [
             price_change["supplier_item"] for price_change in supplier_price_changes
         ]
@@ -185,7 +189,9 @@ class operations:
             ))
 
         print("Exporting supplier price changes report...")
-        export_supplier_price_changes_report(supplier_price_changes_report, supplier_price_changes, uom_errors)
+        export_supplier_price_changes_report(
+            supplier_price_changes_report, supplier_price_changes, uom_errors)
         print("Exporting supplier pricelist...")
-        export_supplier_pricelist(updated_supplier_pricelist, updated_supplier_items)
+        export_supplier_pricelist(
+            updated_supplier_pricelist, updated_supplier_items)
         print("Done.")

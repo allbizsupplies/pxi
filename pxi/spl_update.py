@@ -100,7 +100,8 @@ def update_supplier_items(supplier_pricelist_items, session):
                 })
             # Validate UOM.
             uom_matches = item["supp_uom"] == supplier_item.uom
-            conv_factor_matches = Decimal(item["supp_conv_factor"]) == Decimal(supplier_item.conv_factor)
+            conv_factor_matches = Decimal(
+                item["supp_conv_factor"]) == Decimal(supplier_item.conv_factor)
             item_code_matches = item_code == supplier_item.inventory_item.code
             uom_error = None
             if not uom_matches:

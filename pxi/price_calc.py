@@ -31,27 +31,27 @@ ROUNDING_RULES = [
         "charm_rules": None,
     },
     {
-        "min": d("1.00"), 
-        "rounding_step": d("0.05"), 
+        "min": d("1.00"),
+        "rounding_step": d("0.05"),
         "charm_rules": None,
     },
     {
-        "min": d("25.00"), 
-        "rounding_step": d("0.05"), 
+        "min": d("25.00"),
+        "rounding_step": d("0.05"),
         "charm_rules": [
             (d("1.00"), d("0.05"), d("0.10")),
         ],
     },
     {
-        "min": d("99.00"), 
-        "rounding_step": d("1.00"), 
+        "min": d("99.00"),
+        "rounding_step": d("1.00"),
         "charm_rules": [
             (d("10.00"), d("1.00"), d("2.00")),
         ],
     },
     {
-        "min": d("199.00"), 
-        "rounding_step": d("10.00"), 
+        "min": d("199.00"),
+        "rounding_step": d("10.00"),
         "charm_rules": [
             (d("10.00"), d("1.00"), d("5.00")),
             (d("100.00"), d("1.00"), d("10.00")),
