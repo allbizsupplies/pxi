@@ -209,6 +209,6 @@ def import_supplier_pricelist_items(filepath):
     for rows in supplier_pricelist_items.values():
         for row in rows.values():
             supplier_pricelist_items_flattened.append(row)
-    if overridden_supplier_items_count > 1:
+    if overridden_supplier_items_count > 0:
         print("  Warning: {} records were overridden.".format(overridden_supplier_items_count))
     return supplier_pricelist_items_flattened
