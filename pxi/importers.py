@@ -194,11 +194,16 @@ def import_supplier_pricelist_items(filepath):
     supplier_pricelist_reader = csv.DictReader(file, SPL_FIELDNAMES)
     supplier_pricelist_items = {}
     overridden_supplier_items_count = 0
+    invalid_record_count = 0
     # Collect supplier pricelist items. If an item has the same item code
     # and supplier code as a previous item then it will override it.
     for row in supplier_pricelist_reader:
         item_code = row["item_code"]
         supplier_code = row["supplier_code"]
+        uom = row["supp_uom"]
+        if uom == "":
+            invalid_record_count += 1
+            continue
         if item_code not in supplier_pricelist_items.keys():
             supplier_pricelist_items[item_code] = {}
         if supplier_code in supplier_pricelist_items[item_code].keys():
@@ -209,6 +214,9 @@ def import_supplier_pricelist_items(filepath):
     for rows in supplier_pricelist_items.values():
         for row in rows.values():
             supplier_pricelist_items_flattened.append(row)
+    # Report warnings.
+    if invalid_record_count > 0:
+        print("  Warning: {} invalid records were skipped.".format(invalid_record_count))
     if overridden_supplier_items_count > 0:
         print("  Warning: {} records were overridden.".format(overridden_supplier_items_count))
     return supplier_pricelist_items_flattened
