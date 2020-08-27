@@ -24,4 +24,4 @@ testsuites = [
 
 combined_suite = unittest.TestSuite(testsuites)
 
-unittest.TextTestRunner(verbosity=2).run(combined_suite)
+unittest.TextTestRunner(verbosity=2, buffer=True).run(combined_suite)
