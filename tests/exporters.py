@@ -187,13 +187,23 @@ class ExporterTests(DatabaseTestCase):
             self.session.add(inventory_item)
             supplier_item = random_supplier_item(inventory_item)
             self.session.add(supplier_item)
+            price_was = supplier_item.buy_price
+            price_diff = price_was * Decimal(random.randint(-10, 10)) / 100
+            price_diff_percentage = Decimal(1)
+            if price_was != Decimal(0):
+                price_diff_percentage = price_diff / price_was
+            price_now = price_was + price_diff
             price_changes.append({
                 "supplier_item": supplier_item,
                 # Create price difference between +/- 10%.
-                "price_diff": supplier_item.buy_price * Decimal(random.randint(-10, 10)) / 100,
+                "price_was": price_was,
+                "price_now": price_now,
+                "price_diff": price_diff,
+                "price_diff_percentage": price_diff_percentage,
             })
+        uom_errors = []
 
-        export_supplier_price_changes_report(report_filepath, price_changes)
+        export_supplier_price_changes_report(report_filepath, price_changes, uom_errors)
         report_reader = ReportReader(report_filepath)
         fieldnames = [
             "item_code", "supplier", "brand", "apn", "description",

@@ -29,13 +29,16 @@ class SPLUpdateTests(DatabaseTestCase):
             buy_price = supplier_item.buy_price * \
                 Decimal(random.randint(200, 400)) / 100
             return {
+                "item_code": supplier_item.inventory_item.code,
                 "supplier_code": supplier_code,
                 "supp_item_code": item_code,
                 "supp_price_1": buy_price,
+                "supp_uom": supplier_item.uom,
+                "supp_conv_factor": supplier_item.conv_factor,
             }
         supplier_pricelist_items = [random_supplier_pricelist_item(item)
                                     for item in supplier_items]
 
-        price_changes = update_supplier_items(
+        price_changes, uom_errors = update_supplier_items(
             supplier_pricelist_items, self.session)
         self.assertEqual(10, len(price_changes))
