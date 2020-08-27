@@ -5,3 +5,4 @@ __pycache__/
 *.pyc
 /data/import/*
 /data/export/*
+.~lock.*
