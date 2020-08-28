@@ -1,4 +1,3 @@
-import csv
 from decimal import Decimal
 from sqlalchemy import or_
 from progressbar import progressbar
