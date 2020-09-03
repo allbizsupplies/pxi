@@ -11,5 +11,5 @@ if not sys.warnoptions:
 operations.web_sort(
     inventory_items_datagrid="data/import/inventory_items.xlsx",
     inventory_metadata="data/import/inventory_metadata.xlsx",
-    product_web_sortcode_task="data/export/price_changes_report.xlsx",
+    product_web_sortcode_task="data/export/product_web_sortcode_task.txt",
 )
