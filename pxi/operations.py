@@ -258,3 +258,4 @@ class operations:
         print("Exporting product web sortcode task...")
         export_product_web_sortcode_task(
             product_web_sortcode_task, updated_inventory_items)
+        print("Done.")
