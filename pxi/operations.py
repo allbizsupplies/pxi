@@ -205,7 +205,7 @@ class operations:
         price_rules_datagrid="data/import/price_rules.xlsx",
         pricelist_datagrid="data/import/pricelist.xlsx",
         inventory_metadata="data/import/inventory_metadata.xlsx",
-        product_web_sortcode_task="data/export/price_changes_report.xlsx"
+        product_web_sortcode_task="data/export/product_web_sortcode_task.txt"
     ):
         session = db_session()
         print("Importing inventory items...")
