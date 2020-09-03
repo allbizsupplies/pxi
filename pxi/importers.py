@@ -7,7 +7,8 @@ from pxi.enum import (
     ItemType,
     ItemCondition,
     PriceBasis,
-    TaxCode)
+    TaxCode,
+    WebStatus)
 from pxi.models import (
     ContractItem,
     InventoryItem,
@@ -15,7 +16,8 @@ from pxi.models import (
     PriceRegionItem,
     PriceRule,
     SupplierItem,
-    WarehouseStockItem)
+    WarehouseStockItem,
+    WebSortcode)
 from pxi.spl_update import SPL_FIELDNAMES
 
 
@@ -57,7 +59,9 @@ def import_inventory_items(filepath, db_session):
             created=row["creation_date"],
             item_type=ItemType(row["status"]),
             condition=ItemCondition(row["condition"]),
-            replacement_cost=row["replacement_cost"]
+            replacement_cost=row["replacement_cost"],
+            web_status=WebStatus(row["int_flag_sales_type"]),
+            web_sortcode=row["internet_tree"]
         )
         db_session.add(inventory_item)
         count += 1
@@ -210,6 +214,7 @@ def import_supplier_pricelist_items(filepath):
         if supplier_code in supplier_pricelist_items[item_code].keys():
             overridden_supplier_items_count += 1
         supplier_pricelist_items[item_code][supplier_code] = row
+    file.close()
     # Flatten the list of items.
     supplier_pricelist_items_flattened = []
     for rows in supplier_pricelist_items.values():
@@ -223,3 +228,23 @@ def import_supplier_pricelist_items(filepath):
         print("  Warning: {} records were overridden.".format(
             overridden_supplier_items_count))
     return supplier_pricelist_items_flattened
+
+
+def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
+    count = 0
+    for row in progressbar(load_rows(filepath, worksheet_name)):
+        web_sortcode = WebSortcode(
+            code=row["sortcode"],
+            name=row["description"],
+        )
+        db_session.add(web_sortcode)
+        count += 1
+    return count
+
+
+def import_web_sortcode_mappings(filepath, worksheet_name="rules"):
+    web_sortcode_mappings = {}
+    for row in progressbar(load_rows(filepath, worksheet_name)):
+        rule_code = row["rule_code"]
+        web_sortcode_mappings[rule_code] = str(row["sortcode"])
+    return web_sortcode_mappings

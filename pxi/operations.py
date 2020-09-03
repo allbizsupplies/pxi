@@ -3,12 +3,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from pxi.enum import ItemCondition, ItemType
+from pxi.enum import ItemCondition, ItemType, WebStatus
 from pxi.exporters import (
     export_contract_item_task,
     export_price_changes_report,
     export_pricelist,
     export_product_price_task,
+    export_product_web_sortcode_task,
     export_supplier_price_changes_report,
     export_supplier_pricelist,
     export_tickets_list
@@ -20,7 +21,9 @@ from pxi.importers import (
     import_price_rules,
     import_supplier_items,
     import_supplier_pricelist_items,
-    import_warehouse_stock_items
+    import_warehouse_stock_items,
+    import_web_sortcodes,
+    import_web_sortcode_mappings
 )
 from pxi.models import (
     Base,
@@ -33,9 +36,8 @@ from pxi.price_calc import (
     recalculate_contract_prices,
     recalculate_sell_prices
 )
-from pxi.spl_update import (
-    update_supplier_items
-)
+from pxi.spl_update import update_supplier_items
+from pxi.web_sort import add_web_sortcodes
 
 
 IGNORED_PRICE_RULES = [
@@ -81,6 +83,7 @@ class operations:
         count = import_contract_items(contract_items_datagrid, session)
         print("{} contract items imported.".format(count))
 
+        # pylint:disable=no-member
         price_region_items = session.query(PriceRegionItem).join(
             PriceRegionItem.inventory_item
         ).join(
@@ -195,3 +198,63 @@ class operations:
         export_supplier_pricelist(
             updated_supplier_pricelist, updated_supplier_items)
         print("Done.")
+
+    @staticmethod
+    def web_sort(
+        inventory_items_datagrid="data/import/inventory_items.xlsx",
+        price_rules_datagrid="data/import/price_rules.xlsx",
+        pricelist_datagrid="data/import/pricelist.xlsx",
+        inventory_metadata="data/import/inventory_metadata.xlsx",
+        product_web_sortcode_task="data/export/price_changes_report.xlsx"
+    ):
+        session = db_session()
+        print("Importing inventory items...")
+        count = import_inventory_items(inventory_items_datagrid, session)
+        print("{} inventory items imported.".format(count))
+        print("Importing price rules...")
+        count = import_price_rules(price_rules_datagrid, session)
+        print("{} price rules imported.".format(count))
+        print("Importing price region items...")
+        count = import_price_region_items(pricelist_datagrid, session)
+        print("{} price region items imported.".format(count))
+        print("Importing web sortcodes...")
+        count = import_web_sortcodes(inventory_metadata, session)
+        print("{} web sortcodes imported.".format(count))
+        print("Importing web sortcode mappings...")
+        web_sortcode_mappings = import_web_sortcode_mappings(
+            inventory_metadata)
+        print("{} web sortcode mappings imported.".format(
+            len(web_sortcode_mappings)
+        ))
+
+        # pylint:disable=no-member
+        price_region_items = session.query(PriceRegionItem).join(
+            PriceRegionItem.inventory_item
+        ).join(
+            PriceRegionItem.price_rule
+        ).filter(
+            PriceRegionItem.price_rule_id.isnot(None),
+            PriceRegionItem.code == "",
+            InventoryItem.condition != ItemCondition.DISCONTINUED,
+            InventoryItem.condition != ItemCondition.INACTIVE,
+            InventoryItem.item_type != ItemType.CROSS_REFERENCE,
+            InventoryItem.item_type != ItemType.LABOUR,
+            InventoryItem.item_type != ItemType.INDENT_ITEM,
+            InventoryItem.web_status == WebStatus.ACTIVE,
+            InventoryItem.web_sortcode == None
+        ).all()
+
+        print("{} inventory items selected for web sorting.".format(
+            len(price_region_items)
+        ))
+
+        print("Sorting inventory items...")
+        updated_inventory_items = add_web_sortcodes(price_region_items, web_sortcode_mappings, session)
+
+        print("{} inventory items have been updated with a web sortcode.".format(
+            len(updated_inventory_items)
+        ))
+
+        print("Exporting product web sortcode task...")
+        export_product_web_sortcode_task(
+            product_web_sortcode_task, updated_inventory_items)

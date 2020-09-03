@@ -15,10 +15,13 @@ class SPLUpdateTests(DatabaseTestCase):
         """Apply supplier pricelist prices to supplier items."""
         item_count = 10
         supplier_items = []
+        # pylint:disable=unused-variable
         for i in range(item_count):
             inventory_item = random_inventory_item()
+            # pylint:disable=no-member
             self.session.add(inventory_item)
             supplier_item = random_supplier_item(inventory_item)
+            # pylint:disable=no-member
             self.session.add(supplier_item)
             supplier_items.append(supplier_item)
 

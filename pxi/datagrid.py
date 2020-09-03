@@ -3,10 +3,13 @@ import re
 from openpyxl import load_workbook
 
 
-def load_rows(filepath):
+def load_rows(filepath, worksheet_name=None):
     """Read data from XLSX datagrid."""
     workbook = load_workbook(filename=filepath, read_only=True)
-    worksheet = workbook[workbook.get_sheet_names()[0]]
+    # Use the first worksheet by default.
+    if worksheet_name is None:
+        worksheet_name = workbook.get_sheet_names()[0]
+    worksheet = workbook[worksheet_name]
     fieldnames = get_fieldnames(worksheet)
     rows = []
     for row in worksheet.iter_rows(min_row=2):

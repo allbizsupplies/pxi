@@ -245,6 +245,23 @@ def export_product_price_task(filepath, price_region_items):
         writer.writerows(rows)
 
 
+def export_product_web_sortcode_task(filepath, inventory_items):
+    """Export product web sortcode update task to file."""
+    def inventory_item_to_row(inventory_item):
+        return {
+            "item_code": inventory_item.code,
+            "web_active": inventory_item.web_status.value,
+            "web_sortcode": inventory_item.web_sortcode,
+        }
+    rows = [inventory_item_to_row(item) for item in inventory_items]
+
+    with open(filepath, "w") as file:
+        fieldnames = ["item_code", "web_active", "web_sortcode"]
+        writer = csv.DictWriter(file, fieldnames, dialect="excel-tab")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def export_contract_item_task(filepath, contract_items):
     """Export product price update task to file."""
     def contract_item_to_row(contract_item):

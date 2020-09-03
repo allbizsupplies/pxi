@@ -27,6 +27,8 @@ class InventoryItem(Base):
     condition = Column(Enum(ItemCondition))
     created = Column(DateTime, nullable=False)
     replacement_cost = Column(Numeric(precision=15, scale=4), nullable=False)
+    web_status = Column(Enum(WebStatus))
+    web_sortcode = Column(String(4))
 
     contract_items = relationship("ContractItem",
                                   back_populates="inventory_item")
@@ -116,7 +118,8 @@ class PriceRegionItem(Base):
                               back_populates="price_region_items")
 
     def __repr__(self):
-        return "<PriceRegionItem(code='{}')>".format(self.code)
+        return "<PriceRegionItem(code='{}', inventory_item='{}')>".format(
+            self.code, self.inventory_item.code)
 
 
 class ContractItem(Base):
@@ -214,3 +217,15 @@ class GTINItem(Base):
 
     def __repr__(self):
         return "<GTINItem(code='{}')>".format(self.code)
+
+
+class WebSortcode(Base):
+    __tablename__ = "web_sortcodes"
+
+    id = Column(Integer, primary_key=True)
+    code = Column(String(4), nullable=False, unique=True)
+    name = Column(String(255), nullable=False)
+
+    def __repr__(self):
+        return "<WebSortcode(code='{}', name='{}')>".format(
+            self.code, self.name)

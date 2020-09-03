@@ -6,6 +6,7 @@ from tests.importers import ImporterTests
 from tests.operations import OperationTests
 from tests.price_calc import PriceCalcTests
 from tests.spl_update import SPLUpdateTests
+from tests.web_sort import WebSortTests
 
 testloader = unittest.TestLoader()
 
@@ -15,6 +16,7 @@ testcases = [
     ExporterTests,
     OperationTests,
     SPLUpdateTests,
+    WebSortTests,
 ]
 
 testsuites = [

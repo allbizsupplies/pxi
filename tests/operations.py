@@ -46,3 +46,14 @@ class OperationTests(DatabaseTestCase):
         )
         os.remove(supplier_price_changes_report)
         os.remove(updated_supplier_pricelist)
+
+    def test_web_sort(self):
+        product_web_sortcode_task = "tmp/product_web_sortcode_task.txt"
+        operations.web_sort(
+            inventory_items_datagrid="tests/fixtures/inventory_items.xlsx",
+            price_rules_datagrid="tests/fixtures/price_rules.xlsx",
+            pricelist_datagrid="tests/fixtures/pricelist.xlsx",
+            inventory_metadata="tests/fixtures/inventory_metadata.xlsx",
+            product_web_sortcode_task=product_web_sortcode_task
+        )
+        # os.remove(product_web_sortcode_task)

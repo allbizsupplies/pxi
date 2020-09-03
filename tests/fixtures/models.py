@@ -14,7 +14,8 @@ from pxi.models import (
     PriceRegionItem,
     InventoryItem,
     SupplierItem,
-    WarehouseStockItem)
+    WarehouseStockItem,
+    WebSortcode)
 
 
 def random_contract(items=5):
@@ -58,7 +59,7 @@ def random_inventory_item():
         condition=ItemCondition.NORMAL,
         replacement_cost=random_price(),
     )
-    
+
 
 def random_price(min=10, max=100):
     """Generate a Decimal number between min and max."""
@@ -71,7 +72,8 @@ def random_pricelist(items=5):
     for i in range(5):
         inventory_item = random_inventory_item()
         price_rule = random_price_rule()
-        price_region_item = random_price_region_item(inventory_item, price_rule)
+        price_region_item = random_price_region_item(
+            inventory_item, price_rule)
         price_region_items.append(price_region_item)
     return price_region_items
 
@@ -152,4 +154,12 @@ def random_warehouse_stock_item(inventory_item):
         maximum=random.randint(40, 60),
         bin_location=random_string(8),
         bulk_location=random_string(8),
+    )
+
+
+def random_web_sortcode():
+    """Generate web sortcode with randomised fields."""
+    return WebSortcode(
+        code=random_string(4),
+        name=random_string(30)
     )

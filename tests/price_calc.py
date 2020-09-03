@@ -76,10 +76,12 @@ class PriceCalcTests(DatabaseTestCase):
         price_rule.price_2_factor = Decimal("4.00")
         price_rule.price_3_factor = Decimal("3.00")
         price_rule.price_4_factor = Decimal("2.00")
+        # pylint:disable=no-member
         self.session.add(price_rule)
 
         inventory_item = random_inventory_item()
         inventory_item.replacement_cost = Decimal("10.00")
+        # pylint:disable=no-member
         self.session.add(inventory_item)
 
         price_region_item = PriceRegionItem(
@@ -124,6 +126,7 @@ class PriceCalcTests(DatabaseTestCase):
     def test_recalculate_sell_prices(self):
         """Calculate new prices for items and return a list of changes."""
         price_region_items = random_pricelist(items=5)
+        # pylint:disable=no-member
         [self.session.add(item) for item in price_region_items]
         price_changes = recalculate_sell_prices(
             price_region_items, self.session)
@@ -140,6 +143,7 @@ class PriceCalcTests(DatabaseTestCase):
         for price_region_item in price_region_items:
             inventory_item = price_region_item.inventory_item
             contract_item = random_contract_item(inventory_item)
+            # pylint:disable=no-member
             self.session.add(price_region_item)
             contract_items.append(contract_item)
         price_changes = recalculate_sell_prices(

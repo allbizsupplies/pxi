@@ -42,3 +42,4 @@ class TaxCode(Enum):
 class WebStatus(Enum):
     ACTIVE = "Y"
     INACTIVE = "N"
+    UNKNOWN = None

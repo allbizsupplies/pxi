@@ -5,11 +5,12 @@ import os
 import pathlib
 import random
 
-
+from pxi.enum import WebStatus
 from pxi.exporters import (
     export_price_changes_report,
     export_pricelist,
     export_product_price_task,
+    export_product_web_sortcode_task,
     export_contract_item_task,
     export_supplier_pricelist,
     export_supplier_price_changes_report,
@@ -22,9 +23,10 @@ from tests.fixtures.models import (
     random_contract,
     random_inventory_item,
     random_pricelist,
+    random_string,
     random_supplier_item,
-    random_warehouse_stock_item
-)
+    random_warehouse_stock_item,
+    random_web_sortcode)
 
 
 class ExporterTests(DatabaseTestCase):
@@ -153,8 +155,10 @@ class ExporterTests(DatabaseTestCase):
         supplier_items = []
         for i in range(item_count):
             inventory_item = random_inventory_item()
+            # pylint:disable=no-member
             self.session.add(inventory_item)
             supplier_item = random_supplier_item(inventory_item)
+            # pylint:disable=no-member
             self.session.add(supplier_item)
             supplier_items.append(supplier_item)
         export_supplier_pricelist(supplier_pricelist_filepath, supplier_items)
@@ -182,10 +186,13 @@ class ExporterTests(DatabaseTestCase):
         report_filepath = "tmp/test_supplier_price_changes_report.xlsx"
         item_count = 5
         price_changes = []
+        # pylint:disable=unused-variable
         for i in range(item_count):
             inventory_item = random_inventory_item()
+            # pylint:disable=no-member
             self.session.add(inventory_item)
             supplier_item = random_supplier_item(inventory_item)
+            # pylint:disable=no-member
             self.session.add(supplier_item)
             price_was = supplier_item.buy_price
             price_diff = price_was * Decimal(random.randint(-10, 10)) / 100
@@ -203,7 +210,8 @@ class ExporterTests(DatabaseTestCase):
             })
         uom_errors = []
 
-        export_supplier_price_changes_report(report_filepath, price_changes, uom_errors)
+        export_supplier_price_changes_report(
+            report_filepath, price_changes, uom_errors)
         report_reader = ReportReader(report_filepath)
         fieldnames = [
             "item_code", "supplier", "brand", "apn", "description",
@@ -214,3 +222,28 @@ class ExporterTests(DatabaseTestCase):
         data = report_reader.load()
         self.assertEqual(item_count, len(data))
         os.remove(report_filepath)
+
+    def test_export_product_web_sortcode_task(self):
+        """Export product price update task to file."""
+        task_filepath = "tmp/test_product_web_sortcode_task.txt"
+        item_count = 5
+
+        def inventory_item_with_web_sortcode():
+            inventory_item = random_inventory_item()
+            inventory_item.web_sortcode = random_string(4)
+            inventory_item.web_status = WebStatus.ACTIVE
+            # pylint:disable=no-member
+            self.session.commit()
+            return inventory_item
+        # pylint:disable=unused-variable
+        inventory_items = [
+            inventory_item_with_web_sortcode() for i in range(item_count)]
+
+        export_product_web_sortcode_task(task_filepath, inventory_items)
+        file = open(task_filepath)
+        csv_reader = csv.DictReader(file, dialect="excel-tab")
+        expected_fieldnames = ["item_code", "web_active", "web_sortcode"]
+        self.assertListEqual(csv_reader.fieldnames, expected_fieldnames)
+        file.close()
+        # TODO validate values in rows.
+        os.remove(task_filepath)
