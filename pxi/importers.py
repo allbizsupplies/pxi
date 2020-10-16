@@ -262,3 +262,22 @@ def import_web_sortcode_mappings(filepath, worksheet_name="rules"):
         len(web_sortcode_mappings)
     ))
     return web_sortcode_mappings
+
+
+def import_images_report(filepath):
+    print("Importing images report...")
+
+    def get_image(row):
+        for i in range(1, 5):
+            filename = row["picture{}".format(i)]
+            if filename:
+                return filename
+
+    images_data = {}
+    for row in progressbar(load_rows(filepath)):
+        item_code = str(row["productcode"])
+        images_data[item_code] = get_image(row)
+    print("image data imported for {} items.".format(
+        len(images_data)
+    ))
+    return images_data
