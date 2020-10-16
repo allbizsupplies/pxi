@@ -264,7 +264,7 @@ def import_web_sortcode_mappings(filepath, worksheet_name="rules"):
     return web_sortcode_mappings
 
 
-def import_images_report(filepath):
+def import_images_report(filepath, db_session):
     print("Importing images report...")
 
     def get_image(row):
@@ -276,7 +276,15 @@ def import_images_report(filepath):
     images_data = {}
     for row in progressbar(load_rows(filepath)):
         item_code = str(row["productcode"])
-        images_data[item_code] = get_image(row)
+        inventory_item = db_session.query(InventoryItem).filter(
+            InventoryItem.code == item_code
+        ).scalar()
+        if not inventory_item:
+            continue
+        images_data[item_code] = {
+            "inventory_item": inventory_item,
+            "filename": get_image(row)
+        }
     print("image data imported for {} items.".format(
         len(images_data)
     ))

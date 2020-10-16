@@ -128,8 +128,11 @@ class ImporterTests(DatabaseTestCase):
     def test_import_images_report(self):
         """Import product image information from report."""
         expected_item_count = 6
+        import_inventory_items(
+            "tests/fixtures/inventory_items.xlsx", self.session)
         images_data = import_images_report(
             "tests/fixtures/images_report.xlsx",
+            self.session
         )
         # pylint:disable=no-member
         self.assertEqual(len(images_data), expected_item_count)
