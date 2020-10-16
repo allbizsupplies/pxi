@@ -67,21 +67,11 @@ class operations:
         tickets_list="data/export/tickets_list.txt"
     ):
         session = db_session()
-        print("Importing inventory items...")
-        count = import_inventory_items(inventory_items_datagrid, session)
-        print("{} inventory items imported.".format(count))
-        print("Importing warehouse stock items...")
-        count = import_warehouse_stock_items(inventory_items_datagrid, session)
-        print("{} warehouse stock items imported.".format(count))
-        print("Importing price rules...")
-        count = import_price_rules(price_rules_datagrid, session)
-        print("{} price rules imported.".format(count))
-        print("Importing price region items...")
-        count = import_price_region_items(pricelist_datagrid, session)
-        print("{} price region items imported.".format(count))
-        print("Importing contract items...")
-        count = import_contract_items(contract_items_datagrid, session)
-        print("{} contract items imported.".format(count))
+        import_inventory_items(inventory_items_datagrid, session)
+        import_warehouse_stock_items(inventory_items_datagrid, session)
+        import_price_rules(price_rules_datagrid, session)
+        import_price_region_items(pricelist_datagrid, session)
+        import_contract_items(contract_items_datagrid, session)
 
         # pylint:disable=no-member
         price_region_items = session.query(PriceRegionItem).join(
@@ -164,18 +154,10 @@ class operations:
         updated_supplier_pricelist="data/export/supplier_pricelist.csv"
     ):
         session = db_session()
-        print("Importing inventory items...")
-        count = import_inventory_items(inventory_items_datagrid, session)
-        print("{} inventory items imported.".format(count))
-        print("Importing supplier items...")
-        count = import_supplier_items(supplier_items_datagrid, session)
-        print("{} supplier items imported.".format(count))
-        print("Importing supplier pricelist items...")
+        import_inventory_items(inventory_items_datagrid, session)
+        import_supplier_items(supplier_items_datagrid, session)
         supplier_pricelist_items = import_supplier_pricelist_items(
             supplier_pricelist)
-        print("{} supplier pricelist items imported.".format(len(
-            supplier_pricelist_items
-        )))
 
         print("Updating supplier prices...")
         supplier_price_changes, uom_errors = update_supplier_items(
@@ -208,24 +190,12 @@ class operations:
         product_web_sortcode_task="data/export/product_web_sortcode_task.txt"
     ):
         session = db_session()
-        print("Importing inventory items...")
-        count = import_inventory_items(inventory_items_datagrid, session)
-        print("{} inventory items imported.".format(count))
-        print("Importing price rules...")
-        count = import_price_rules(price_rules_datagrid, session)
-        print("{} price rules imported.".format(count))
-        print("Importing price region items...")
-        count = import_price_region_items(pricelist_datagrid, session)
-        print("{} price region items imported.".format(count))
-        print("Importing web sortcodes...")
-        count = import_web_sortcodes(inventory_metadata, session)
-        print("{} web sortcodes imported.".format(count))
-        print("Importing web sortcode mappings...")
+        import_inventory_items(inventory_items_datagrid, session)
+        import_price_rules(price_rules_datagrid, session)
+        import_price_region_items(pricelist_datagrid, session)
+        import_web_sortcodes(inventory_metadata, session)
         web_sortcode_mappings = import_web_sortcode_mappings(
             inventory_metadata)
-        print("{} web sortcode mappings imported.".format(
-            len(web_sortcode_mappings)
-        ))
 
         # pylint:disable=no-member
         price_region_items = session.query(PriceRegionItem).join(
@@ -249,7 +219,8 @@ class operations:
         ))
 
         print("Sorting inventory items...")
-        updated_inventory_items = add_web_sortcodes(price_region_items, web_sortcode_mappings, session)
+        updated_inventory_items = add_web_sortcodes(
+            price_region_items, web_sortcode_mappings, session)
 
         print("{} inventory items have been updated with a web sortcode.".format(
             len(updated_inventory_items)

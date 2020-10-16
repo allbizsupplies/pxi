@@ -22,6 +22,7 @@ from pxi.spl_update import SPL_FIELDNAMES
 
 
 def import_contract_items(filepath, db_session):
+    print("Importing contract items...")
     count = 0
     for row in load_rows(filepath):
         inventory_item = db_session.query(InventoryItem).filter(
@@ -41,10 +42,11 @@ def import_contract_items(filepath, db_session):
         )
         db_session.add(contract_item)
         count += 1
-    return count
+    print("{} contract items imported.".format(count))
 
 
 def import_inventory_items(filepath, db_session):
+    print("Importing inventory items...")
     count = 0
     for row in progressbar(load_rows(filepath)):
         inventory_item = InventoryItem(
@@ -65,10 +67,11 @@ def import_inventory_items(filepath, db_session):
         )
         db_session.add(inventory_item)
         count += 1
-    return count
+    print("{} inventory items imported.".format(count))
 
 
 def import_price_region_items(filepath, db_session):
+    print("Importing price region items...")
     count = 0
     for row in progressbar(load_rows(filepath)):
         inventory_item = db_session.query(InventoryItem).filter(
@@ -100,10 +103,11 @@ def import_price_region_items(filepath, db_session):
         )
         db_session.add(price_region_item)
         count += 1
-    return count
+    print("{} price region items imported.".format(count))
 
 
 def import_price_rules(filepath, db_session):
+    print("Importing price rules...")
     count = 0
     for row in progressbar(load_rows(filepath)):
         price_rule = PriceRule(
@@ -126,10 +130,11 @@ def import_price_rules(filepath, db_session):
         )
         db_session.add(price_rule)
         count += 1
-    return count
+    print("{} price rules imported.".format(count))
 
 
 def import_warehouse_stock_items(filepath, db_session):
+    print("Importing warehouse stock items...")
     count = 0
     for row in progressbar(load_rows(filepath)):
         inventory_item = db_session.query(InventoryItem).filter(
@@ -146,7 +151,7 @@ def import_warehouse_stock_items(filepath, db_session):
         )
         db_session.add(warehouse_stock_item)
         count += 1
-    return count
+    print("{} warehouse stock items imported.".format(count))
 
 
 def import_supplier_items(filepath, db_session):
@@ -195,6 +200,7 @@ def import_gtin_items(filepath, db_session):
 
 
 def import_supplier_pricelist_items(filepath):
+    print("Importing supplier pricelist items...")
     file = open(filepath, "r", encoding="iso8859-14")
     supplier_pricelist_reader = csv.DictReader(file, SPL_FIELDNAMES)
     supplier_pricelist_items = {}
@@ -227,10 +233,14 @@ def import_supplier_pricelist_items(filepath):
     if overridden_supplier_items_count > 0:
         print("  Warning: {} records were overridden.".format(
             overridden_supplier_items_count))
+    print("{} supplier pricelist items imported.".format(len(
+        supplier_pricelist_items
+    )))
     return supplier_pricelist_items_flattened
 
 
 def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
+    print("Importing web sortcodes...")
     count = 0
     for row in progressbar(load_rows(filepath, worksheet_name)):
         web_sortcode = WebSortcode(
@@ -239,12 +249,16 @@ def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
         )
         db_session.add(web_sortcode)
         count += 1
-    return count
+    print("{} web sortcodes imported.".format(count))
 
 
 def import_web_sortcode_mappings(filepath, worksheet_name="rules"):
+    print("Importing web sortcode mappings...")
     web_sortcode_mappings = {}
     for row in progressbar(load_rows(filepath, worksheet_name)):
         rule_code = row["rule_code"]
         web_sortcode_mappings[rule_code] = str(row["sortcode"])
+    print("{} web sortcode mappings imported.".format(
+        len(web_sortcode_mappings)
+    ))
     return web_sortcode_mappings
