@@ -237,8 +237,8 @@ class ExporterTests(DatabaseTestCase):
                 "filename": filename
             })
         export_downloaded_images_report(report_filepath, images)
-        # os.remove(report_filepath)
-
+        # TODO validate values in rows.
+        os.remove(report_filepath)
 
     def test_export_product_web_sortcode_task(self):
         """Export product price update task to file."""
