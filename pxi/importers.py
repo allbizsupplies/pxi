@@ -155,6 +155,7 @@ def import_warehouse_stock_items(filepath, db_session):
 
 
 def import_supplier_items(filepath, db_session):
+    print("Importing supplier items...")
     count = 0
     for row in progressbar(load_rows(filepath)):
         if not row["supplier_item"]:
@@ -177,10 +178,11 @@ def import_supplier_items(filepath, db_session):
         )
         db_session.add(supplier_item)
         count += 1
-    return count
+    print("{} supplier items imported.".format(count))
 
 
 def import_gtin_items(filepath, db_session):
+    print("Importing GTIN items...")
     count = 0
     for row in progressbar(load_rows(filepath)):
         inventory_item = db_session.query(InventoryItem).filter(
@@ -196,7 +198,7 @@ def import_gtin_items(filepath, db_session):
         )
         db_session.add(gtin_item)
         count += 1
-    return count
+    print("{} GTIN items imported.".format(count))
 
 
 def import_supplier_pricelist_items(filepath):
