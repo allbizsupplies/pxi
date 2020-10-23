@@ -25,12 +25,10 @@ class FetcherTests(DatabaseTestCase):
         """Fetch image URLs."""
         inventory_item = random_inventory_item()
         # pylint:disable=no-member
-        self.session.commit()
         for fetcher_class in FETCHER_CLASSES:
             supplier_item = random_supplier_item(inventory_item)
             supplier_item.code = fetcher_class.__name__
             # pylint:disable=no-member
-            self.session.commit()
 
         fetchers = get_fetchers(inventory_item)
         for fetcher in fetchers:
@@ -45,7 +43,6 @@ class FetcherTests(DatabaseTestCase):
         supplier_item.code = "ACO"
         supplier_item.item_code = sku
         # pylint:disable=no-member
-        self.session.commit()
         expected_filepath = os.path.join(
             "tmp", "{}.jpg".format(inventory_item.code))
         fetchers = get_fetchers(inventory_item)
