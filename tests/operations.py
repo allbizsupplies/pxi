@@ -10,6 +10,19 @@ class OperationTests(DatabaseTestCase):
     def setUp(self):
         super().setUp()
         pathlib.Path("tmp").mkdir(parents=True, exist_ok=True)
+        
+    def test_generate_spl(self):
+        supplier_price_changes_report = "tmp/supplier_price_changes_report.xlsx"
+        updated_supplier_pricelist = "tmp/supplier_pricelist.csv"
+        operations.generate_spl(
+            inventory_items_datagrid="tests/fixtures/inventory_items.xlsx",
+            supplier_items_datagrid="tests/fixtures/supplier_items.xlsx",
+            supplier_pricelist="tests/fixtures/supplier_pricelist.csv",
+            supplier_price_changes_report=supplier_price_changes_report,
+            updated_supplier_pricelist=updated_supplier_pricelist
+        )
+        os.remove(supplier_price_changes_report)
+        os.remove(updated_supplier_pricelist)
 
     def test_price_calc(self):
         price_changes_report = "tmp/price_changes_report.xlsx"
@@ -34,19 +47,6 @@ class OperationTests(DatabaseTestCase):
         os.remove(contract_item_task)
         os.remove(tickets_list)
 
-    def test_generate_spl(self):
-        supplier_price_changes_report = "tmp/supplier_price_changes_report.xlsx"
-        updated_supplier_pricelist = "tmp/supplier_pricelist.csv"
-        operations.generate_spl(
-            inventory_items_datagrid="tests/fixtures/inventory_items.xlsx",
-            supplier_items_datagrid="tests/fixtures/supplier_items.xlsx",
-            supplier_pricelist="tests/fixtures/supplier_pricelist.csv",
-            supplier_price_changes_report=supplier_price_changes_report,
-            updated_supplier_pricelist=updated_supplier_pricelist
-        )
-        os.remove(supplier_price_changes_report)
-        os.remove(updated_supplier_pricelist)
-
     def test_web_sort(self):
         product_web_sortcode_task = "tmp/product_web_sortcode_task.txt"
         operations.web_sort(
@@ -56,4 +56,4 @@ class OperationTests(DatabaseTestCase):
             inventory_metadata="tests/fixtures/inventory_metadata.xlsx",
             product_web_sortcode_task=product_web_sortcode_task
         )
-        # os.remove(product_web_sortcode_task)
+        os.remove(product_web_sortcode_task)

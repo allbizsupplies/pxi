@@ -55,6 +55,42 @@ def db_session():
 class operations:
 
     @staticmethod
+    def generate_spl(
+        inventory_items_datagrid="data/import/inventory_items.xlsx",
+        supplier_items_datagrid="data/import/supplier_items.xlsx",
+        supplier_pricelist="data/import/supplier_pricelist.csv",
+        supplier_price_changes_report="data/export/supplier_price_changes_report.xlsx",
+        updated_supplier_pricelist="data/export/supplier_pricelist.csv"
+    ):
+        session = db_session()
+        import_inventory_items(inventory_items_datagrid, session)
+        import_supplier_items(supplier_items_datagrid, session)
+        supplier_pricelist_items = import_supplier_pricelist_items(
+            supplier_pricelist)
+
+        print("Updating supplier prices...")
+        supplier_price_changes, uom_errors = update_supplier_items(
+            supplier_pricelist_items, session)
+        updated_supplier_items = [
+            price_change["supplier_item"] for price_change in supplier_price_changes
+        ]
+        print("{} supplier items have been updated.".format(
+            len(updated_supplier_items)
+        ))
+        if len(uom_errors) > 0:
+            print("{} supplier items have UOM errors.".format(
+                len(uom_errors)
+            ))
+
+        print("Exporting supplier price changes report...")
+        export_supplier_price_changes_report(
+            supplier_price_changes_report, supplier_price_changes, uom_errors)
+        print("Exporting supplier pricelist...")
+        export_supplier_pricelist(
+            updated_supplier_pricelist, updated_supplier_items)
+        print("Done.")
+
+    @staticmethod
     def price_calc(
         inventory_items_datagrid="data/import/inventory_items.xlsx",
         price_rules_datagrid="data/import/price_rules.xlsx",
@@ -143,42 +179,6 @@ class operations:
         print("Exporting tickets list...")
         export_tickets_list(
             tickets_list, warehouse_stock_items_needing_tickets())
-        print("Done.")
-
-    @staticmethod
-    def generate_spl(
-        inventory_items_datagrid="data/import/inventory_items.xlsx",
-        supplier_items_datagrid="data/import/supplier_items.xlsx",
-        supplier_pricelist="data/import/supplier_pricelist.csv",
-        supplier_price_changes_report="data/export/supplier_price_changes_report.xlsx",
-        updated_supplier_pricelist="data/export/supplier_pricelist.csv"
-    ):
-        session = db_session()
-        import_inventory_items(inventory_items_datagrid, session)
-        import_supplier_items(supplier_items_datagrid, session)
-        supplier_pricelist_items = import_supplier_pricelist_items(
-            supplier_pricelist)
-
-        print("Updating supplier prices...")
-        supplier_price_changes, uom_errors = update_supplier_items(
-            supplier_pricelist_items, session)
-        updated_supplier_items = [
-            price_change["supplier_item"] for price_change in supplier_price_changes
-        ]
-        print("{} supplier items have been updated.".format(
-            len(updated_supplier_items)
-        ))
-        if len(uom_errors) > 0:
-            print("{} supplier items have UOM errors.".format(
-                len(uom_errors)
-            ))
-
-        print("Exporting supplier price changes report...")
-        export_supplier_price_changes_report(
-            supplier_price_changes_report, supplier_price_changes, uom_errors)
-        print("Exporting supplier pricelist...")
-        export_supplier_pricelist(
-            updated_supplier_pricelist, updated_supplier_items)
         print("Done.")
 
     @staticmethod
