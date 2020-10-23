@@ -1,7 +1,6 @@
 
 from pxi.importers import (
     import_contract_items,
-    import_images_report,
     import_inventory_items,
     import_gtin_items,
     import_price_region_items,
@@ -10,7 +9,8 @@ from pxi.importers import (
     import_supplier_pricelist_items,
     import_warehouse_stock_items,
     import_web_sortcodes,
-    import_web_sortcode_mappings
+    import_web_sortcode_mappings,
+    import_website_images_report
 )
 from pxi.models import (
     ContractItem,
@@ -125,13 +125,13 @@ class ImporterTests(DatabaseTestCase):
         # pylint:disable=no-member
         self.assertEqual(len(web_sortcode_mappings), expected_item_count)
 
-    def test_import_images_report(self):
+    def test_import_website_images_report(self):
         """Import product image information from report."""
         expected_item_count = 6
         import_inventory_items(
             "tests/fixtures/inventory_items.xlsx", self.session)
-        images_data = import_images_report(
-            "tests/fixtures/images_report.xlsx",
+        images_data = import_website_images_report(
+            "tests/fixtures/website_images_report.xlsx",
             self.session
         )
         # pylint:disable=no-member

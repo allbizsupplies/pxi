@@ -266,7 +266,7 @@ def import_web_sortcode_mappings(filepath, worksheet_name="rules"):
     return web_sortcode_mappings
 
 
-def import_images_report(filepath, db_session):
+def import_website_images_report(filepath, db_session):
     print("Importing images report...")
 
     def get_image(row):
