@@ -1,11 +1,6 @@
 from unittest.mock import MagicMock
 import os
 
-from pxi.importers import (
-    import_inventory_items,
-    import_supplier_items,
-    import_images_report
-)
 from pxi.fetchers import get_fetcher, get_fetchers, ACO, CSS, GNS, SAT
 from pxi.models import InventoryItem
 from tests import DatabaseTestCase
