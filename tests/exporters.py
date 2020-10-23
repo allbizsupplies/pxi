@@ -7,6 +7,7 @@ import random
 
 from pxi.enum import WebStatus
 from pxi.exporters import (
+    export_downloaded_images_report,
     export_price_changes_report,
     export_pricelist,
     export_product_price_task,
@@ -209,7 +210,6 @@ class ExporterTests(DatabaseTestCase):
                 "price_diff_percentage": price_diff_percentage,
             })
         uom_errors = []
-
         export_supplier_price_changes_report(
             report_filepath, price_changes, uom_errors)
         report_reader = ReportReader(report_filepath)
@@ -222,6 +222,23 @@ class ExporterTests(DatabaseTestCase):
         data = report_reader.load()
         self.assertEqual(item_count, len(data))
         os.remove(report_filepath)
+
+    def test_export_downloaded_images_report(self):
+        """Export downloaded images report to file."""
+        report_filepath = "tmp/test_export_downloaded_images_report.xlsx"
+        images = []
+        item_count = 5
+        for i in range(item_count):
+            inventory_item = random_inventory_item()
+            filename = "{}.jpg".format(inventory_item.code) if i > 0 else None
+            images.append({
+                "inventory_item": inventory_item,
+                "source": random_string(3),
+                "filename": filename
+            })
+        export_downloaded_images_report(report_filepath, images)
+        # os.remove(report_filepath)
+
 
     def test_export_product_web_sortcode_task(self):
         """Export product price update task to file."""

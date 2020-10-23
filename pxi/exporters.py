@@ -193,6 +193,29 @@ def export_supplier_price_changes_report(filepath, price_changes, uom_errors):
     report_writer.save()
 
 
+def export_downloaded_images_report(filepath, images):
+    """Export supplier price report to file."""
+    report_writer = ReportWriter(filepath)
+
+    fields = [
+        string_field("item_code", "Item Code", 20),
+        string_field("source", "Source", 8),
+        string_field("filename", "Filename", 40),
+    ]
+
+    def rows(images):
+        for image in images:
+            inventory_item = image["inventory_item"]
+            yield {
+                "item_code": inventory_item.code,
+                "source": image["source"],
+                "filename": image["filename"],
+            }
+
+    report_writer.write_sheet("Price Changes", fields, rows(images))
+    report_writer.save()
+
+
 def contract_item_rows(price_changes):
     for price_change in price_changes:
         price_region_item = price_change.price_region_item
