@@ -3,6 +3,7 @@ import unittest
 
 from tests.exporters import ExporterTests
 from tests.importers import ImporterTests
+from tests.fetchers import FetcherTests
 from tests.operations import OperationTests
 from tests.price_calc import PriceCalcTests
 from tests.spl_update import SPLUpdateTests
@@ -11,10 +12,11 @@ from tests.web_sort import WebSortTests
 testloader = unittest.TestLoader()
 
 testcases = [
-    PriceCalcTests,
+    FetcherTests,
     ImporterTests,
     ExporterTests,
     OperationTests,
+    PriceCalcTests,
     SPLUpdateTests,
     WebSortTests,
 ]
