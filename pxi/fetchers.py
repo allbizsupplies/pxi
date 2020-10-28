@@ -87,6 +87,14 @@ class ACO(SimpleImageFetcher):
             "https://www.accobrands.com.au/pa_images/Detail/{item_code}.jpg")
 
 
+class BAN(SimpleImageFetcher):
+
+    def __init__(self):
+        super().__init__(
+            "BAN",
+            "https://hamelinbrands.com.au/products/images/{item_code}.jpg")
+
+
 class CSS(SimpleImageFetcher):
 
     def __init__(self):
