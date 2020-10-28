@@ -1,10 +1,12 @@
 from decimal import Decimal
+from progressbar import progressbar
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 from pxi.enum import ItemCondition, ItemType, WebStatus
 from pxi.exporters import (
+    export_downloaded_images_report,
     export_contract_item_task,
     export_price_changes_report,
     export_pricelist,
@@ -14,6 +16,8 @@ from pxi.exporters import (
     export_supplier_pricelist,
     export_tickets_list
 )
+from pxi.fetchers import get_fetchers
+from pxi.image_resizer import resize_image
 from pxi.importers import (
     import_contract_items,
     import_inventory_items,
@@ -23,7 +27,8 @@ from pxi.importers import (
     import_supplier_pricelist_items,
     import_warehouse_stock_items,
     import_web_sortcodes,
-    import_web_sortcode_mappings
+    import_web_sortcode_mappings,
+    import_website_images_report
 )
 from pxi.models import (
     Base,
@@ -53,6 +58,67 @@ def db_session():
 
 
 class operations:
+
+    @staticmethod
+    def fetch_images(
+        inventory_items_datagrid="data/import/inventory_items.xlsx",
+        supplier_items_datagrid="data/import/supplier_items.xlsx",
+        website_images_report="data/import/website_images_report.xlsx",
+        downloaded_images_report="data/export/downloaded_images_report.xlsx",
+        images_dir="data/export/images"
+    ):
+        session = db_session()
+        import_inventory_items(inventory_items_datagrid, session)
+        import_supplier_items(supplier_items_datagrid, session)
+        website_images = import_website_images_report(
+            website_images_report, session)
+
+        inventory_items = []
+        for website_image in website_images:
+            if website_image["filename"] is None:
+                inventory_items.append(website_image["inventory_item"])
+
+        print("Selected {} items missing website image.".format(
+            len(inventory_items)))
+
+        def download_image(fetchers, inventory_item):
+            for fetcher in fetchers:
+                image_filepath = fetcher.download_image(
+                    inventory_item, images_dir)
+                if image_filepath:
+                    return {
+                        "inventory_item": inventory_item,
+                        "source": fetcher.__class__.__name__,
+                        "filename": image_filepath
+                    }
+
+        def fetch_image(inventory_item):
+            fetchers = get_fetchers(inventory_item)
+            if len(fetchers) > 0:
+                image_data = download_image(fetchers, inventory_item)
+                if image_data:
+                    return image_data
+
+        print("Fetching images...")
+        downloaded_images = []
+        missing_images = []
+        for inventory_item in progressbar(inventory_items):
+            image = fetch_image(inventory_item)
+            if image:
+                downloaded_images.append(image)
+            else:
+                missing_images.append(inventory_item)
+        print("{} images have been downloaded.".format(len(downloaded_images)))
+        print("{} inventory items are missing images.".format(len(missing_images)))
+
+        print("Processing images...")
+        for image in progressbar(downloaded_images):
+            resize_image(image["filename"], 1000, 1000)
+
+        print("Exporting downloaded images report...")
+        export_downloaded_images_report(
+            downloaded_images_report, downloaded_images, missing_images)
+        print("Done.")
 
     @staticmethod
     def generate_spl(

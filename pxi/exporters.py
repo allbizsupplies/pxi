@@ -193,18 +193,18 @@ def export_supplier_price_changes_report(filepath, price_changes, uom_errors):
     report_writer.save()
 
 
-def export_downloaded_images_report(filepath, images):
+def export_downloaded_images_report(filepath, downloaded_images, missing_images):
     """Export supplier price report to file."""
     report_writer = ReportWriter(filepath)
 
-    fields = [
+    downloaded_images_fields = [
         string_field("item_code", "Item Code", 20),
         string_field("source", "Source", 8),
         string_field("filename", "Filename", 40),
     ]
 
-    def rows(images):
-        for image in images:
+    def downloaded_images_rows():
+        for image in downloaded_images:
             inventory_item = image["inventory_item"]
             yield {
                 "item_code": inventory_item.code,
@@ -212,7 +212,32 @@ def export_downloaded_images_report(filepath, images):
                 "filename": image["filename"],
             }
 
-    report_writer.write_sheet("Price Changes", fields, rows(images))
+    report_writer.write_sheet(
+        "Downloaded Images", downloaded_images_fields, downloaded_images_rows())
+
+    missing_images_fields = [
+        string_field("item_code", "Item Code", 20),
+        string_field("brand", "Brand", 8),
+        string_field("apn", "APN", 20),
+        string_field("description", "Description", 80),
+        string_field("suppliers", "Suppliers", 40),
+    ]
+
+    def missing_images_rows():
+        for inventory_item in missing_images:
+            supplier_codes = [
+                supplier_items.code for supplier_items in inventory_item.supplier_items]
+            yield {
+                "item_code": inventory_item.code,
+                "brand": inventory_item.brand,
+                "apn": inventory_item.apn,
+                "description": inventory_item.full_description,
+                "suppliers": (", ").join(supplier_codes)
+            }
+
+    report_writer.write_sheet(
+        "Missing Images", missing_images_fields, missing_images_rows())
+
     report_writer.save()
 
 

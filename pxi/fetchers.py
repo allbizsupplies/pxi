@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from requests import Session
+from requests.exceptions import ConnectionError
 import os
 import shutil
 import sys
@@ -7,9 +8,12 @@ from urllib.parse import urlparse
 
 
 def get_fetcher(fetcher_classname):
-    fetcher_class = getattr(sys.modules[__name__], fetcher_classname)
-    fetcher = fetcher_class()
-    return fetcher
+    try:
+        fetcher_class = getattr(sys.modules[__name__], fetcher_classname)
+        fetcher = fetcher_class()
+        return fetcher
+    except AttributeError:
+        pass
 
 
 def get_fetchers(inventory_item):
@@ -34,18 +38,23 @@ class BaseImageFetcher(ABC):
 
     def download_image(self, inventory_item, images_dir="data/images"):
         """Save image to file and return boolean value indicating success."""
+        if not os.path.exists(images_dir):
+            os.mkdir(images_dir)
         url = self.get_image_url(inventory_item)
         path = urlparse(url).path
         extension = path.split(".")[-1]
         filename = "{}.{}".format(inventory_item.code, extension)
         filepath = os.path.join(images_dir, filename)
-        res = self.session.get(url)
-        if res.status_code == 200:
-            with open(filepath, "wb") as imgfile:
-                imgfile.write(res.content)
-            # Close requests session to avoid unclosed socket warning.
-            self.session.close()
-            return filepath
+        try:
+            res = self.session.get(url)
+            if res.status_code == 200:
+                with open(filepath, "wb") as imgfile:
+                    imgfile.write(res.content)
+                # Close requests session to avoid unclosed socket warning.
+                self.session.close()
+                return filepath
+        except ConnectionError:
+            pass
 
     @ abstractmethod
     def get_image_url(self, inventory_item):
@@ -84,6 +93,14 @@ class CSS(SimpleImageFetcher):
         super().__init__(
             "CSS",
             "https://dc1240h7n7gpb.cloudfront.net/resources/static/main/image/{item_code_lowercase}.jpg")
+
+
+class JSH(SimpleImageFetcher):
+
+    def __init__(self):
+        super().__init__(
+            "JSH",
+            "https://www.jshayes.com.au/productimages/{item_code}.jpg")
 
 
 class GNS(SimpleImageFetcher):
