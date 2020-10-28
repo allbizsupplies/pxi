@@ -95,6 +95,14 @@ class CSS(SimpleImageFetcher):
             "https://dc1240h7n7gpb.cloudfront.net/resources/static/main/image/{item_code_lowercase}.jpg")
 
 
+class ELA(SimpleImageFetcher):
+
+    def __init__(self):
+        super().__init__(
+            "ELA",
+            "https://eliteagencies.com.au/wp-content/uploads/{item_code}.jpg")
+
+
 class JSH(SimpleImageFetcher):
 
     def __init__(self):
