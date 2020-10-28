@@ -1,7 +1,13 @@
 from abc import ABC, abstractmethod
-from requests import Session
 from requests.exceptions import ConnectionError
+from requests import Session
 import os
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import shutil
 import sys
 from urllib.parse import urlparse
@@ -79,6 +85,22 @@ class SimpleImageFetcher(BaseImageFetcher):
         return url
 
 
+class BrowserImageFetcher(BaseImageFetcher):
+    """Fetches images using a web browser to collect URLs."""
+
+    def __init__(self, supplier_code):
+        super().__init__(supplier_code)
+
+    def get_webdriver(self):
+        profile_path = os.path.join("chromedriver", "profile")
+        options = Options()
+        options.add_argument('user-data-dir={}'.format(profile_path))
+        options.headless = True
+        return webdriver.Chrome(
+            options=options,
+            service_log_path="/dev/null")
+
+
 class ACO(SimpleImageFetcher):
 
     def __init__(self):
@@ -133,3 +155,32 @@ class SAT(SimpleImageFetcher):
         super().__init__(
             "SAT",
             "http://webconnect.groupnews.com.au/prodlarge/{item_code}.jpg")
+
+
+class AVD(BrowserImageFetcher):
+
+    def __init__(self):
+        super().__init__("AVD")
+
+    def get_image_url(self, inventory_item):
+        supplier_item = self.get_supplier_item(inventory_item)
+        driver = self.get_webdriver()
+        search_url = "https://www.averyproducts.com.au/search?term={item_code}&content_group=product".format(
+            item_code=supplier_item.item_code)
+        driver.get(search_url)
+        url = None
+        page_title = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//h1"))
+        )
+        if "Search results" in page_title.text:
+            # Get image url from search result with matching SKU.
+            results = driver.find_elements_by_class_name("content-search__result-item")
+            for result in results:
+                sku_wrapper_element = result.find_element_by_class_name("field-prod-sku-num")
+                sku = sku_wrapper_element.text
+                if sku == supplier_item.item_code:
+                    image_wrapper_element = result.find_element_by_class_name("field-image-file")
+                    image_element = image_wrapper_element.find_element_by_tag_name("img")
+                    url = image_element.get_attribute("src")
+        driver.close()
+        return url

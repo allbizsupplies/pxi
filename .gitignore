@@ -6,3 +6,4 @@ __pycache__/
 /data/import/*
 /data/export/*
 .~lock.*
+/chromedriver
