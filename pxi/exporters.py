@@ -241,6 +241,60 @@ def export_downloaded_images_report(filepath, downloaded_images, missing_images)
     report_writer.save()
 
 
+def export_product_web_sortcode_report(filepath, updated_inventory_items, skipped_inventory_items):
+    """Export supplier price report to file."""
+    report_writer = ReportWriter(filepath)
+
+    updated_item_fields = [
+        string_field("item_code", "Item Code", 20),
+        string_field("brand", "Brand", 7),
+        string_field("apn", "APN", 20),
+        string_field("description", "Description", 80),
+        string_field("web_sortcode", "Web Sortcode", 20),
+    ]
+
+    def updated_item_rows():
+        for inventory_item in updated_inventory_items:
+            yield {
+                "item_code": inventory_item.code,
+                "brand": inventory_item.brand,
+                "apn": inventory_item.apn,
+                "description": inventory_item.full_description,
+                "web_sortcode": inventory_item.web_sortcode,
+            }
+
+    report_writer.write_sheet(
+        "Sorted Items", updated_item_fields, updated_item_rows())
+
+    skipped_item_fields = [
+        string_field("item_code", "Item Code", 20),
+        string_field("brand", "Brand", 7),
+        string_field("apn", "APN", 20),
+        string_field("description", "Description", 80),
+        string_field("reason", "Reason", 40),
+        string_field("group", "Group", 10),
+        string_field("price_rule", "Price Rule", 10),
+    ]
+
+    def skipped_item_rows():
+        for inventory_item, reason in skipped_inventory_items:
+            price_region_item = inventory_item.default_price_region_item
+            yield {
+                "item_code": inventory_item.code,
+                "brand": inventory_item.brand,
+                "apn": inventory_item.apn,
+                "description": inventory_item.full_description,
+                "reason": reason,
+                "group": inventory_item.group,
+                "price_rule": price_region_item.price_rule.code
+            }
+
+    report_writer.write_sheet(
+        "Unsorted Items", skipped_item_fields, skipped_item_rows())
+
+    report_writer.save()
+
+
 def contract_item_rows(price_changes):
     for price_change in price_changes:
         price_region_item = price_change.price_region_item
