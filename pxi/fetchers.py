@@ -149,6 +149,14 @@ class GNS(SimpleImageFetcher):
             "http://webconnect.groupnews.com.au/prodlarge/{item_code}.jpg")
 
 
+class RAS(SimpleImageFetcher):
+
+    def __init__(self):
+        super().__init__(
+            "RAS",
+            "http://www.razorstat.com.au/images/{item_code}.jpg")
+
+
 class SAT(SimpleImageFetcher):
 
     def __init__(self):
@@ -174,13 +182,17 @@ class AVD(BrowserImageFetcher):
         )
         if "Search results" in page_title.text:
             # Get image url from search result with matching SKU.
-            results = driver.find_elements_by_class_name("content-search__result-item")
+            results = driver.find_elements_by_class_name(
+                "content-search__result-item")
             for result in results:
-                sku_wrapper_element = result.find_element_by_class_name("field-prod-sku-num")
+                sku_wrapper_element = result.find_element_by_class_name(
+                    "field-prod-sku-num")
                 sku = sku_wrapper_element.text
                 if sku == supplier_item.item_code:
-                    image_wrapper_element = result.find_element_by_class_name("field-image-file")
-                    image_element = image_wrapper_element.find_element_by_tag_name("img")
+                    image_wrapper_element = result.find_element_by_class_name(
+                        "field-image-file")
+                    image_element = image_wrapper_element.find_element_by_tag_name(
+                        "img")
                     url = image_element.get_attribute("src")
         driver.close()
         return url
