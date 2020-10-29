@@ -49,6 +49,12 @@ class InventoryItem(Base):
         return "<InventoryItem(code='{}')>".format(self.code)
 
     @property
+    def default_price_region_item(self):
+        for price_region_item in self.price_region_items:
+            if price_region_item.code == "":
+                return price_region_item
+
+    @property
     def full_description(self):
         full_description = self.description_line_1
         if self.description_line_2:
