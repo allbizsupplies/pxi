@@ -11,6 +11,7 @@ from pxi.exporters import (
     export_price_changes_report,
     export_pricelist,
     export_product_price_task,
+    export_product_web_sortcode_report,
     export_product_web_sortcode_task,
     export_supplier_price_changes_report,
     export_supplier_pricelist,
@@ -253,7 +254,8 @@ class operations:
         price_rules_datagrid="data/import/price_rules.xlsx",
         pricelist_datagrid="data/import/pricelist.xlsx",
         inventory_metadata="data/import/inventory_metadata.xlsx",
-        product_web_sortcode_task="data/export/product_web_sortcode_task.txt"
+        product_web_sortcode_task="data/export/product_web_sortcode_task.txt",
+        product_web_sortcode_report="data/export/product_web_sortcode_report.xlsx"
     ):
         session = db_session()
         import_inventory_items(inventory_items_datagrid, session)
@@ -285,14 +287,22 @@ class operations:
         ))
 
         print("Sorting inventory items...")
-        updated_inventory_items = add_web_sortcodes(
+        updated_inventory_items, skipped_inventory_items = add_web_sortcodes(
             price_region_items, web_sortcode_mappings, session)
 
         print("{} inventory items have been updated with a web sortcode.".format(
             len(updated_inventory_items)
         ))
+        print("{} inventory items were skipped.".format(
+            len(skipped_inventory_items)
+        ))
 
         print("Exporting product web sortcode task...")
         export_product_web_sortcode_task(
             product_web_sortcode_task, updated_inventory_items)
+        print("Exporting product web sortcode report...")
+        export_product_web_sortcode_report(
+            product_web_sortcode_report,
+            updated_inventory_items,
+            skipped_inventory_items)
         print("Done.")

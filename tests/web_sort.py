@@ -41,7 +41,7 @@ class WebSortTests(DatabaseTestCase):
             # pylint:disable=no-member
             self.session.commit()
 
-        updated_inventory_items = add_web_sortcodes(
+        updated_inventory_items, skipped_inventory_items = add_web_sortcodes(
             price_region_items, web_sortcode_mappings, self.session)
         self.assertEqual(10, len(updated_inventory_items))
 
