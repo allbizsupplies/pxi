@@ -96,7 +96,7 @@ class ImporterTests(DatabaseTestCase):
 
     def test_import_gtin_items(self):
         """Import GTIN Items from Pronto datagrid."""
-        expected_item_count = 10
+        expected_item_count = 7
         datagrid_filepath = "tests/fixtures/gtin_items.xlsx"
         import_inventory_items(
             "tests/fixtures/inventory_items.xlsx", self.session)

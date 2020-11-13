@@ -184,12 +184,21 @@ def import_supplier_items(filepath, db_session):
 def import_gtin_items(filepath, db_session):
     print("Importing GTIN items...")
     count = 0
+    gtin_items = []
     for row in progressbar(load_rows(filepath)):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
         if not inventory_item:
             continue
+        # Ignore rows where GTIN is empty.
+        if not row["gtin"]:
+            continue
+        # Ignore duplicate rows.
+        uid = "{}--{}".format(inventory_item.code, row["gtin"])
+        if uid in gtin_items:
+            continue
+        gtin_items.append(uid)
         gtin_item = GTINItem(
             inventory_item=inventory_item,
             code=row["gtin"],
