@@ -16,7 +16,7 @@ def add_web_sortcodes(price_region_items, web_sortcode_mappings, session):
                     inventory_item,
                     "Must be manually sorted."
                 ))
-            if web_sortcode is None:
+            elif web_sortcode is None:
                 skipped_inventory_items.append((
                     inventory_item,
                     "Price rule is not mapped to a sortcode."
