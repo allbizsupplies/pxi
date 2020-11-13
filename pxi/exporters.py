@@ -241,6 +241,34 @@ def export_downloaded_images_report(filepath, downloaded_images, missing_images)
     report_writer.save()
 
 
+def export_gtin_report(filepath, inventory_items_missing_gtin, inventory_items_on_hand):
+    """Export list of inventory items to file."""
+    report_writer = ReportWriter(filepath)
+
+    missing_gtin_fields = [
+        string_field("item_code", "Item Code", 20),
+        string_field("brand", "Brand", 8),
+        string_field("apn", "APN", 20),
+        string_field("description", "Description", 80),
+    ]
+
+    def missing_gtin_rows(inventory_items):
+        for inventory_item in inventory_items:
+            yield {
+                "item_code": inventory_item.code,
+                "brand": inventory_item.brand,
+                "apn": inventory_item.apn,
+                "description": inventory_item.full_description,
+            }
+
+    report_writer.write_sheet(
+        "Missing GTIN", missing_gtin_fields, missing_gtin_rows(inventory_items_missing_gtin))
+    report_writer.write_sheet(
+        "Missing GTIN and on hand", missing_gtin_fields, missing_gtin_rows(inventory_items_on_hand))
+
+    report_writer.save()
+
+
 def export_product_web_sortcode_report(filepath, updated_inventory_items, skipped_inventory_items):
     """Export supplier price report to file."""
     report_writer = ReportWriter(filepath)
