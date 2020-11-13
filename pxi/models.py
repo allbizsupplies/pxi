@@ -224,6 +224,27 @@ class GTINItem(Base):
     def __repr__(self):
         return "<GTINItem(code='{}')>".format(self.code)
 
+    @property
+    def is_numeric_code(self):
+        try:
+            int(self.code)
+            return True
+        except ValueError:
+            pass
+        return False
+
+    @property
+    def is_barcode(self):
+        if not self.is_numeric_code:
+            return False
+        return len(self.code) >= 8 and len(self.code) <= 14
+
+    @property
+    def is_unit_barcode(self):
+        if not self.is_barcode:
+            return False
+        return self.conv_factor == 1
+
 
 class WebSortcode(Base):
     __tablename__ = "web_sortcodes"
