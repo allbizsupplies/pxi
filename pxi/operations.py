@@ -1,6 +1,6 @@
 from decimal import Decimal
 from progressbar import progressbar
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, not_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -8,6 +8,7 @@ from pxi.enum import ItemCondition, ItemType, WebStatus
 from pxi.exporters import (
     export_downloaded_images_report,
     export_contract_item_task,
+    export_gtin_report,
     export_price_changes_report,
     export_pricelist,
     export_product_price_task,
@@ -21,6 +22,7 @@ from pxi.fetchers import get_fetchers
 from pxi.image_resizer import resize_image
 from pxi.importers import (
     import_contract_items,
+    import_gtin_items,
     import_inventory_items,
     import_price_region_items,
     import_price_rules,
@@ -33,10 +35,12 @@ from pxi.importers import (
 )
 from pxi.models import (
     Base,
+    GTINItem,
     InventoryItem,
     PriceRegionItem,
     PriceRule,
-    SupplierItem
+    SupplierItem,
+    WarehouseStockItem
 )
 from pxi.price_calc import (
     recalculate_contract_prices,
@@ -48,6 +52,10 @@ from pxi.web_sort import add_web_sortcodes
 
 IGNORED_PRICE_RULES = [
     "", "MR", "MRAL", "MRCP", "MRKI", "NA", "OU", "RRP", "SH"
+]
+
+BRANDS_WITHOUT_GTIN = [
+    "ALL", "ELA", "EUR", "FNX", "LAL", "WES", "YSD"
 ]
 
 
@@ -305,4 +313,59 @@ class operations:
             product_web_sortcode_report,
             updated_inventory_items,
             skipped_inventory_items)
+        print("Done.")
+
+    @staticmethod
+    def missing_gtin(
+        inventory_items_datagrid="data/import/inventory_items.xlsx",
+        gtin_items_datagrid="data/import/gtin_items.xlsx",
+        gtin_report="data/export/gtin_report.xlsx"
+    ):
+        session = db_session()
+        import_inventory_items(inventory_items_datagrid, session)
+        import_warehouse_stock_items(inventory_items_datagrid, session)
+        import_gtin_items(gtin_items_datagrid, session)
+
+        print("Selecting inventory items without unit GTIN...")
+        # pylint:disable=no-member
+        inventory_items = session.query(InventoryItem).join(
+            InventoryItem.gtin_items
+        ).filter(
+            ~InventoryItem.brand.in_(BRANDS_WITHOUT_GTIN),
+            InventoryItem.condition != ItemCondition.DISCONTINUED,
+            InventoryItem.condition != ItemCondition.INACTIVE,
+            InventoryItem.item_type != ItemType.CROSS_REFERENCE,
+            InventoryItem.item_type != ItemType.LABOUR,
+            InventoryItem.item_type != ItemType.INDENT_ITEM,
+        ).all()
+
+        def missing_gtin(inventory_item):
+            for gtin_item in inventory_item.gtin_items:
+                if gtin_item.is_unit_barcode:
+                    return False
+            return True
+
+        inventory_items_missing_gtin = []
+        for inventory_item in progressbar(inventory_items):
+            if missing_gtin(inventory_item):
+                inventory_items_missing_gtin.append(inventory_item)
+
+        print("{} inventory items have been selected.".format(
+            len(inventory_items_missing_gtin)
+        ))
+
+        print("Selecting inventory items with stock on hand...")
+        inventory_items_on_hand = []
+        for inventory_item in progressbar(inventory_items_missing_gtin):
+            for warehouse_stock_item in inventory_item.warehouse_stock_items:
+                if warehouse_stock_item.on_hand > 0:
+                    inventory_items_on_hand.append(inventory_item)
+                    continue
+
+        print("{} of these inventory items are on hand.".format(
+            len(inventory_items_on_hand)
+        ))
+
+        print("Exporting missing GTIN report...")
+        export_gtin_report(gtin_report, inventory_items_missing_gtin, inventory_items_on_hand)
         print("Done.")

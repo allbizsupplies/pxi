@@ -24,6 +24,15 @@ class OperationTests(DatabaseTestCase):
         os.remove(supplier_price_changes_report)
         os.remove(updated_supplier_pricelist)
 
+    def test_missing_gtin(self):
+        gtin_report = "tmp/test_gtin_report.xlsx"
+        operations.missing_gtin(
+            inventory_items_datagrid="tests/fixtures/inventory_items.xlsx",
+            gtin_items_datagrid="tests/fixtures/gtin_items.xlsx",
+            gtin_report=gtin_report
+        )
+        # os.remove(gtin_report)
+
     def test_price_calc(self):
         price_changes_report = "tmp/price_changes_report.xlsx"
         pricelist = "tmp/pricelist.csv"
