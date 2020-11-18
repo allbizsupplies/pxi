@@ -125,6 +125,14 @@ class CSS(SimpleImageFetcher):
             "https://dc1240h7n7gpb.cloudfront.net/resources/static/main/image/{item_code_lowercase}.jpg")
 
 
+class DYN(SimpleImageFetcher):
+
+    def __init__(self):
+        super().__init__(
+            "DYN",
+            "https://www.ds.net.au/assets/full/{item_code}.jpg")
+
+
 class ELA(SimpleImageFetcher):
 
     def __init__(self):
