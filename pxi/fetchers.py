@@ -149,6 +149,14 @@ class JSH(SimpleImageFetcher):
             "https://www.jshayes.com.au/productimages/{item_code}.jpg")
 
 
+class LEA(SimpleImageFetcher):
+
+    def __init__(self):
+        super().__init__(
+            "LEA",
+            "https://www.leadersystems.com.au/Images/{item_code}.jpg")
+
+
 class GNS(SimpleImageFetcher):
 
     def __init__(self):
