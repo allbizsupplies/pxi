@@ -36,7 +36,7 @@ def export_pricelist(filepath, price_region_items):
             reason_code,
         ]
     rows = [price_region_item_to_row(item) for item in price_region_items]
-    with open(filepath, "w") as file:
+    with open(filepath, "w", newline="") as file:
         csv.writer(file).writerows(rows)
 
 
