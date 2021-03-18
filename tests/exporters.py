@@ -30,6 +30,13 @@ from tests.fixtures.models import (
     random_web_sortcode)
 
 
+def delete_temporary_file(filepath):
+    try:
+        os.remove(filepath)
+    except PermissionError:
+        return
+
+
 class ExporterTests(DatabaseTestCase):
 
     def setUp(self):
@@ -62,7 +69,7 @@ class ExporterTests(DatabaseTestCase):
             self.assertIn(fieldname, report_reader.fieldnames)
         data = report_reader.load()
         self.assertEqual(item_count, len(data))
-        os.remove(report_filepath)
+        delete_temporary_file(report_filepath)
 
     def test_export_pricelist(self):
         """Export price region items to Pronto pricelist import file."""
@@ -98,7 +105,7 @@ class ExporterTests(DatabaseTestCase):
                 "",
             ]
             self.assertListEqual(data, expected_data)
-        os.remove(pricelist_filepath)
+        delete_temporary_file(pricelist_filepath)
 
     def test_export_product_price_task(self):
         """Export product price update task to file."""
@@ -113,7 +120,7 @@ class ExporterTests(DatabaseTestCase):
         self.assertListEqual(csv_reader.fieldnames, expected_fieldnames)
         file.close()
         # TODO validate values in rows.
-        os.remove(task_filepath)
+        delete_temporary_file(task_filepath)
 
     def test_export_contract_item_task(self):
         """Export contract item task to file."""
@@ -129,7 +136,7 @@ class ExporterTests(DatabaseTestCase):
         self.assertListEqual(csv_reader.fieldnames, expected_fieldnames)
         file.close()
         # TODO validate values in rows.
-        os.remove(task_filepath)
+        delete_temporary_file(task_filepath)
 
     def test_export_tickets_list(self):
         """Export tickets list to file."""
@@ -147,7 +154,7 @@ class ExporterTests(DatabaseTestCase):
         for i, item_code in enumerate(item_codes):
             expected_item_code = warehouse_stock_items[i].inventory_item.code
             self.assertEqual(item_code, expected_item_code)
-        os.remove(tickets_list_filepath)
+        delete_temporary_file(tickets_list_filepath)
 
     def test_export_supplier_pricelist(self):
         """Export supplier pricelist to file."""
@@ -180,7 +187,7 @@ class ExporterTests(DatabaseTestCase):
                     expected_value, value, key
                 ))
         file.close()
-        os.remove(supplier_pricelist_filepath)
+        delete_temporary_file(supplier_pricelist_filepath)
 
     def test_export_supplier_price_changes_report(self):
         """Export supplier price updates to XLSX report."""
@@ -221,12 +228,13 @@ class ExporterTests(DatabaseTestCase):
             self.assertIn(fieldname, report_reader.fieldnames)
         data = report_reader.load()
         self.assertEqual(item_count, len(data))
-        os.remove(report_filepath)
+        delete_temporary_file(report_filepath)
 
     def test_export_downloaded_images_report(self):
         """Export downloaded images report to file."""
         report_filepath = "tmp/test_export_downloaded_images_report.xlsx"
         images = []
+        missing_images = []
         item_count = 5
         for i in range(item_count):
             inventory_item = random_inventory_item()
@@ -236,9 +244,12 @@ class ExporterTests(DatabaseTestCase):
                 "source": random_string(3),
                 "filename": filename
             })
-        export_downloaded_images_report(report_filepath, images)
+        for i in range(item_count):
+            inventory_item = random_inventory_item()
+            missing_images.append(inventory_item)
+        export_downloaded_images_report(report_filepath, images, missing_images)
         # TODO validate values in rows.
-        os.remove(report_filepath)
+        delete_temporary_file(report_filepath)
 
     def test_export_product_web_sortcode_task(self):
         """Export product price update task to file."""
@@ -263,4 +274,4 @@ class ExporterTests(DatabaseTestCase):
         self.assertListEqual(csv_reader.fieldnames, expected_fieldnames)
         file.close()
         # TODO validate values in rows.
-        os.remove(task_filepath)
+        delete_temporary_file(task_filepath)
