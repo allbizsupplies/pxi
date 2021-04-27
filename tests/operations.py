@@ -5,6 +5,13 @@ from pxi.operations import operations
 from tests import DatabaseTestCase
 
 
+def delete_temporary_file(filepath):
+    try:
+        os.remove(filepath)
+    except PermissionError:
+        return
+
+
 class OperationTests(DatabaseTestCase):
 
     def setUp(self):
@@ -21,8 +28,8 @@ class OperationTests(DatabaseTestCase):
             supplier_price_changes_report=supplier_price_changes_report,
             updated_supplier_pricelist=updated_supplier_pricelist
         )
-        os.remove(supplier_price_changes_report)
-        os.remove(updated_supplier_pricelist)
+        delete_temporary_file(supplier_price_changes_report)
+        delete_temporary_file(updated_supplier_pricelist)
 
     def test_missing_gtin(self):
         gtin_report = "tmp/test_gtin_report.xlsx"
@@ -31,7 +38,7 @@ class OperationTests(DatabaseTestCase):
             gtin_items_datagrid="tests/fixtures/gtin_items.xlsx",
             gtin_report=gtin_report
         )
-        # os.remove(gtin_report)
+        # delete_temporary_file(gtin_report)
 
     def test_price_calc(self):
         price_changes_report = "tmp/price_changes_report.xlsx"
@@ -50,19 +57,23 @@ class OperationTests(DatabaseTestCase):
             contract_item_task=contract_item_task,
             tickets_list=tickets_list
         )
-        os.remove(price_changes_report)
-        os.remove(pricelist)
-        os.remove(product_price_task)
-        os.remove(contract_item_task)
-        os.remove(tickets_list)
+        delete_temporary_file(price_changes_report)
+        delete_temporary_file(pricelist)
+        delete_temporary_file(product_price_task)
+        delete_temporary_file(contract_item_task)
+        delete_temporary_file(tickets_list)
 
-    def test_web_sort(self):
-        product_web_sortcode_task = "tmp/product_web_sortcode_task.txt"
-        operations.web_sort(
+    def test_web_update(self):
+        web_product_menu_data = "tmp/test_web_update__web_product_menu_data.txt"
+        web_data_updates_report = "tmp/test_web_update__web_data_updates_report.xlsx"
+        operations.web_update(
             inventory_items_datagrid="tests/fixtures/inventory_items.xlsx",
+            inventory_web_data_items_datagrid="tests/fixtures/inventory_web_data_items.xlsx",
             price_rules_datagrid="tests/fixtures/price_rules.xlsx",
             pricelist_datagrid="tests/fixtures/pricelist.xlsx",
             inventory_metadata="tests/fixtures/inventory_metadata.xlsx",
-            product_web_sortcode_task=product_web_sortcode_task
+            web_product_menu_data=web_product_menu_data,
+            web_data_updates_report=web_data_updates_report
         )
-        os.remove(product_web_sortcode_task)
+        delete_temporary_file(web_product_menu_data)
+        delete_temporary_file(web_data_updates_report)

@@ -27,8 +27,6 @@ class InventoryItem(Base):
     condition = Column(Enum(ItemCondition))
     created = Column(DateTime, nullable=False)
     replacement_cost = Column(Numeric(precision=15, scale=4), nullable=False)
-    web_status = Column(Enum(WebStatus))
-    web_sortcode = Column(String(4))
 
     contract_items = relationship("ContractItem",
                                   back_populates="inventory_item")
@@ -44,6 +42,10 @@ class InventoryItem(Base):
 
     gtin_items = relationship("GTINItem",
                               back_populates="inventory_item")
+
+    inventory_web_data_item = relationship("InventoryWebDataItem",
+                                           back_populates="inventory_item",
+                                           uselist=False)
 
     def __repr__(self):
         return "<InventoryItem(code='{}')>".format(self.code)
@@ -250,9 +252,40 @@ class WebSortcode(Base):
     __tablename__ = "web_sortcodes"
 
     id = Column(Integer, primary_key=True)
-    code = Column(String(4), nullable=False, unique=True)
-    name = Column(String(255), nullable=False)
+    parent_name = Column(String(255), nullable=False)
+    child_name = Column(String(255), nullable=False)
+
+    inventory_web_data_items = relationship("InventoryWebDataItem",
+                                            back_populates="web_sortcode")
+
+    @property
+    def name(self):
+        return "{}/{}".format(self.parent_name, self.child_name)
+
+    __table_args__ = (
+        UniqueConstraint("parent_name", "child_name"),
+    )
 
     def __repr__(self):
-        return "<WebSortcode(code='{}', name='{}')>".format(
-            self.code, self.name)
+        return "<WebSortcode(name='{}')>".format(self.name)
+
+
+class InventoryWebDataItem(Base):
+    __tablename__ = "inventory_web_data_items"
+
+    id = Column(Integer, primary_key=True)
+    description = Column(String(255))
+    inventory_item_id = Column(Integer,
+                               ForeignKey("inventory_items.id"), nullable=False)
+    web_sortcode_id = Column(Integer,
+                             ForeignKey("web_sortcodes.id"), nullable=True)
+
+    inventory_item = relationship("InventoryItem",
+                                  back_populates="inventory_web_data_item")
+
+    web_sortcode = relationship("WebSortcode",
+                                back_populates="inventory_web_data_items")
+
+    def __repr__(self):
+        return "<InventoryWebDataItem(item='{}')>".format(
+            self.inventory_item.code)

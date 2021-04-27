@@ -12,18 +12,18 @@ from pxi.exporters import (
     export_price_changes_report,
     export_pricelist,
     export_product_price_task,
-    export_product_web_sortcode_report,
-    export_product_web_sortcode_task,
     export_supplier_price_changes_report,
     export_supplier_pricelist,
-    export_tickets_list
+    export_tickets_list,
+    export_web_data_updates_report,
+    export_web_product_menu_data
 )
 from pxi.fetchers import get_fetchers
 from pxi.image_resizer import resize_image
 from pxi.importers import (
     import_contract_items,
     import_gtin_items,
-    import_inventory_items,
+    import_inventory_items, import_inventory_web_data_items,
     import_price_region_items,
     import_price_rules,
     import_supplier_items,
@@ -36,18 +36,19 @@ from pxi.importers import (
 from pxi.models import (
     Base,
     GTINItem,
-    InventoryItem,
+    InventoryItem, InventoryWebDataItem,
     PriceRegionItem,
     PriceRule,
     SupplierItem,
-    WarehouseStockItem
+    WarehouseStockItem,
+    WebSortcode
 )
 from pxi.price_calc import (
     recalculate_contract_prices,
     recalculate_sell_prices
 )
 from pxi.spl_update import update_supplier_items
-from pxi.web_sort import add_web_sortcodes
+from pxi.web_update import update_product_menu
 
 
 IGNORED_PRICE_RULES = [
@@ -257,62 +258,59 @@ class operations:
         print("Done.")
 
     @staticmethod
-    def web_sort(
+    def web_update(
         inventory_items_datagrid="data/import/inventory_items.xlsx",
+        inventory_web_data_items_datagrid="data/import/inventory_web_data_items.xlsx",
         price_rules_datagrid="data/import/price_rules.xlsx",
         pricelist_datagrid="data/import/pricelist.xlsx",
         inventory_metadata="data/import/inventory_metadata.xlsx",
-        product_web_sortcode_task="data/export/product_web_sortcode_task.txt",
-        product_web_sortcode_report="data/export/product_web_sortcode_report.xlsx"
+        web_product_menu_data="data/export/web_product_menu_data.csv",
+        web_data_updates_report="data/export/web_data_updates_report.xlsx"
     ):
         session = db_session()
         import_inventory_items(inventory_items_datagrid, session)
         import_price_rules(price_rules_datagrid, session)
         import_price_region_items(pricelist_datagrid, session)
         import_web_sortcodes(inventory_metadata, session)
+        import_inventory_web_data_items(inventory_web_data_items_datagrid, session)
         web_sortcode_mappings = import_web_sortcode_mappings(
-            inventory_metadata)
+            inventory_metadata,
+            session)
 
         # pylint:disable=no-member
-        price_region_items = session.query(PriceRegionItem).join(
-            PriceRegionItem.inventory_item
+        inventory_items = session.query(InventoryItem).join(
+            InventoryItem.inventory_web_data_item
         ).join(
-            PriceRegionItem.price_rule
+            InventoryItem.price_region_items
         ).filter(
             PriceRegionItem.price_rule_id.isnot(None),
             PriceRegionItem.code == "",
+            InventoryWebDataItem.web_sortcode == None,
             InventoryItem.condition != ItemCondition.DISCONTINUED,
             InventoryItem.condition != ItemCondition.INACTIVE,
             InventoryItem.item_type != ItemType.CROSS_REFERENCE,
             InventoryItem.item_type != ItemType.LABOUR,
             InventoryItem.item_type != ItemType.INDENT_ITEM,
-            InventoryItem.web_status == WebStatus.ACTIVE,
-            InventoryItem.web_sortcode == None
         ).all()
-
         print("{} inventory items selected for web sorting.".format(
-            len(price_region_items)
+            len(inventory_items)
         ))
 
-        print("Sorting inventory items...")
-        updated_inventory_items, skipped_inventory_items = add_web_sortcodes(
-            price_region_items, web_sortcode_mappings, session)
+        print("Updating web menu for inventory items...")
+        updated_inventory_items = update_product_menu(
+            inventory_items, web_sortcode_mappings, session)
 
         print("{} inventory items have been updated with a web sortcode.".format(
             len(updated_inventory_items)
         ))
-        print("{} inventory items were skipped.".format(
-            len(skipped_inventory_items)
-        ))
 
         print("Exporting product web sortcode task...")
-        export_product_web_sortcode_task(
-            product_web_sortcode_task, updated_inventory_items)
+        export_web_product_menu_data(
+            web_product_menu_data, updated_inventory_items)
         print("Exporting product web sortcode report...")
-        export_product_web_sortcode_report(
-            product_web_sortcode_report,
-            updated_inventory_items,
-            skipped_inventory_items)
+        export_web_data_updates_report(
+            web_data_updates_report,
+            updated_inventory_items)
         print("Done.")
 
     @staticmethod
@@ -367,5 +365,6 @@ class operations:
         ))
 
         print("Exporting missing GTIN report...")
-        export_gtin_report(gtin_report, inventory_items_missing_gtin, inventory_items_on_hand)
+        export_gtin_report(
+            gtin_report, inventory_items_missing_gtin, inventory_items_on_hand)
         print("Done.")

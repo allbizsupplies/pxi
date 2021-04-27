@@ -13,6 +13,7 @@ from pxi.models import (
     PriceRule,
     PriceRegionItem,
     InventoryItem,
+    InventoryWebDataItem,
     SupplierItem,
     WarehouseStockItem,
     WebSortcode)
@@ -159,7 +160,18 @@ def random_warehouse_stock_item(inventory_item):
 
 def random_web_sortcode():
     """Generate web sortcode with randomised fields."""
+    parent_name = random_string(30)
+    child_name = random_string(30)
     return WebSortcode(
-        code=random_string(4),
-        name=random_string(30)
+        parent_name=parent_name,
+        child_name=child_name,
+    )
+
+
+def random_inventory_web_data_item(inventory_item, web_sortcode):
+    """Generate inventory web data with randomised fields."""
+    return InventoryWebDataItem(
+        description=random_string(90),
+        inventory_item=inventory_item,
+        web_sortcode=web_sortcode
     )

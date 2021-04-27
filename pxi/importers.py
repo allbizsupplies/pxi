@@ -12,7 +12,7 @@ from pxi.enum import (
 from pxi.models import (
     ContractItem,
     InventoryItem,
-    GTINItem,
+    GTINItem, InventoryWebDataItem,
     PriceRegionItem,
     PriceRule,
     SupplierItem,
@@ -62,12 +62,37 @@ def import_inventory_items(filepath, db_session):
             item_type=ItemType(row["status"]),
             condition=ItemCondition(row["condition"]),
             replacement_cost=row["replacement_cost"],
-            web_status=WebStatus(row["int_flag_sales_type"]),
-            web_sortcode=row["internet_tree"]
         )
         db_session.add(inventory_item)
         count += 1
     print("{} inventory items imported.".format(count))
+
+
+def import_inventory_web_data_items(filepath, db_session):
+    print("Importing inventory web data items...")
+    count = 0
+    for row in progressbar(load_rows(filepath)):
+        inventory_item = db_session.query(InventoryItem).filter(
+            InventoryItem.code == row["stock_code"]
+        ).scalar()
+        if not inventory_item:
+            continue
+        if row["menu_name"] is None:
+            web_sortcode = None
+        else:
+            parent_name, child_name = row["menu_name"].split("/")
+            web_sortcode = db_session.query(WebSortcode).filter(
+                WebSortcode.parent_name == parent_name,
+                WebSortcode.child_name == child_name
+            ).scalar()
+        inventory_web_data_item = InventoryWebDataItem(
+            description=row["description"],
+            inventory_item=inventory_item,
+            web_sortcode=web_sortcode
+        )
+        db_session.add(inventory_web_data_item)
+        count += 1
+    print("{} inventory web data items imported.".format(count))
 
 
 def import_price_region_items(filepath, db_session):
@@ -255,20 +280,29 @@ def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
     count = 0
     for row in progressbar(load_rows(filepath, worksheet_name)):
         web_sortcode = WebSortcode(
-            code=row["sortcode"],
-            name=row["description"],
+            parent_name=row["parent_name"].strip(),
+            child_name=row["child_name"].strip(),
         )
         db_session.add(web_sortcode)
         count += 1
     print("{} web sortcodes imported.".format(count))
 
 
-def import_web_sortcode_mappings(filepath, worksheet_name="rules"):
+def import_web_sortcode_mappings(filepath, db_session, worksheet_name="rules"):
     print("Importing web sortcode mappings...")
     web_sortcode_mappings = {}
     for row in progressbar(load_rows(filepath, worksheet_name)):
         rule_code = row["rule_code"]
-        web_sortcode_mappings[rule_code] = str(row["sortcode"])
+        menu_name = row["menu_name"]
+        if menu_name and menu_name != "man":
+            parent_name, child_name = menu_name.split("/")
+            web_sortcode = db_session.query(WebSortcode).filter(
+                WebSortcode.parent_name == parent_name,
+                WebSortcode.child_name == child_name,
+            ).scalar()
+            web_sortcode_mappings[rule_code] = web_sortcode
+        else:
+            web_sortcode_mappings[rule_code] = menu_name
     print("{} web sortcode mappings imported.".format(
         len(web_sortcode_mappings)
     ))

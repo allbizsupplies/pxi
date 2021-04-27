@@ -269,8 +269,8 @@ def export_gtin_report(filepath, inventory_items_missing_gtin, inventory_items_o
     report_writer.save()
 
 
-def export_product_web_sortcode_report(filepath, updated_inventory_items, skipped_inventory_items):
-    """Export supplier price report to file."""
+def export_web_data_updates_report(filepath, web_product_menu_data_updates):
+    """Export web data updates report to file."""
     report_writer = ReportWriter(filepath)
 
     updated_item_fields = [
@@ -278,47 +278,24 @@ def export_product_web_sortcode_report(filepath, updated_inventory_items, skippe
         string_field("brand", "Brand", 7),
         string_field("apn", "APN", 20),
         string_field("description", "Description", 80),
-        string_field("web_sortcode", "Web Sortcode", 20),
+        string_field("menu_parent_name", "Menu Parent", 40),
+        string_field("menu_child_name", "Menu Child", 40),
     ]
 
     def updated_item_rows():
-        for inventory_item in updated_inventory_items:
+        for inventory_item in web_product_menu_data_updates:
+            inventory_web_data_item = inventory_item.inventory_web_data_item
             yield {
                 "item_code": inventory_item.code,
                 "brand": inventory_item.brand,
                 "apn": inventory_item.apn,
                 "description": inventory_item.full_description,
-                "web_sortcode": inventory_item.web_sortcode,
+                "menu_parent_name": inventory_web_data_item.web_sortcode.parent_name,
+                "menu_child_name": inventory_web_data_item.web_sortcode.child_name,
             }
 
     report_writer.write_sheet(
-        "Sorted Items", updated_item_fields, updated_item_rows())
-
-    skipped_item_fields = [
-        string_field("item_code", "Item Code", 20),
-        string_field("brand", "Brand", 7),
-        string_field("apn", "APN", 20),
-        string_field("description", "Description", 80),
-        string_field("reason", "Reason", 40),
-        string_field("group", "Group", 10),
-        string_field("price_rule", "Price Rule", 10),
-    ]
-
-    def skipped_item_rows():
-        for inventory_item, reason in skipped_inventory_items:
-            price_region_item = inventory_item.default_price_region_item
-            yield {
-                "item_code": inventory_item.code,
-                "brand": inventory_item.brand,
-                "apn": inventory_item.apn,
-                "description": inventory_item.full_description,
-                "reason": reason,
-                "group": inventory_item.group,
-                "price_rule": price_region_item.price_rule.code
-            }
-
-    report_writer.write_sheet(
-        "Unsorted Items", skipped_item_fields, skipped_item_rows())
+        "Product Menu Updates", updated_item_fields, updated_item_rows())
 
     report_writer.save()
 
@@ -370,23 +347,6 @@ def export_product_price_task(filepath, price_region_items):
     with open(filepath, "w") as file:
         fieldnames = ["item_code", "region"] + [
             "price_{}".format(i) for i in range(5)]
-        writer = csv.DictWriter(file, fieldnames, dialect="excel-tab")
-        writer.writeheader()
-        writer.writerows(rows)
-
-
-def export_product_web_sortcode_task(filepath, inventory_items):
-    """Export product web sortcode update task to file."""
-    def inventory_item_to_row(inventory_item):
-        return {
-            "item_code": inventory_item.code,
-            "web_active": inventory_item.web_status.value,
-            "web_sortcode": inventory_item.web_sortcode,
-        }
-    rows = [inventory_item_to_row(item) for item in inventory_items]
-
-    with open(filepath, "w") as file:
-        fieldnames = ["item_code", "web_active", "web_sortcode"]
         writer = csv.DictWriter(file, fieldnames, dialect="excel-tab")
         writer.writeheader()
         writer.writerows(rows)
@@ -468,6 +428,24 @@ def export_tickets_list(filepath, warehouse_stock_items):
     lines = ["{}\n".format(item_code) for item_code in item_codes]
     with open(filepath, "w") as file:
         file.writelines(lines)
+
+
+def export_web_product_menu_data(filepath, inventory_items):
+    """Export Pronto web menu data file."""
+    def inventory_item_to_row(inventory_item):
+        return {
+            "item_code": inventory_item.code,
+            "menu_name": inventory_item.inventory_web_data_item.web_sortcode.name
+        }
+
+    with open(filepath, "w", newline="") as file:
+        writer = csv.DictWriter(file, [
+            "item_code",
+            "menu_name",
+        ], delimiter="|", quoting=csv.QUOTE_NONE)
+        for inventory_item in inventory_items:
+            row = inventory_item_to_row(inventory_item)
+            writer.writerow(row)
 
 
 def sell_price_change(product):

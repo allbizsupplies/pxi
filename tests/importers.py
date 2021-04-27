@@ -2,6 +2,7 @@
 from pxi.importers import (
     import_contract_items,
     import_inventory_items,
+    import_inventory_web_data_items,
     import_gtin_items,
     import_price_region_items,
     import_price_rules,
@@ -15,6 +16,7 @@ from pxi.importers import (
 from pxi.models import (
     ContractItem,
     InventoryItem,
+    InventoryWebDataItem,
     GTINItem,
     PriceRegionItem,
     PriceRule,
@@ -105,6 +107,22 @@ class ImporterTests(DatabaseTestCase):
         gtin_items = self.session.query(GTINItem).all()
         self.assertEqual(len(gtin_items), expected_item_count)
 
+    def test_import_inventory_web_data_items(self):
+        """Import Inventory Web Data Items from Pronto datagrids."""
+        expected_item_count = 10
+        import_inventory_items(
+            "tests/fixtures/inventory_items.xlsx", self.session)
+        import_web_sortcodes(
+            "tests/fixtures/inventory_metadata.xlsx",
+            self.session
+        )
+        import_inventory_web_data_items(
+            "tests/fixtures/inventory_web_data_items.xlsx", self.session)
+        # pylint:disable=no-member
+        inventory_web_data_items = self.session.query(
+            InventoryWebDataItem).all()
+        self.assertEqual(len(inventory_web_data_items), expected_item_count)
+
     def test_import_web_sortcodes(self):
         """Import web sortcodes from metadata spreadsheet."""
         expected_item_count = 99
@@ -118,11 +136,15 @@ class ImporterTests(DatabaseTestCase):
 
     def test_import_web_sortcode_mappings(self):
         """Import web sortcodes from metadata spreadsheet."""
+        import_web_sortcodes(
+            "tests/fixtures/inventory_metadata.xlsx",
+            self.session
+        )
         expected_item_count = 10
         web_sortcode_mappings = import_web_sortcode_mappings(
             "tests/fixtures/inventory_metadata.xlsx",
+            self.session
         )
-        # pylint:disable=no-member
         self.assertEqual(len(web_sortcode_mappings), expected_item_count)
 
     def test_import_website_images_report(self):

@@ -3,6 +3,7 @@ from datetime import date
 from decimal import Decimal
 import os
 import pathlib
+from pxi.models import InventoryItem
 import random
 
 from pxi.enum import WebStatus
@@ -11,11 +12,12 @@ from pxi.exporters import (
     export_price_changes_report,
     export_pricelist,
     export_product_price_task,
-    export_product_web_sortcode_task,
     export_contract_item_task,
     export_supplier_pricelist,
     export_supplier_price_changes_report,
-    export_tickets_list)
+    export_tickets_list,
+    export_web_data_updates_report,
+    export_web_product_menu_data)
 from pxi.price_calc import recalculate_sell_prices
 from pxi.report import ReportReader
 from pxi.spl_update import SPL_FIELDNAMES
@@ -23,6 +25,7 @@ from tests import DatabaseTestCase
 from tests.fixtures.models import (
     random_contract,
     random_inventory_item,
+    random_inventory_web_data_item,
     random_pricelist,
     random_string,
     random_supplier_item,
@@ -247,31 +250,39 @@ class ExporterTests(DatabaseTestCase):
         for i in range(item_count):
             inventory_item = random_inventory_item()
             missing_images.append(inventory_item)
-        export_downloaded_images_report(report_filepath, images, missing_images)
+        export_downloaded_images_report(
+            report_filepath, images, missing_images)
         # TODO validate values in rows.
         delete_temporary_file(report_filepath)
 
-    def test_export_product_web_sortcode_task(self):
-        """Export product price update task to file."""
-        task_filepath = "tmp/test_product_web_sortcode_task.txt"
+    def test_export_web_product_menu_data(self):
+        """Export inventory web data to file."""
+        filepath = "tmp/test_export_web_product_menu_data.csv"
         item_count = 5
-
-        def inventory_item_with_web_sortcode():
+        inventory_items = []
+        for i in range(item_count):
             inventory_item = random_inventory_item()
-            inventory_item.web_sortcode = random_string(4)
-            inventory_item.web_status = WebStatus.ACTIVE
-            # pylint:disable=no-member
-            self.session.commit()
-            return inventory_item
-        # pylint:disable=unused-variable
-        inventory_items = [
-            inventory_item_with_web_sortcode() for i in range(item_count)]
+            web_sortcode = random_web_sortcode()
+            inventory_web_data_item = random_inventory_web_data_item(
+                inventory_item,
+                web_sortcode)
+            inventory_items.append(inventory_item)
+        export_web_product_menu_data(filepath, inventory_items)
+        delete_temporary_file(filepath)
 
-        export_product_web_sortcode_task(task_filepath, inventory_items)
-        file = open(task_filepath)
-        csv_reader = csv.DictReader(file, dialect="excel-tab")
-        expected_fieldnames = ["item_code", "web_active", "web_sortcode"]
-        self.assertListEqual(csv_reader.fieldnames, expected_fieldnames)
-        file.close()
-        # TODO validate values in rows.
-        delete_temporary_file(task_filepath)
+    def test_export_web_data_updates_report(self):
+        """Export web data updates to file."""
+        filepath = "tmp/test_export_web_data_updates_report.xlsx"
+        item_count = 5
+        inventory_items = []
+        for i in range(item_count):
+            inventory_item = random_inventory_item()
+            web_sortcode = random_web_sortcode()
+            inventory_web_data_item = random_inventory_web_data_item(
+                inventory_item,
+                web_sortcode)
+            inventory_items.append(inventory_item)
+        export_web_data_updates_report(
+            filepath,
+            inventory_items)
+        # delete_temporary_file(filepath)

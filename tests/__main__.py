@@ -7,7 +7,7 @@ from tests.fetchers import FetcherTests
 from tests.operations import OperationTests
 from tests.price_calc import PriceCalcTests
 from tests.spl_update import SPLUpdateTests
-from tests.web_sort import WebSortTests
+from tests.web_update import WebUpdateTests
 
 testloader = unittest.TestLoader()
 
@@ -18,7 +18,7 @@ testcases = [
     OperationTests,
     PriceCalcTests,
     SPLUpdateTests,
-    WebSortTests,
+    WebUpdateTests,
 ]
 
 testsuites = [
