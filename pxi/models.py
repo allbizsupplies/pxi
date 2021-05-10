@@ -22,10 +22,10 @@ class InventoryItem(Base):
     uom = Column(String(4), nullable=False)
     brand = Column(String(3))
     apn = Column(String(20))
-    group = Column(String(4), nullable=False)
+    group = Column(String(4))
     item_type = Column(Enum(ItemType), nullable=False)
     condition = Column(Enum(ItemCondition))
-    created = Column(DateTime, nullable=False)
+    created = Column(DateTime)
     replacement_cost = Column(Numeric(precision=15, scale=4), nullable=False)
 
     contract_items = relationship("ContractItem",
