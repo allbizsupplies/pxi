@@ -156,7 +156,7 @@ def recalculate_contract_prices(price_changes, db_session):
 def round_price(price_excl, tax_exempt=False):
     """Calculate rounded price."""
 
-    def round_to_step(price, step):
+    def round_to_step(price_incl, step):
         """Round the price to the nearest step"""
         remainder = price_incl % step
         rounding_amount = -(remainder)
