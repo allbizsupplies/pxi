@@ -1,7 +1,6 @@
 from decimal import Decimal
 from progressbar import progressbar
 from sqlalchemy import create_engine, not_
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 from pxi.enum import ItemCondition, ItemType, WebStatus
@@ -35,13 +34,10 @@ from pxi.importers import (
 )
 from pxi.models import (
     Base,
-    GTINItem,
-    InventoryItem, InventoryWebDataItem,
+    InventoryItem,
+    InventoryWebDataItem,
     PriceRegionItem,
     PriceRule,
-    SupplierItem,
-    WarehouseStockItem,
-    WebSortcode
 )
 from pxi.price_calc import (
     recalculate_contract_prices,
