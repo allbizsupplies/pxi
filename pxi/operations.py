@@ -71,12 +71,11 @@ class operations:
 
     @staticmethod
     def fetch_images(
-        inventory_items_datagrid="data/import/inventory_items.xlsx",
-        supplier_items_datagrid="data/import/supplier_items.xlsx",
-        website_images_report="data/import/website_images_report.xlsx",
-        downloaded_images_report="data/export/downloaded_images_report.xlsx",
-        images_dir="data/export/images"
-    ):
+            inventory_items_datagrid,
+            supplier_items_datagrid,
+            website_images_report,
+            downloaded_images_report,
+            images_dir):
         session = db_session()
         import_inventory_items(inventory_items_datagrid, session)
         import_supplier_items(supplier_items_datagrid, session)
@@ -132,11 +131,11 @@ class operations:
 
     @staticmethod
     def generate_spl(
-        inventory_items_datagrid="data/import/inventory_items.xlsx",
-        supplier_items_datagrid="data/import/supplier_items.xlsx",
-        supplier_pricelist="data/import/supplier_pricelist.csv",
-        supplier_price_changes_report="data/export/supplier_price_changes_report.xlsx",
-        updated_supplier_pricelist="data/export/supplier_pricelist.csv"
+        inventory_items_datagrid,
+        supplier_items_datagrid,
+        supplier_pricelist,
+        supplier_price_changes_report,
+        updated_supplier_pricelist
     ):
         session = db_session()
         import_inventory_items(inventory_items_datagrid, session)
@@ -168,15 +167,15 @@ class operations:
 
     @staticmethod
     def price_calc(
-        inventory_items_datagrid="data/import/inventory_items.xlsx",
-        price_rules_datagrid="data/import/price_rules.xlsx",
-        pricelist_datagrid="data/import/pricelist.xlsx",
-        contract_items_datagrid="data/import/contract_items.xlsx",
-        price_changes_report="data/export/price_changes_report.xlsx",
-        pricelist="data/export/pricelist.csv",
-        product_price_task="data/export/product_price_task.txt",
-        contract_item_task="data/export/contract_item_task.txt",
-        tickets_list="data/export/tickets_list.txt"
+        inventory_items_datagrid,
+        price_rules_datagrid,
+        pricelist_datagrid,
+        contract_items_datagrid,
+        price_changes_report,
+        pricelist,
+        product_price_task,
+        contract_item_task,
+        tickets_list
     ):
         session = db_session()
         import_inventory_items(inventory_items_datagrid, session)
@@ -259,20 +258,21 @@ class operations:
 
     @staticmethod
     def web_update(
-        inventory_items_datagrid="data/import/inventory_items.xlsx",
-        inventory_web_data_items_datagrid="data/import/inventory_web_data_items.xlsx",
-        price_rules_datagrid="data/import/price_rules.xlsx",
-        pricelist_datagrid="data/import/pricelist.xlsx",
-        inventory_metadata="data/import/inventory_metadata.xlsx",
-        web_product_menu_data="data/export/web_product_menu_data.csv",
-        web_data_updates_report="data/export/web_data_updates_report.xlsx"
+        inventory_items_datagrid,
+        inventory_web_data_items_datagrid,
+        price_rules_datagrid,
+        pricelist_datagrid,
+        inventory_metadata,
+        web_product_menu_data,
+        web_data_updates_report
     ):
         session = db_session()
         import_inventory_items(inventory_items_datagrid, session)
         import_price_rules(price_rules_datagrid, session)
         import_price_region_items(pricelist_datagrid, session)
         import_web_sortcodes(inventory_metadata, session)
-        import_inventory_web_data_items(inventory_web_data_items_datagrid, session)
+        import_inventory_web_data_items(
+            inventory_web_data_items_datagrid, session)
         web_sortcode_mappings = import_web_sortcode_mappings(
             inventory_metadata,
             session)
@@ -315,9 +315,9 @@ class operations:
 
     @staticmethod
     def missing_gtin(
-        inventory_items_datagrid="data/import/inventory_items.xlsx",
-        gtin_items_datagrid="data/import/gtin_items.xlsx",
-        gtin_report="data/export/gtin_report.xlsx"
+        inventory_items_datagrid,
+        gtin_items_datagrid,
+        gtin_report
     ):
         session = db_session()
         import_inventory_items(inventory_items_datagrid, session)
