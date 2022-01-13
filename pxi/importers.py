@@ -1,6 +1,9 @@
 import csv
-from datetime import date
-from progressbar import progressbar
+from datetime import datetime
+from hashlib import md5
+import logging
+import os
+import time
 
 from pxi.datagrid import load_rows
 from pxi.enum import (
@@ -11,8 +14,10 @@ from pxi.enum import (
     WebStatus)
 from pxi.models import (
     ContractItem,
+    File,
     InventoryItem,
-    GTINItem, InventoryWebDataItem,
+    InventoryWebDataItem,
+    GTINItem,
     PriceRegionItem,
     PriceRule,
     SupplierItem,
@@ -22,217 +27,288 @@ from pxi.spl_update import SPL_FIELDNAMES
 
 
 def import_contract_items(filepath, db_session):
-    print("Importing contract items...")
-    count = 0
+    insert_count = 0
+    update_count = 0
     for row in load_rows(filepath):
+        item_code = row["item_code"]
         inventory_item = db_session.query(InventoryItem).filter(
-            InventoryItem.code == row["item_code"]
+            InventoryItem.code == item_code
         ).scalar()
-        if not inventory_item:
-            continue
-        contract_item = ContractItem(
-            inventory_item=inventory_item,
-            code=row["contract_no"],
-            price_1=row["price_1"],
-            price_2=row["price_2"],
-            price_3=row["price_3"],
-            price_4=row["price_4"],
-            price_5=row["price_5"],
-            price_6=row["price_6"],
-        )
-        db_session.add(contract_item)
-        count += 1
-    print("{} contract items imported.".format(count))
+        if inventory_item:
+            contract_code = row["contract_no"]
+            attributes = {
+                "inventory_item": inventory_item,
+                "code": contract_code,
+                "price_1": row["price_1"],
+                "price_2": row["price_2"],
+                "price_3": row["price_3"],
+                "price_4": row["price_4"],
+                "price_5": row["price_5"],
+                "price_6": row["price_6"],
+            }
+            contract_item = db_session.query(ContractItem).filter(
+                ContractItem.code == contract_code,
+                ContractItem.inventory_item == inventory_item
+            ).scalar()
+            if contract_item:
+                update(contract_item, attributes)
+                update_count += 1
+            else:
+                db_session.add(ContractItem(**attributes))
+                insert_count += 1
+    db_session.commit()
+    logging.info(
+        f"Import ContractItem: {insert_count} inserted, {update_count} updated")
 
 
 def import_inventory_items(filepath, db_session):
-    print("Importing inventory items...")
-    count = 0
-    for row in progressbar(load_rows(filepath)):
-        inventory_item = InventoryItem(
-            code=row["item_code"],
-            description_line_1=row["item_description"],
-            description_line_2=row["description_2"],
-            description_line_3=row["description_3"],
-            uom=row["unit"],
-            brand=row["brand_manuf"],
-            apn=row["manuf_apn_no"],
-            group=row["group"],
-            created=row["creation_date"],
-            item_type=ItemType(row["status"]),
-            condition=ItemCondition(row["condition"]),
-            replacement_cost=row["replacement_cost"],
-        )
-        db_session.add(inventory_item)
-        count += 1
-    print("{} inventory items imported.".format(count))
+    insert_count = 0
+    update_count = 0
+    for row in load_rows(filepath):
+        item_code = row["item_code"]
+        inventory_item = db_session.query(InventoryItem).filter(
+            InventoryItem.code == item_code
+        ).scalar()
+        attributes = {
+            "code": row["item_code"],
+            "description_line_1": row["item_description"],
+            "description_line_2": row["description_2"],
+            "description_line_3": row["description_3"],
+            "uom": row["unit"],
+            "brand": row["brand_manuf"],
+            "apn": row["manuf_apn_no"],
+            "group": row["group"],
+            "created": row["creation_date"],
+            "item_type": ItemType(row["status"]),
+            "condition": ItemCondition(row["condition"]),
+            "replacement_cost": row["replacement_cost"],
+        }
+        if inventory_item:
+            update(inventory_item, attributes)
+            update_count += 1
+        else:
+            db_session.add(InventoryItem(**attributes))
+            insert_count += 1
+    db_session.commit()
+    logging.info(
+        f"Import InventoryItem: {insert_count} inserted, {update_count} updated")
 
 
 def import_inventory_web_data_items(filepath, db_session):
-    print("Importing inventory web data items...")
-    count = 0
-    for row in progressbar(load_rows(filepath)):
+    insert_count = 0
+    for row in load_rows(filepath):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["stock_code"]
         ).scalar()
-        if not inventory_item:
-            continue
-        if row["menu_name"] is None:
-            web_sortcode = None
-        else:
+        web_sortcode = None
+        if row["menu_name"] is not None:
             parent_name, child_name = row["menu_name"].split("/")
             web_sortcode = db_session.query(WebSortcode).filter(
                 WebSortcode.parent_name == parent_name,
                 WebSortcode.child_name == child_name
             ).scalar()
-        inventory_web_data_item = InventoryWebDataItem(
-            description=row["description"],
-            inventory_item=inventory_item,
-            web_sortcode=web_sortcode
-        )
-        db_session.add(inventory_web_data_item)
-        count += 1
-    print("{} inventory web data items imported.".format(count))
+        if inventory_item:
+            inventory_web_data_item = InventoryWebDataItem(
+                description=row["description"],
+                inventory_item=inventory_item,
+                web_sortcode=web_sortcode
+            )
+            db_session.add(inventory_web_data_item)
+            insert_count += 1
+    db_session.commit()
+    logging.info(
+        f"Import InventoryWebDataItem: {insert_count} inserted.")
 
 
 def import_price_region_items(filepath, db_session):
-    print("Importing price region items...")
-    count = 0
-    for row in progressbar(load_rows(filepath)):
+    insert_count = 0
+    update_count = 0
+    for row in load_rows(filepath):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
-        if not inventory_item:
-            continue
-        price_rule = None
-        if row["rule"]:
-            price_rule = db_session.query(PriceRule).filter(
-                PriceRule.code == row["rule"]
+        if inventory_item:
+            price_region_code = row["region"] if row["region"] else ""
+            price_rule = None
+            if row["rule"]:
+                price_rule = db_session.query(PriceRule).filter(
+                    PriceRule.code == row["rule"]
+                ).scalar()
+            attributes = {
+                "inventory_item": inventory_item,
+                "price_rule": price_rule,
+                "code": price_region_code,
+                "tax_code": TaxCode.TAXABLE if row["tax_rate"] else TaxCode.EXEMPT,
+                "quantity_1": row["pr_1_corpa_qty"],
+                "quantity_2": row["pr_2_corp_b_qty"],
+                "quantity_3": row["pr_3_corp_c_qty"],
+                "quantity_4": row["pr_4_bulk_qty"],
+                "price_0": row["w_sale_price"],
+                "price_1": row["pr_1_corpa"],
+                "price_2": row["pr_2_corp_b"],
+                "price_3": row["pr_3_corp_c"],
+                "price_4": row["pr_4_bulk"],
+                "rrp_excl_tax": row["retail_price"],
+                "rrp_incl_tax": row["rrp_inc_tax"]
+            }
+            price_region_item = db_session.query(PriceRegionItem).filter(
+                PriceRegionItem.inventory_item == inventory_item,
+                PriceRegionItem.code == price_region_code
             ).scalar()
-        price_region_item = PriceRegionItem(
-            inventory_item=inventory_item,
-            price_rule=price_rule,
-            code=row["region"] if row["region"] else "",
-            tax_code=TaxCode.TAXABLE if row["tax_rate"] else TaxCode.EXEMPT,
-            quantity_1=row["pr_1_corpa_qty"],
-            quantity_2=row["pr_2_corp_b_qty"],
-            quantity_3=row["pr_3_corp_c_qty"],
-            quantity_4=row["pr_4_bulk_qty"],
-            price_0=row["w_sale_price"],
-            price_1=row["pr_1_corpa"],
-            price_2=row["pr_2_corp_b"],
-            price_3=row["pr_3_corp_c"],
-            price_4=row["pr_4_bulk"],
-            rrp_excl_tax=row["retail_price"],
-            rrp_incl_tax=row["rrp_inc_tax"]
-        )
-        db_session.add(price_region_item)
-        count += 1
-    print("{} price region items imported.".format(count))
+            if price_region_item:
+                update(price_region_item, attributes)
+                update_count += 1
+            else:
+                db_session.add(PriceRegionItem(**attributes))
+                insert_count += 1
+    db_session.commit()
+    logging.info(
+        f"Import PriceRegionItem: {insert_count} inserted, {update_count} updated")
 
 
 def import_price_rules(filepath, db_session):
-    print("Importing price rules...")
-    count = 0
-    for row in progressbar(load_rows(filepath)):
-        price_rule = PriceRule(
-            code=row["rule"],
-            description=row["comments"],
-            price_0_basis=PriceBasis(row["price0_based_on"]),
-            price_1_basis=PriceBasis(row["price1_based_on"]),
-            price_2_basis=PriceBasis(row["price2_based_on"]),
-            price_3_basis=PriceBasis(row["price3_based_on"]),
-            price_4_basis=PriceBasis(row["price4_based_on"]),
-            rrp_excl_basis=PriceBasis(row["rec_retail_based_on"]),
-            rrp_incl_basis=PriceBasis(row["rrp_inc_tax_based_on"]),
-            price_0_factor=row["price0_factor"],
-            price_1_factor=row["price1_factor"],
-            price_2_factor=row["price2_factor"],
-            price_3_factor=row["price3_factor"],
-            price_4_factor=row["price4_factor"],
-            rrp_excl_factor=row["rec_retail_factor"],
-            rrp_incl_factor=row["rrp_inc_tax_factor"]
-        )
-        db_session.add(price_rule)
-        count += 1
-    print("{} price rules imported.".format(count))
+    insert_count = 0
+    update_count = 0
+    for row in load_rows(filepath):
+        rule_code = row["rule"]
+        price_rule = db_session.query(PriceRule).filter(
+            PriceRule.code == rule_code
+        ).scalar()
+        attributes = {
+            "code": rule_code,
+            "description": row["comments"],
+            "price_0_basis": PriceBasis(row["price0_based_on"]),
+            "price_1_basis": PriceBasis(row["price1_based_on"]),
+            "price_2_basis": PriceBasis(row["price2_based_on"]),
+            "price_3_basis": PriceBasis(row["price3_based_on"]),
+            "price_4_basis": PriceBasis(row["price4_based_on"]),
+            "rrp_excl_basis": PriceBasis(row["rec_retail_based_on"]),
+            "rrp_incl_basis": PriceBasis(row["rrp_inc_tax_based_on"]),
+            "price_0_factor": row["price0_factor"],
+            "price_1_factor": row["price1_factor"],
+            "price_2_factor": row["price2_factor"],
+            "price_3_factor": row["price3_factor"],
+            "price_4_factor": row["price4_factor"],
+            "rrp_excl_factor": row["rec_retail_factor"],
+            "rrp_incl_factor": row["rrp_inc_tax_factor"]
+        }
+        if price_rule:
+            update(price_rule, attributes)
+            update_count += 1
+        else:
+            price_rule = PriceRule(**attributes)
+            db_session.add(price_rule)
+        insert_count += 1
+    db_session.commit()
+    logging.info(
+        f"Import PriceRule: {insert_count} inserted, {update_count} updated")
 
 
 def import_warehouse_stock_items(filepath, db_session):
-    print("Importing warehouse stock items...")
-    count = 0
-    for row in progressbar(load_rows(filepath)):
+    insert_count = 0
+    update_count = 0
+    for row in load_rows(filepath):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
-        warehouse_stock_item = WarehouseStockItem(
-            inventory_item=inventory_item,
-            code=row["whse"],
-            minimum=row["minimum_stock"],
-            maximum=row["maximum_stock"],
-            on_hand=row["on_hand"],
-            bin_location=row["bin_loc"],
-            bulk_location=row["bulk_loc"]
-        )
-        db_session.add(warehouse_stock_item)
-        count += 1
-    print("{} warehouse stock items imported.".format(count))
+        if inventory_item:
+            warehouse_stock_item = db_session.query(WarehouseStockItem).filter(
+                WarehouseStockItem.inventory_item == inventory_item,
+                WarehouseStockItem.code == row["whse"]
+            ).scalar()
+            attributes = {
+                "inventory_item": inventory_item,
+                "code": row["whse"],
+                "minimum": row["minimum_stock"],
+                "maximum": row["maximum_stock"],
+                "on_hand": row["on_hand"],
+                "bin_location": row["bin_loc"],
+                "bulk_location": row["bulk_loc"],
+            }
+            if warehouse_stock_item:
+                update(warehouse_stock_item, attributes)
+                update_count += 1
+            else:
+                warehouse_stock_item = WarehouseStockItem(**attributes)
+                db_session.add(warehouse_stock_item)
+                insert_count += 1
+    db_session.commit()
+    logging.info(
+        f"Import WarehouseStockItem: {insert_count} inserted, {update_count} updated")
 
 
 def import_supplier_items(filepath, db_session):
-    print("Importing supplier items...")
-    count = 0
-    for row in progressbar(load_rows(filepath)):
+    insert_count = 0
+    update_count = 0
+    for row in load_rows(filepath):
         if not row["supplier_item"]:
             continue
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
-        if not inventory_item:
-            continue
-        supplier_item = SupplierItem(
-            inventory_item=inventory_item,
-            code=row["supplier"],
-            item_code=row["supplier_item"],
-            priority=row["priority"],
-            uom=row["unit"],
-            conv_factor=row["conv_factor"],
-            pack_quantity=row["pack_qty"],
-            moq=row["eoq"],
-            buy_price=row["current_buy_price"],
-        )
-        db_session.add(supplier_item)
-        count += 1
-    print("{} supplier items imported.".format(count))
+        supplier_code = row["supplier"]
+        if inventory_item:
+            attributes = {
+                "inventory_item": inventory_item,
+                "code": supplier_code,
+                "item_code": row["supplier_item"],
+                "priority": row["priority"],
+                "uom": row["unit"],
+                "conv_factor": row["conv_factor"],
+                "pack_quantity": row["pack_qty"],
+                "moq": row["eoq"],
+                "buy_price": row["current_buy_price"],
+            }
+            supplier_item = db_session.query(SupplierItem).filter(
+                SupplierItem.code == supplier_code,
+                SupplierItem.inventory_item == inventory_item
+            ).scalar()
+            if supplier_item:
+                update(supplier_item, attributes)
+                update_count += 1
+            else:
+                db_session.add(SupplierItem(**attributes))
+                insert_count += 1
+    db_session.commit()
+    logging.info(
+        f"Import SupplierItem: {insert_count} inserted, {update_count} updated")
 
 
 def import_gtin_items(filepath, db_session):
-    print("Importing GTIN items...")
-    count = 0
-    gtin_items = []
-    for row in progressbar(load_rows(filepath)):
+    insert_count = 0
+    update_count = 0
+    gtin_item_uids = []
+    for row in load_rows(filepath):
+        gtin_code = row["gtin"]
+        if not gtin_code:
+            continue
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
-        if not inventory_item:
-            continue
-        # Ignore rows where GTIN is empty.
-        if not row["gtin"]:
-            continue
-        # Ignore duplicate rows.
-        uid = "{}--{}".format(inventory_item.code, row["gtin"])
-        if uid in gtin_items:
-            continue
-        gtin_items.append(uid)
-        gtin_item = GTINItem(
-            inventory_item=inventory_item,
-            code=row["gtin"],
-            uom=row["uom"],
-            conv_factor=row["conversion"]
-        )
-        db_session.add(gtin_item)
-        count += 1
-    print("{} GTIN items imported.".format(count))
+        if inventory_item:
+            # Ignore duplicate rows.
+            uid = "{}--{}".format(inventory_item.code, row["gtin"])
+            if uid not in gtin_item_uids:
+                gtin_item_uids.append(uid)
+                gtin_item = db_session.query(GTINItem).filter(
+                    GTINItem.inventory_item == inventory_item,
+                    GTINItem.code == gtin_code
+                ).scalar()
+                attributes = {
+                    "inventory_item": inventory_item,
+                    "code": row["gtin"],
+                    "uom": row["uom"],
+                    "conv_factor": row["conversion"]
+                }
+                if gtin_item:
+                    update(gtin_item, attributes)
+                    update_count += 1
+                else:
+                    db_session.add(GTINItem(**attributes))
+                    insert_count += 1
+    db_session.commit()
+    logging.info(
+        f"Import GTINITem: {insert_count} inserted, {update_count} updated")
 
 
 def import_supplier_pricelist_items(filepath):
@@ -276,9 +352,8 @@ def import_supplier_pricelist_items(filepath):
 
 
 def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
-    print("Importing web sortcodes...")
     count = 0
-    for row in progressbar(load_rows(filepath, worksheet_name)):
+    for row in load_rows(filepath, worksheet_name):
         web_sortcode = WebSortcode(
             parent_name=row["parent_name"].strip(),
             child_name=row["child_name"].strip(),
@@ -291,7 +366,7 @@ def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
 def import_web_sortcode_mappings(filepath, db_session, worksheet_name="rules"):
     print("Importing web sortcode mappings...")
     web_sortcode_mappings = {}
-    for row in progressbar(load_rows(filepath, worksheet_name)):
+    for row in load_rows(filepath, worksheet_name):
         rule_code = row["rule_code"]
         menu_name = row["menu_name"]
         if menu_name and menu_name != "man":
@@ -310,8 +385,6 @@ def import_web_sortcode_mappings(filepath, db_session, worksheet_name="rules"):
 
 
 def import_website_images_report(filepath, db_session):
-    print("Importing website images report...")
-
     def get_image(row):
         for i in range(1, 5):
             filename = row["picture{}".format(i)]
@@ -319,7 +392,7 @@ def import_website_images_report(filepath, db_session):
                 return filename
 
     images_data = []
-    for row in progressbar(load_rows(filepath)):
+    for row in load_rows(filepath):
         item_code = str(row["productcode"])
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == item_code
@@ -334,3 +407,42 @@ def import_website_images_report(filepath, db_session):
         len(images_data)
     ))
     return images_data
+
+
+MODEL_IMPORTS = [
+    (InventoryItem, import_inventory_items, "inventory_items_datagrid"),
+    (WarehouseStockItem, import_warehouse_stock_items, "inventory_items_datagrid"),
+    (PriceRule, import_price_rules, "price_rules_datagrid"),
+    (PriceRegionItem, import_price_region_items, "pricelist_datagrid"),
+    (ContractItem, import_contract_items, "contract_items_datagrid"),
+]
+
+
+def update(record, attributes):
+    for key, value in attributes.items():
+        setattr(record, key, value)
+
+
+def import_data(db_session, paths, models=None, force_imports=False):
+    import_all_models = models is None
+
+    def file_has_changed(path):
+        file = db_session.query(File).filter(
+            File.path == path
+        ).scalar()
+        modified = datetime.fromtimestamp(os.path.getmtime(path))
+        if file is None:
+            file = File(
+                path=path,
+                modified=modified
+            )
+            db_session.add(file)
+        if file.modified < modified:
+            file.modified = modified
+            return True
+
+    for model, function, path_key in MODEL_IMPORTS:
+        path = paths[path_key]
+        if import_all_models or model in models:
+            if force_imports or file_has_changed(path):
+                function(path, db_session)
