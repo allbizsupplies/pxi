@@ -1,0 +1,9 @@
+openpyxl
+paramiko
+pillow
+progressbar2
+python-dotenv
+requests
+selenium
+scp
+sqlalchemy
