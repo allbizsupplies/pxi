@@ -3,7 +3,7 @@
 __pycache__/
 /tmp/
 *.pyc
-/data/import/*
-/data/export/*
+/data/*
 .~lock.*
 /chromedriver
+config.yml
