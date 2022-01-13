@@ -289,3 +289,11 @@ class InventoryWebDataItem(Base):
     def __repr__(self):
         return "<InventoryWebDataItem(item='{}')>".format(
             self.inventory_item.code)
+
+
+class File(Base):
+    __tablename__ = "files"
+
+    id = Column(Integer, primary_key=True)
+    path = Column(String(255))
+    modified = Column(DateTime)
