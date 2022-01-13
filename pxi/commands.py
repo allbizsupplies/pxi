@@ -23,6 +23,9 @@ from pxi.scp import get_scp_client
 
 
 class CommandBase:
+    """
+    Base class for commands. stores config and is callable.
+    """
 
     def __init__(self, config):
         self.config = config
@@ -31,36 +34,35 @@ class CommandBase:
     def __call__(self, **options):
         self.execute(options)
 
-    @property
-    def name_and_aliases(self):
-        return [self.__name__] + self.aliases
-
-
-class CommandError(BaseException):
-    pass
-
 
 class Commands:
+    """
+    Namespace class containing executable commands.
+    """
 
     class help(CommandBase):
-        """Displays help text."""
-
+        """
+        Displays a list of commands.
+        """
         aliases = ["h"]
 
         def execute(self, options):
-            print("\nAvailable commands:\n")
+            print()
+            print("Available commands:")
+            print()
             commands = []
             for attr_name in dir(Commands):
                 attr = getattr(Commands, attr_name)
                 if type(attr).__name__ == "type" and attr.__base__.__name__ == "CommandBase":
                     commands.append(attr)
             for command in commands:
-                print(f"{command.__name__:<24}{command.__doc__}")
+                print(f"{command.__name__:<24}{command.__doc__.strip()}")
             print()
 
     class price_calc(CommandBase):
-        """Calculate rounded prices for price region items."""
-
+        """
+        Calculates rounded prices for price region items assigned a price rule.
+        """
         aliases = ["pc"]
 
         def execute(self, options):
@@ -135,8 +137,9 @@ class Commands:
             logging.info("")
 
     class download_spl(CommandBase):
-        """Download supplier pricelist from remote server."""
-
+        """
+        Download supplier pricelist from remote server.
+        """
         aliases = ["dspl"]
 
         def execute(self, options):
@@ -147,8 +150,9 @@ class Commands:
                            self.config["paths"]["import"]["supplier_pricelist"])
 
     class upload_spl(CommandBase):
-        """Upload supplier pricelist to remote server."""
-
+        """
+        Upload supplier pricelist to remote server.
+        """
         aliases = ["uspl"]
 
         def execute(self, options):
@@ -159,8 +163,9 @@ class Commands:
                            self.config["paths"]["remote"]["supplier_pricelist_import"])
 
     class upload_pricelist(CommandBase):
-        """Upload pricelist to remote server."""
-
+        """
+        Upload pricelist to remote server.
+        """
         aliases = ["upl"]
 
         def execute(self, options):
@@ -172,7 +177,9 @@ class Commands:
 
 
 def get_command(command_name):
-    """Fetch a command given its name or alias."""
+    """
+    Fetch a command given its name or alias.
+    """
 
     def commands():
         for attr_name in dir(Commands):
@@ -180,6 +187,7 @@ def get_command(command_name):
             if type(attr).__name__ == "type" and attr.__base__.__name__ == "CommandBase":
                 yield attr
 
+    # Search for command by name and alias and return if found.
     for command in commands():
         if command_name == command.__name__ or command_name in command.aliases:
             return command
