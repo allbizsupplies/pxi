@@ -31,6 +31,10 @@ class CommandBase:
     def __call__(self, **options):
         self.execute(options)
 
+    @property
+    def name_and_aliases(self):
+        return [self.__name__] + self.aliases
+
 
 class CommandError(BaseException):
     pass
@@ -40,6 +44,8 @@ class Commands:
 
     class help(CommandBase):
         """Displays help text."""
+
+        aliases = ["h"]
 
         def execute(self, options):
             print("\nAvailable commands:\n")
@@ -54,6 +60,8 @@ class Commands:
 
     class price_calc(CommandBase):
         """Calculate rounded prices for price region items."""
+
+        aliases = ["pc"]
 
         def execute(self, options):
             force_imports = False
@@ -129,6 +137,8 @@ class Commands:
     class download_spl(CommandBase):
         """Download supplier pricelist from remote server."""
 
+        aliases = ["dspl"]
+
         def execute(self, options):
             config = self.config["ssh"]
             scp_client = get_scp_client(
@@ -138,6 +148,8 @@ class Commands:
 
     class upload_spl(CommandBase):
         """Upload supplier pricelist to remote server."""
+
+        aliases = ["uspl"]
 
         def execute(self, options):
             config = self.config["ssh"]
@@ -149,9 +161,25 @@ class Commands:
     class upload_pricelist(CommandBase):
         """Upload pricelist to remote server."""
 
+        aliases = ["upl"]
+
         def execute(self, options):
             config = self.config["ssh"]
             scp_client = get_scp_client(
                 config["hostname"], config["username"], config["password"])
             scp_client.put(self.config["paths"]["export"]["pricelist"],
                            self.config["paths"]["remote"]["pricelist"])
+
+
+def get_command(command_name):
+    """Fetch a command given its name or alias."""
+
+    def commands():
+        for attr_name in dir(Commands):
+            attr = getattr(Commands, attr_name)
+            if type(attr).__name__ == "type" and attr.__base__.__name__ == "CommandBase":
+                yield attr
+
+    for command in commands():
+        if command_name == command.__name__ or command_name in command.aliases:
+            return command

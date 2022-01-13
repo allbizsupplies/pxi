@@ -6,7 +6,7 @@ import logging
 from time import perf_counter
 import yaml
 
-from pxi.commands import Commands
+from pxi.commands import Commands, get_command
 
 # Suppress warnings.
 if not sys.warnoptions:
@@ -31,7 +31,8 @@ def main():
             format="%(asctime)s %(levelname)s: %(message)s",
             level=logging_level)
     try:
-        command = getattr(Commands, args.command)
+        command_name = args.command.replace("-", "_")
+        command = get_command(command_name)
         logging.info(f"Command: {args.command}")
         command(config)(
             force_imports=args.force_imports)
