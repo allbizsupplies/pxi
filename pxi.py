@@ -40,15 +40,18 @@ def main():
             format="%(asctime)s %(levelname)s: %(message)s",
             level=logging_level)
 
-    # Run the command if it exists; display an error if it doesn't.
+    # Allow user to write command name with hyphens in place of underscores.
     command_name = args.command.replace("-", "_")
+
+    # Run the command if it exists; display an error if it doesn't.
     command = get_command(command_name)
     if command:
-        logging.info(f"Command: {args.command}")
-        command(config)(
-            force_imports=args.force_imports)
+        print(f"pxi: {command.__name__}")
+        command(config)(force_imports=args.force_imports)
+
+        # Log the command execution time.
         duration = (perf_counter() - start_at) * 1000
-        logging.info(f"{args.command} ({int(duration)}ms)")
+        logging.info(f"Command: {command.__name__} ({int(duration)}ms)")
     else:
         print("Error: Command does not exist: " + args.command)
         logging.error("Command does not exist: " + args.command)
