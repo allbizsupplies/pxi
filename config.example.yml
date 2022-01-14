@@ -1,0 +1,95 @@
+paths:
+  # The path to the SQLite database file.
+  database: "data/sqlite.db"
+
+  # The path to the log.
+  logging: "data/log.txt"
+
+  # Paths to imported files.
+  import:
+    # Datagrids are Excel spreadsheets exported from Pronto datagrids.
+    # See README.md for instructions on how to export these files from
+    # Pronto.
+    contract_items_datagrid: "data/import/contract_items.xlsx" #
+    inventory_items_datagrid: "data/import/inventory_items.xlsx"
+    gtin_items_datagrid: "data/import/gtin_items.xlsx"
+    price_rules_datagrid: "data/import/price_rules.xlsx"
+    pricelist_datagrid: "data/import/pricelist.xlsx"
+    inventory_metadata: "data/import/inventory_metadata.xlsx"
+    supplier_items_datagrid: "data/import/supplier_items.xlsx"
+    inventory_web_data_items_datagrid: "data/import/inventory_web_data_items.xlsx"
+
+    # The Supplier pricelist is a CSV file downloaded from the Pronto server.
+    # See README.md for instructions on how to download this file.
+    supplier_pricelist: "data/import/supplier_pricelist.csv"
+
+    # TODO update this key and default filepath.
+    website_images_report: "data/import/website_images_report.xlsx"
+
+  # Paths to exported files.
+  export:
+    # Reports are XLSX files intended to be opened and viewed by the user after
+    # running a command. Export these somewhere easily accessible.
+    downloaded_images_report: "data/export/downloaded_images_report.xlsx"
+    price_changes_report: "data/export/price_changes_report.xlsx"
+    supplier_price_changes_report: "data/export/supplier_price_changes_report.xlsx"
+    gtin_report: "data/export/gtin_report.xlsx"
+    web_data_updates_report: "data/export/web_data_updates_report.xlsx"
+
+    # The tickets list is a plain text file that contains a list of codes that
+    # can be pasted into the rapid entry dialog for shelf putaway labels.
+    # See README.md for instructions on how to use this file.
+    tickets_list: "data/export/tickets_list.txt"
+
+    # pricelists are files that can be uploaded to the Pronto server to be
+    # imported using Pronto functions. See README.md for instructions on how
+    # to upload these files and import them.
+    updated_supplier_pricelist: "data/export/supplier_pricelist.csv"
+    pricelist: "data/export/pricelist.csv"
+
+    # Web product menu data contains the menu locations for products, and is
+    # imported into Pronto directly from your local machine. See README.md for
+    # instructions on how import this data.
+    web_product_menu_data: "data/export/web_product_menu_data.csv"
+
+    # Tasks are tab-delimited flat files used by Taskrunner to quickly perform
+    # data entry tasks. See README.txt for instructions on how to execute these
+    # tasks.
+    contract_item_task: "data/export/contract_item_task.txt"
+    product_price_task: "data/export/product_price_task.txt"
+
+    # The price rules JSON file is used to update the price calculator app.
+    price_rules_json: "data/export/priceRules.json"
+
+    # The images directory is used to store downloaded product images, ready
+    # to be uploaded to an e-commerce platform.
+    images_dir: "data/export/images"
+
+  # Paths to files on the Pronto server.
+  remote:
+    # The location of the supplier pricelist provided by Office Choice.
+    supplier_pricelist: "/oclimport/supplierpricelist/SPL.PRN"
+
+    # The upload destination for pricelist to be imported.
+    pricelist: "/home/PRONTO_USERNAME/pricelist.csv"
+
+    # The upload destination for supplier pricelist to be imported.
+    supplier_pricelist_import: "/home/PRONTO_USERNAME/supplier_pricelist.csv"
+
+# SSH configuration to connect to Pronto.
+ssh:
+  hostname: "pronto.example.com"
+  username: "PRONTO_USERNAME"
+  password: "PRONTO_PASSWORD"
+
+price_rules:
+  # Ignore these price rules when selecting price regions for price calculation.
+  ignore:
+    - ""
+    - "NA"
+
+bin_locations:
+  # Ignore these BINs when selecting products that need price tickets.
+  ignore:
+    - "OWNUSE"
+    - "CLEAR"
