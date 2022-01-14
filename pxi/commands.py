@@ -66,18 +66,18 @@ class Commands:
         aliases = ["pc"]
 
         def execute(self, options):
-            force_imports = False
-            if "force_imports" in options:
-                force_imports = options["force_imports"]
+
+            # Import all data related to price region items and contract items.
             import_data(self.db_session, self.config["paths"]["import"], [
                 InventoryItem,
                 WarehouseStockItem,
                 PriceRule,
                 PriceRegionItem,
                 ContractItem,
-            ], force_imports=True)
-            # Select all price region items that have a price rule and belong to
-            # an active inventory item.
+            ], force_imports=options.get("force_imports", False))
+
+            # Select all price region items that have a price rule and belong
+            # to an active inventory item.
             # pylint:disable=no-member
             price_region_items = self.db_session.query(PriceRegionItem).join(
                 PriceRegionItem.inventory_item
