@@ -44,7 +44,7 @@ class FetcherTests(DatabaseTestCase):
         supplier_item.code = "ACO"
         supplier_item.item_code = sku
         expected_filepath = os.path.join(
-            "tmp", "{}.jpg".format(inventory_item.code))
+            "tmp", f"{inventory_item.code}.jpg")
         fetchers = get_fetchers(inventory_item)
         for fetcher in fetchers:
             filepath = fetcher.download_image(inventory_item, "tmp")

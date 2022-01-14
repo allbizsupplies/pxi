@@ -55,16 +55,15 @@ def export_price_changes_report(filepath, price_changes):
     for i in range(5):
         if i > 0:
             price_change_fields.append(number_field(
-                "quantity_{}".format(i), "Quantity {}".format(i),
-                number_format="0"))
+                f"quantity_{i}", f"Quantity {i}", number_format="0"))
         price_change_fields.append(number_field(
-            "price_{}_was".format(i), "Price {} Was".format(i)))
+            f"price_{i}_was", f"Price {i} Was"))
         price_change_fields.append(number_field(
-            "price_{}_now".format(i), "Price {} Now".format(i)))
+            f"price_{i}_now", f"Price {i} Now"))
         price_change_fields.append(number_field(
-            "price_{}_diff".format(i), "Price {} Diff".format(i)))
+            f"price_{i}_diff", f"Price {i} Diff"))
         price_change_fields.append(number_field(
-            "price_{}_diff_percentage".format(i), "Price {} Diff %".format(i),
+            f"price_{i}_diff_percentage", f"Price {i} Diff %",
             number_format="0%"))
 
     def price_change_rows(price_changes):
@@ -83,20 +82,19 @@ def export_price_changes_report(filepath, price_changes):
             }
             for i in range(5):
                 if i > 0:
-                    row["quantity_{}".format(i)] = getattr(
-                        price_region_item, "quantity_{}".format(i))
-                price_now = getattr(price_region_item, "price_{}".format(i))
+                    row[f"quantity_{i}"] = getattr(
+                        price_region_item, f"quantity_{i}")
+                price_now = getattr(price_region_item, f"price_{i}")
                 price_diff = price_diffs[i]
                 price_was = price_now - price_diff
                 price_diff_percentage = None
                 if price_was > 0:
                     price_diff_percentage = (
                         price_diff / price_was).quantize(price_now)
-                row["price_{}_was".format(i)] = price_now - price_diff
-                row["price_{}_now".format(i)] = price_now
-                row["price_{}_diff".format(i)] = price_diff
-                row["price_{}_diff_percentage".format(
-                    i)] = price_diff_percentage
+                row[f"price_{i}_was"] = price_now - price_diff
+                row[f"price_{i}_now"] = price_now
+                row[f"price_{i}_diff"] = price_diff
+                row[f"price_{i}_diff_percentage"] = price_diff_percentage
             yield row
 
     report_writer.write_sheet("Price Changes", price_change_fields,
@@ -113,7 +111,7 @@ def export_price_changes_report(filepath, price_changes):
     ]
     for i in range(1, 7):
         contract_item_fields.append(number_field(
-            "price_{}".format(i), "Price {}".format(i)))
+            f"price_{i}", f"Price {i}"))
     report_writer.write_sheet("Contract Changes", contract_item_fields,
                               contract_item_rows(price_changes))
     report_writer.save()
@@ -325,8 +323,8 @@ def contract_item_rows(price_changes):
                 "retail_price_diff_percentage": price_diff_percentage,
             }
             for i in range(1, 7):
-                price = getattr(contract_item, "price_{}".format(i))
-                row["price_{}".format(i)] = price
+                price = getattr(contract_item, f"price_{i}")
+                row[f"price_{i}"] = price
             yield row
 
 
@@ -339,14 +337,14 @@ def export_product_price_task(filepath, price_region_items):
             "region": price_region_item.code,
         }
         for i in range(5):
-            fieldname = "price_{}".format(i)
+            fieldname = f"price_{i}"
             row[fieldname] = getattr(price_region_item, fieldname)
         return row
     rows = [price_region_item_to_row(item) for item in price_region_items]
 
     with open(filepath, "w") as file:
         fieldnames = ["item_code", "region"] + [
-            "price_{}".format(i) for i in range(5)]
+            f"price_{i}" for i in range(5)]
         writer = csv.DictWriter(file, fieldnames, dialect="excel-tab")
         writer.writeheader()
         writer.writerows(rows)
@@ -361,7 +359,7 @@ def export_contract_item_task(filepath, contract_items):
             "item_code": inventory_item.code,
         }
         for i in range(1, 7):
-            fieldname = "price_{}".format(i)
+            fieldname = f"price_{i}"
             row[fieldname] = getattr(contract_item, fieldname)
         return row
     rows = [contract_item_to_row(item) for item in contract_items]
@@ -369,7 +367,7 @@ def export_contract_item_task(filepath, contract_items):
     with open(filepath, "w") as file:
         fieldnames = ["contract", "item_code"]
         for i in range(1, 7):
-            fieldnames.append("price_{}".format(i))
+            fieldnames.append(f"price_{i}")
         writer = csv.DictWriter(file, fieldnames, dialect="excel-tab")
         writer.writeheader()
         writer.writerows(rows)
@@ -403,8 +401,8 @@ def export_supplier_pricelist(filepath, supplier_items):
     rows = [supplier_item_to_row(item) for item in supplier_items]
 
     if len(duplicate_supplier_pricelist_items) > 0:
-        print("  Warning: {} exported records will be overridden on import.".format(
-            len(duplicate_supplier_pricelist_items)))
+        print(f"  Warning: {len(duplicate_supplier_pricelist_items)}"
+              f" exported records will be overridden on import.")
 
     with open(filepath, "w") as file:
         fieldnames = SPL_FIELDNAMES
@@ -425,7 +423,7 @@ def export_tickets_list(filepath, warehouse_stock_items):
                 yield item_code
 
     item_codes = stocked_item_codes(warehouse_stock_items)
-    lines = ["{}\n".format(item_code) for item_code in item_codes]
+    lines = [f"{item_code}\n" for item_code in item_codes]
     with open(filepath, "w") as file:
         file.writelines(lines)
 

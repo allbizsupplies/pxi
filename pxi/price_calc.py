@@ -75,8 +75,8 @@ def apply_price_rule(price_region_item):
     price_diffs = []
     price_has_changed = False
     for i in range(5):
-        basis = getattr(price_rule, "price_{}_basis".format(i))
-        factor = getattr(price_rule, "price_{}_factor".format(i))
+        basis = getattr(price_rule, f"price_{i}_basis")
+        factor = getattr(price_rule, f"price_{i}_factor")
         base_price = None
         if basis == PriceBasis.REPLACEMENT_COST:
             base_price = inventory_item.replacement_cost
@@ -95,19 +95,17 @@ def apply_price_rule(price_region_item):
         elif basis == PriceBasis.EXISTING_PRICE_4:
             base_price = price_region_item.price_4
         if base_price is None:
-            raise Exception("no base price for {}, {}".format(
-                inventory_item,
-                price_region_item
-            ))
+            raise Exception(
+                f"no base price for {inventory_item}, {price_region_item}")
         price = base_price * factor
         tax_exempt = price_region_item.tax_code == TaxCode.EXEMPT
         rounded_price = round_price(price, tax_exempt=tax_exempt)
-        price_was = getattr(price_region_item, "price_{}".format(i))
+        price_was = getattr(price_region_item, f"price_{i}")
         price_diff = rounded_price - price_was
         if abs(price_diff) >= Decimal("0.005"):
             price_has_changed = True
         price_diffs.append(price_diff)
-        setattr(price_region_item, "price_{}".format(i), rounded_price)
+        setattr(price_region_item, f"price_{i}", rounded_price)
     if price_has_changed:
         return PriceChange(price_region_item, price_diffs)
 
@@ -127,7 +125,7 @@ def recalculate_contract_prices(price_changes, db_session):
 
     def multiply_prices(contract_item, price_ratio):
         for i in range(1, 7):
-            price_field = "price_{}".format(i)
+            price_field = f"price_{i}"
             price_was = getattr(contract_item, price_field)
             price_now = (price_was * price_ratio).quantize(price_was)
             setattr(contract_item, price_field, price_now)

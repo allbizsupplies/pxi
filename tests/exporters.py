@@ -58,15 +58,15 @@ class ExporterTests(DatabaseTestCase):
         fieldnames = [
             "item_code", "region", "brand", "apn", "description", "price_rule",
         ] + [
-            "price_{}_was".format(i) for i in range(5)
+            f"price_{i}_was" for i in range(5)
         ] + [
-            "price_{}_now".format(i) for i in range(5)
+            f"price_{i}_now" for i in range(5)
         ] + [
-            "price_{}_diff".format(i) for i in range(5)
+            f"price_{i}_diff" for i in range(5)
         ] + [
-            "price_{}_diff_%".format(i) for i in range(5)
+            f"price_{i}_diff_%" for i in range(5)
         ] + [
-            "quantity_{}".format(i) for i in range(1, 5)
+            f"quantity_{i}" for i in range(1, 5)
         ]
         for fieldname in fieldnames:
             self.assertIn(fieldname, report_reader.fieldnames)
@@ -119,7 +119,7 @@ class ExporterTests(DatabaseTestCase):
         file = open(task_filepath)
         csv_reader = csv.DictReader(file, dialect="excel-tab")
         expected_fieldnames = ["item_code", "region"] + [
-            "price_{}".format(i) for i in range(5)]
+            f"price_{i}" for i in range(5)]
         self.assertListEqual(csv_reader.fieldnames, expected_fieldnames)
         file.close()
         # TODO validate values in rows.
@@ -135,7 +135,7 @@ class ExporterTests(DatabaseTestCase):
         csv_reader = csv.DictReader(file, dialect="excel-tab")
         expected_fieldnames = ["contract", "item_code"]
         for i in range(1, 7):
-            expected_fieldnames.append("price_{}".format(i))
+            expected_fieldnames.append(f"price_{i}")
         self.assertListEqual(csv_reader.fieldnames, expected_fieldnames)
         file.close()
         # TODO validate values in rows.
@@ -186,9 +186,8 @@ class ExporterTests(DatabaseTestCase):
             }
             for key, expected_value in expected_item_values.items():
                 value = supplier_pricelist_item[key]
-                self.assertEqual(expected_value, value, "'{}' != '{}' for key: {}".format(
-                    expected_value, value, key
-                ))
+                self.assertEqual(
+                    expected_value, value, f"'{expected_value}' != '{value}' for key: {key}")
         file.close()
         delete_temporary_file(supplier_pricelist_filepath)
 
@@ -241,7 +240,7 @@ class ExporterTests(DatabaseTestCase):
         item_count = 5
         for i in range(item_count):
             inventory_item = random_inventory_item()
-            filename = "{}.jpg".format(inventory_item.code) if i > 0 else None
+            filename = f"{inventory_item.code}.jpg" if i > 0 else None
             images.append({
                 "inventory_item": inventory_item,
                 "source": random_string(3),

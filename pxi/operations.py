@@ -83,8 +83,7 @@ class operations:
             if website_image["filename"] is None:
                 inventory_items.append(website_image["inventory_item"])
 
-        print("Selected {} items missing website image.".format(
-            len(inventory_items)))
+        print(f"Selected {len(inventory_items)} items missing website image.")
 
         def download_image(fetchers, inventory_item):
             for fetcher in fetchers:
@@ -113,8 +112,8 @@ class operations:
                 downloaded_images.append(image)
             else:
                 missing_images.append(inventory_item)
-        print("{} images have been downloaded.".format(len(downloaded_images)))
-        print("{} inventory items are missing images.".format(len(missing_images)))
+        print(f"{len(downloaded_images)} images have been downloaded.")
+        print(f"{len(missing_images)} inventory items are missing images.")
 
         print("Processing images...")
         for image in progressbar(downloaded_images):
@@ -125,7 +124,7 @@ class operations:
             downloaded_images_report, downloaded_images, missing_images)
         print("Done.")
 
-    @staticmethod
+    @ staticmethod
     def generate_spl(
         inventory_items_datagrid,
         supplier_items_datagrid,
@@ -145,13 +144,9 @@ class operations:
         updated_supplier_items = [
             price_change["supplier_item"] for price_change in supplier_price_changes
         ]
-        print("{} supplier items have been updated.".format(
-            len(updated_supplier_items)
-        ))
+        print(f"{len(updated_supplier_items)} supplier items have been updated.")
         if len(uom_errors) > 0:
-            print("{} supplier items have UOM errors.".format(
-                len(uom_errors)
-            ))
+            print(f"{len(uom_errors)} supplier items have UOM errors.")
 
         print("Exporting supplier price changes report...")
         export_supplier_price_changes_report(
@@ -161,7 +156,7 @@ class operations:
             updated_supplier_pricelist, updated_supplier_items)
         print("Done.")
 
-    @staticmethod
+    @ staticmethod
     def price_calc(
         inventory_items_datagrid,
         price_rules_datagrid,
@@ -195,24 +190,20 @@ class operations:
             InventoryItem.item_type != ItemType.INDENT_ITEM
         ).all()
 
-        print("{} price region items selected for price calculation.".format(
-            len(price_region_items)
-        ))
+        print(f"{len(price_region_items)} price region items"
+              f" selected for price calculation.")
 
         print("Recalculating sell prices...")
         price_changes = recalculate_sell_prices(price_region_items, session)
         updated_price_region_items = [
             price_change.price_region_item for price_change in price_changes
         ]
-        print("{} price region items have been updated.".format(
-            len(updated_price_region_items)
-        ))
+        print(
+            f"{len(updated_price_region_items)} price region items have been updated.")
         print("Recalculating contract prices...")
         updated_contract_items = recalculate_contract_prices(
             price_changes, session)
-        print("{} contract items have been updated.".format(
-            len(updated_contract_items)
-        ))
+        print(f"{len(updated_contract_items)} contract items have been updated.")
 
         def updated_default_price_regions():
             for price_change in price_changes:
@@ -252,7 +243,7 @@ class operations:
             tickets_list, warehouse_stock_items_needing_tickets())
         print("Done.")
 
-    @staticmethod
+    @ staticmethod
     def web_update(
         inventory_items_datagrid,
         inventory_web_data_items_datagrid,
@@ -288,17 +279,14 @@ class operations:
             InventoryItem.item_type != ItemType.LABOUR,
             InventoryItem.item_type != ItemType.INDENT_ITEM,
         ).all()
-        print("{} inventory items selected for web sorting.".format(
-            len(inventory_items)
-        ))
+        print(f"{len(inventory_items)} inventory items selected for web sorting.")
 
         print("Updating web menu for inventory items...")
         updated_inventory_items = update_product_menu(
             inventory_items, web_sortcode_mappings, session)
 
-        print("{} inventory items have been updated with a web sortcode.".format(
-            len(updated_inventory_items)
-        ))
+        print(
+            f"{len(updated_inventory_items)} inventory items have been updated with a web sortcode.")
 
         print("Exporting product web sortcode task...")
         export_web_product_menu_data(
@@ -309,7 +297,7 @@ class operations:
             updated_inventory_items)
         print("Done.")
 
-    @staticmethod
+    @ staticmethod
     def missing_gtin(
         inventory_items_datagrid,
         gtin_items_datagrid,
@@ -344,9 +332,8 @@ class operations:
             if missing_gtin(inventory_item):
                 inventory_items_missing_gtin.append(inventory_item)
 
-        print("{} inventory items have been selected.".format(
-            len(inventory_items_missing_gtin)
-        ))
+        print(
+            f"{len(inventory_items_missing_gtin)} inventory items have been selected.")
 
         print("Selecting inventory items with stock on hand...")
         inventory_items_on_hand = []
@@ -356,9 +343,7 @@ class operations:
                     inventory_items_on_hand.append(inventory_item)
                     continue
 
-        print("{} of these inventory items are on hand.".format(
-            len(inventory_items_on_hand)
-        ))
+        print(f"{len(inventory_items_on_hand)} of these inventory items are on hand.")
 
         print("Exporting missing GTIN report...")
         export_gtin_report(

@@ -49,7 +49,7 @@ class BaseImageFetcher(ABC):
         url = self.get_image_url(inventory_item)
         path = urlparse(url).path
         extension = path.split(".")[-1]
-        filename = "{}.{}".format(inventory_item.code, extension)
+        filename = f"{inventory_item.code}.{extension}"
         filepath = os.path.join(images_dir, filename)
         try:
             res = self.session.get(url)
@@ -80,8 +80,7 @@ class SimpleImageFetcher(BaseImageFetcher):
             return
         url = self.template.format(
             item_code=supplier_item.item_code,
-            item_code_lowercase=supplier_item.item_code.lower()
-        )
+            item_code_lowercase=supplier_item.item_code.lower())
         return url
 
 

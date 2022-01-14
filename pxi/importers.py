@@ -287,7 +287,7 @@ def import_gtin_items(filepath, db_session):
         ).scalar()
         if inventory_item:
             # Ignore duplicate rows.
-            uid = "{}--{}".format(inventory_item.code, row["gtin"])
+            uid = f"{inventory_item.code}--{row['gtin']}"
             if uid not in gtin_item_uids:
                 gtin_item_uids.append(uid)
                 gtin_item = db_session.query(GTINItem).filter(
@@ -340,14 +340,12 @@ def import_supplier_pricelist_items(filepath):
             supplier_pricelist_items_flattened.append(row)
     # Report warnings.
     if invalid_record_count > 0:
-        print("  Warning: {} invalid records were skipped.".format(
-            invalid_record_count))
+        print(f"  Warning: {invalid_record_count}"
+              f" invalid records were skipped.")
     if overridden_supplier_items_count > 0:
-        print("  Warning: {} records were overridden.".format(
-            overridden_supplier_items_count))
-    print("{} supplier pricelist items imported.".format(len(
-        supplier_pricelist_items
-    )))
+        print(f"  Warning: {overridden_supplier_items_count}"
+              f" records were overridden.")
+    print(f"{len(supplier_pricelist_items)} supplier pricelist items imported.")
     return supplier_pricelist_items_flattened
 
 
@@ -360,7 +358,7 @@ def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
         )
         db_session.add(web_sortcode)
         count += 1
-    print("{} web sortcodes imported.".format(count))
+    print(f"{count} web sortcodes imported.")
 
 
 def import_web_sortcode_mappings(filepath, db_session, worksheet_name="rules"):
@@ -378,16 +376,14 @@ def import_web_sortcode_mappings(filepath, db_session, worksheet_name="rules"):
             web_sortcode_mappings[rule_code] = web_sortcode
         else:
             web_sortcode_mappings[rule_code] = menu_name
-    print("{} web sortcode mappings imported.".format(
-        len(web_sortcode_mappings)
-    ))
+    print(f"{len(web_sortcode_mappings)} web sortcode mappings imported.")
     return web_sortcode_mappings
 
 
 def import_website_images_report(filepath, db_session):
     def get_image(row):
         for i in range(1, 5):
-            filename = row["picture{}".format(i)]
+            filename = row[f"picture{i}"]
             if filename:
                 return filename
 
@@ -403,9 +399,7 @@ def import_website_images_report(filepath, db_session):
             "inventory_item": inventory_item,
             "filename": get_image(row)
         })
-    print("website image data imported for {} items.".format(
-        len(images_data)
-    ))
+    print(f"website image data imported for {len(images_data)} items.")
     return images_data
 
 

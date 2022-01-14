@@ -48,7 +48,7 @@ class InventoryItem(Base):
                                            uselist=False)
 
     def __repr__(self):
-        return "<InventoryItem(code='{}')>".format(self.code)
+        return f"<InventoryItem(code='{self.code}')>"
 
     @property
     def default_price_region_item(self):
@@ -91,7 +91,7 @@ class PriceRule(Base):
                                       back_populates="price_rule")
 
     def __repr__(self):
-        return "<PriceRule(code='{}')>".format(self.code)
+        return f"<PriceRule(code='{self.code}')>"
 
 
 class PriceRegionItem(Base):
@@ -126,8 +126,8 @@ class PriceRegionItem(Base):
                               back_populates="price_region_items")
 
     def __repr__(self):
-        return "<PriceRegionItem(code='{}', inventory_item='{}')>".format(
-            self.code, self.inventory_item.code)
+        return (f"<PriceRegionItem(code='{self.code}',"
+                f" inventory_item='{self.inventory_item.code}')>")
 
 
 class ContractItem(Base):
@@ -152,7 +152,7 @@ class ContractItem(Base):
                                   back_populates="contract_items")
 
     def __repr__(self):
-        return "<ContractItem(code='{}')>".format(self.code)
+        return f"<ContractItem(code='{self.code}')>"
 
 
 class WarehouseStockItem(Base):
@@ -176,7 +176,7 @@ class WarehouseStockItem(Base):
                                   back_populates="warehouse_stock_items")
 
     def __repr__(self):
-        return "<WarehouseStockItem(code='{}')>".format(self.code)
+        return f"<WarehouseStockItem(code='{self.code}')>"
 
 
 class SupplierItem(Base):
@@ -202,8 +202,9 @@ class SupplierItem(Base):
                                   back_populates="supplier_items")
 
     def __repr__(self):
-        return "<SupplierItem(code='{}', item_code='{}', inventory_item.code='{}')>".format(
-            self.code, self.item_code, self.inventory_item.code)
+        return (f"<SupplierItem(code='{self.code}',"
+                f" item_code='{self.item_code}',"
+                f" inventory_item.code='{self.inventory_item.code}')>")
 
 
 class GTINItem(Base):
@@ -224,7 +225,7 @@ class GTINItem(Base):
                                   back_populates="gtin_items")
 
     def __repr__(self):
-        return "<GTINItem(code='{}')>".format(self.code)
+        return f"<GTINItem(code='{self.code}')>"
 
     @property
     def is_numeric_code(self):
@@ -260,14 +261,14 @@ class WebSortcode(Base):
 
     @property
     def name(self):
-        return "{}/{}".format(self.parent_name, self.child_name)
+        return f"{self.parent_name}/{self.child_name}"
 
     __table_args__ = (
         UniqueConstraint("parent_name", "child_name"),
     )
 
     def __repr__(self):
-        return "<WebSortcode(name='{}')>".format(self.name)
+        return f"<WebSortcode(name='{self.name}')>"
 
 
 class InventoryWebDataItem(Base):
@@ -287,8 +288,7 @@ class InventoryWebDataItem(Base):
                                 back_populates="inventory_web_data_items")
 
     def __repr__(self):
-        return "<InventoryWebDataItem(item='{}')>".format(
-            self.inventory_item.code)
+        return f"<InventoryWebDataItem(item='{self.inventory_item.code}')>"
 
 
 class File(Base):
