@@ -403,12 +403,37 @@ def import_website_images_report(filepath, db_session):
     return images_data
 
 
+# import functions and files for each model.
+# Each item in the list is a tuplc containing the following values:
+# - The model class.
+# - The import function.
+# - The name of the import file in the config.
 MODEL_IMPORTS = [
-    (InventoryItem, import_inventory_items, "inventory_items_datagrid"),
-    (WarehouseStockItem, import_warehouse_stock_items, "inventory_items_datagrid"),
-    (PriceRule, import_price_rules, "price_rules_datagrid"),
-    (PriceRegionItem, import_price_region_items, "pricelist_datagrid"),
-    (ContractItem, import_contract_items, "contract_items_datagrid"),
+    (
+        InventoryItem,
+        import_inventory_items,
+        "inventory_items_datagrid"
+    ),
+    (
+        WarehouseStockItem,
+        import_warehouse_stock_items,
+        "inventory_items_datagrid"
+    ),
+    (
+        PriceRule,
+        import_price_rules,
+        "price_rules_datagrid"
+    ),
+    (
+        PriceRegionItem,
+        import_price_region_items,
+        "pricelist_datagrid"
+    ),
+    (
+        ContractItem,
+        import_contract_items,
+        "contract_items_datagrid"
+    ),
 ]
 
 
@@ -428,8 +453,7 @@ def import_data(db_session, paths, models=None, force_imports=False):
         if file is None:
             file = File(
                 path=path,
-                modified=modified
-            )
+                modified=modified)
             db_session.add(file)
         if file.modified < modified:
             file.modified = modified
