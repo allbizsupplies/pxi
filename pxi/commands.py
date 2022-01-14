@@ -50,13 +50,9 @@ class Commands:
             print()
             print("Available commands:")
             print()
-            commands = []
-            for attr_name in dir(Commands):
-                attr = getattr(Commands, attr_name)
-                if type(attr).__name__ == "type" and attr.__base__.__name__ == "CommandBase":
-                    commands.append(attr)
-            for command in commands:
-                print(f"{command.__name__:<24}{command.__doc__.strip()}")
+            for command in commands():
+                print(f"{command.__name__:<24}"
+                      f"{command.__doc__.strip()}")
             print()
 
     class price_calc(CommandBase):
@@ -176,18 +172,20 @@ class Commands:
                            self.config["paths"]["remote"]["pricelist"])
 
 
+def commands():
+    """
+    Generates a list of commands.
+    """
+    for attr_name in dir(Commands):
+        attr = getattr(Commands, attr_name)
+        if type(attr).__name__ == "type" and attr.__base__.__name__ == "CommandBase":
+            yield attr
+
+
 def get_command(command_name):
     """
     Fetch a command given its name or alias.
     """
-
-    def commands():
-        for attr_name in dir(Commands):
-            attr = getattr(Commands, attr_name)
-            if type(attr).__name__ == "type" and attr.__base__.__name__ == "CommandBase":
-                yield attr
-
-    # Search for command by name and alias and return if found.
     for command in commands():
         if command_name == command.__name__ or command_name in command.aliases:
             return command
