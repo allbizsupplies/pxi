@@ -34,6 +34,9 @@ def get_mock_config():
 class CommandTests(DatabaseTestCase):
 
     def test_commands_generator(self):
+        """
+        Generates a list of command classes.
+        """
         expected_commands = [
             Commands.download_spl,
             Commands.help,
@@ -47,6 +50,9 @@ class CommandTests(DatabaseTestCase):
             expected_commands)
 
     def test_get_command(self):
+        """
+        Gets a command given its class name or one of its aliases.
+        """
         fixtures = [
             ("download_spl", Commands.download_spl),
             ("download-spl", Commands.download_spl),
@@ -68,12 +74,18 @@ class CommandTests(DatabaseTestCase):
             self.assertEqual(expected_command, get_command(command_name))
 
     def test_command_help(self):
+        """
+        Prints a list of commands.
+        """
         mock_config = get_mock_config()
         command = Commands.help(mock_config)
         command()
 
     @patch("pxi.commands.get_scp_client")
     def test_command_download_spl(self, mock_get_scp_client):
+        """
+        download_spl command downloads supplier pricelist usingn SCP.
+        """
         mock_config = get_mock_config()
         mock_scp_client = MagicMock()
         mock_get_scp_client.return_value = mock_scp_client
@@ -85,6 +97,9 @@ class CommandTests(DatabaseTestCase):
 
     @patch("pxi.commands.get_scp_client")
     def test_command_upload_spl(self, mock_get_scp_client):
+        """
+        download_spl command uploads supplier pricelist usingn SCP.
+        """
         mock_config = get_mock_config()
         mock_scp_client = MagicMock()
         mock_get_scp_client.return_value = mock_scp_client
@@ -96,6 +111,9 @@ class CommandTests(DatabaseTestCase):
 
     @patch("pxi.commands.get_scp_client")
     def test_command_upload_pricelist(self, mock_get_scp_client):
+        """
+        download_spl command uploads pricelist usingn SCP.
+        """
         mock_config = get_mock_config()
         mock_scp_client = MagicMock()
         mock_get_scp_client.return_value = mock_scp_client
