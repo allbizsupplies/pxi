@@ -40,11 +40,8 @@ def main():
             format="%(asctime)s %(levelname)s: %(message)s",
             level=logging_level)
 
-    # Allow user to write command name with hyphens in place of underscores.
-    command_name = args.command.replace("-", "_")
-
     # Run the command if it exists; display an error if it doesn't.
-    command = get_command(command_name)
+    command = get_command(args.command)
     if command:
         print(f"pxi: {command.__name__}")
         command(config)(force_imports=args.force_imports)

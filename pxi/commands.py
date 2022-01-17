@@ -186,6 +186,10 @@ def get_command(command_name):
     """
     Fetch a command given its name or alias.
     """
+    # Accept hyphens in place of underscores.
+    command_name = command_name.replace("-", "_")
+
+    # Search for command by both class name and aliases attribute.
     for command in commands():
         if command_name == command.__name__ or command_name in command.aliases:
             return command
