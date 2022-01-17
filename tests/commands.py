@@ -2,7 +2,7 @@
 from unittest.mock import MagicMock, patch
 
 from tests import DatabaseTestCase
-from pxi.commands import Commands, get_command
+from pxi.commands import Commands, commands, get_command
 
 
 def get_mock_config():
@@ -32,6 +32,19 @@ def get_mock_config():
 
 
 class CommandTests(DatabaseTestCase):
+
+    def test_commands_generator(self):
+        expected_commands = [
+            Commands.download_spl,
+            Commands.help,
+            Commands.price_calc,
+            Commands.upload_pricelist,
+            Commands.upload_spl,
+        ]
+
+        self.assertEqual(
+            list(commands()),
+            expected_commands)
 
     def test_get_command(self):
         fixtures = [
