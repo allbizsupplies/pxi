@@ -96,41 +96,72 @@ class Commands:
             updated_contract_items = recalculate_contract_prices(
                 price_changes, self.db_session)
 
-            def updated_default_price_regions():
-                for price_change in price_changes:
-                    price_region_item = price_change.price_region_item
-                    in_default_price_region = price_region_item.code != ""
-                    price_has_changed = price_change.price_diffs[0] < Decimal(
-                        "0.005")
-                    if in_default_price_region and price_has_changed:
-                        yield price_region_item
+            # Select all price regions where the retail price has changed by
+            # At least one cent.
+            updated_default_price_regions = []
+            for price_change in price_changes:
+                price_region_item = price_change.price_region_item
+                in_default_price_region = price_region_item.code != ""
+                retail_price_diff = price_change.price_diffs[0]
+                price_has_changed = retail_price_diff < Decimal("0.005")
+                if in_default_price_region and price_has_changed:
+                    updated_default_price_regions.append(price_region_item)
 
-            def ticketed_warehouse_stock_items():
-                for price_region_item in updated_default_price_regions():
-                    inventory_item = price_region_item.inventory_item
-                    warehouse_stock_items = inventory_item.warehouse_stock_items
-                    for warehouse_stock_item in warehouse_stock_items:
-                        if warehouse_stock_item.on_hand > 0:
-                            yield warehouse_stock_item
-                        elif warehouse_stock_item.minimum > 0:
-                            yield warehouse_stock_item
-                        elif warehouse_stock_item.bin_location:
-                            ignored_bin_locations = self.config["bin_locations"]["ignore"]
-                            if warehouse_stock_item.bin_location not in ignored_bin_locations:
-                                yield warehouse_stock_item
+            # Select all warehouse stock items that belong to an inventory item
+            # with an updated default price region, and meet one of the
+            # following criteria:
+            # - The warehouse has stock on hand for this item.
+            # - The warehouse has a minimum order quantity for this item.
+            # - The warehouse has a BIN location for this item and the BIN is
+            #   not on the ignore list.
+            ticketed_whse_stock_items = []
+            for price_region_item in updated_default_price_regions:
+                inv_item = price_region_item.inventory_item
+                whse_stock_items = inv_item.warehouse_stock_items
+                for whse_stock_item in whse_stock_items:
+                    if whse_stock_item.on_hand > 0:
+                        ticketed_whse_stock_items.append(
+                            whse_stock_item)
+                    elif whse_stock_item.minimum > 0:
+                        ticketed_whse_stock_items.append(
+                            whse_stock_item)
+                    elif whse_stock_item.bin_location:
+                        ignored_bins = self.config["bin_locations"]["ignore"]
+                        if whse_stock_item.bin_location not in ignored_bins:
+                            ticketed_whse_stock_items.append(
+                                whse_stock_item)
 
+            # Export reports and data files:
+            # - Price changes report
+            # - Pronto-format pricelist
+            # - Taskrunner data files for these tasks:
+            #   - update_product_price
+            #   - update_contract_item
+            # - Tickets list (a plain text list of item codes)
             export_paths = self.config["paths"]["export"]
             export_price_changes_report(
-                export_paths["price_changes_report"], price_changes)
+                export_paths["price_changes_report"],
+                price_changes)
             export_pricelist(
-                export_paths["pricelist"], updated_price_region_items)
+                export_paths["pricelist"],
+                updated_price_region_items)
             export_product_price_task(
-                export_paths["product_price_task"], updated_price_region_items)
+                export_paths["product_price_task"],
+                updated_price_region_items)
             export_contract_item_task(
-                export_paths["contract_item_task"], updated_contract_items)
+                export_paths["contract_item_task"],
+                updated_contract_items)
             export_tickets_list(
-                export_paths["tickets_list"], ticketed_warehouse_stock_items())
-            logging.info("")
+                export_paths["tickets_list"],
+                ticketed_whse_stock_items())
+
+            # Log results.
+            logging.info(
+                f"Price regions updated: ",
+                f"{len(price_changes)}")
+            logging.info(
+                f"Contract items updated: ",
+                f"{len(updated_contract_items)}")
 
     class download_spl(CommandBase):
         """
@@ -139,11 +170,18 @@ class Commands:
         aliases = ["dspl"]
 
         def execute(self, options):
+            # Download the file using SCP.
             config = self.config["ssh"]
+            src = self.config["paths"]["remote"]["supplier_pricelist"]
+            dest = self.config["paths"]["import"]["supplier_pricelist"]
             scp_client = get_scp_client(
-                config["hostname"], config["username"], config["password"])
-            scp_client.get(self.config["paths"]["remote"]["supplier_pricelist"],
-                           self.config["paths"]["import"]["supplier_pricelist"])
+                config["hostname"],
+                config["username"],
+                config["password"])
+            scp_client.get(src, dest)
+
+            # Log results.
+            logging.info(f"Downloaded SPL to {dest}")
 
     class upload_spl(CommandBase):
         """
@@ -152,11 +190,18 @@ class Commands:
         aliases = ["uspl"]
 
         def execute(self, options):
+            # Upload the file using SCP.
             config = self.config["ssh"]
+            src = self.config["paths"]["export"]["supplier_pricelist"]
+            dest = self.config["paths"]["remote"]["supplier_pricelist_import"]
             scp_client = get_scp_client(
-                config["hostname"], config["username"], config["password"])
-            scp_client.put(self.config["paths"]["export"]["supplier_pricelist"],
-                           self.config["paths"]["remote"]["supplier_pricelist_import"])
+                config["hostname"],
+                config["username"],
+                config["password"])
+            scp_client.put(src, dest)
+
+            # Log results.
+            logging.info(f"Uploaded SPL to {config['hostname']}:{dest}")
 
     class upload_pricelist(CommandBase):
         """
@@ -165,11 +210,18 @@ class Commands:
         aliases = ["upl"]
 
         def execute(self, options):
+            # Upload the file using SCP.
             config = self.config["ssh"]
+            src = self.config["paths"]["export"]["pricelist"]
+            dest = self.config["paths"]["remote"]["pricelist"]
             scp_client = get_scp_client(
-                config["hostname"], config["username"], config["password"])
-            scp_client.put(self.config["paths"]["export"]["pricelist"],
-                           self.config["paths"]["remote"]["pricelist"])
+                config["hostname"],
+                config["username"],
+                config["password"])
+            scp_client.put(src, dest)
+
+            # Log results.
+            logging.info(f"Uploaded pricelist to {config['hostname']}:{dest}")
 
 
 def commands():
@@ -177,8 +229,10 @@ def commands():
     Generates a list of commands.
     """
     for attr_name in dir(Commands):
+        # Yield attribute if it is a subclass of CommandBase.
         attr = getattr(Commands, attr_name)
-        if type(attr).__name__ == "type" and attr.__base__.__name__ == "CommandBase":
+        is_class = type(attr).__name__ == "type"
+        if is_class and attr.__base__.__name__ == "CommandBase":
             yield attr
 
 
