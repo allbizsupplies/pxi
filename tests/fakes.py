@@ -98,4 +98,4 @@ def fake_inventory_item(values={}):
         item_type=values.get("item_type", ItemType.STOCKED_ITEM),
         condition=values.get("condition", ItemCondition.NONE),
         created=values.get("created", random_datetime()),
-        replacement_cost=values.get("replacement_cost"))
+        replacement_cost=values.get("replacement_cost", random_price()))
