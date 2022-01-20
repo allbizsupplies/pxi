@@ -254,7 +254,8 @@ class ImporterTests(DatabaseTestCase):
 
         # Seed the database with ten InventoryItems and two ContractItems, then
         # mock an import for another 10 ContractItems, but where the first
-        # imported row has the same item code as the first seeded ContractItem.
+        # imported row has the same item code and contract code as the first
+        # seeded ContractItem.
         imported_items_count = 10
         fake_inv_items_datagrid_filepath = random_string(20)
         fake_con_items_datagrid_filepath = random_string(20)
