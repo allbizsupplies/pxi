@@ -6,7 +6,7 @@ import string
 import time
 from pxi.enum import ItemCondition, ItemType
 
-from pxi.models import InventoryItem
+from pxi.models import ContractItem, InventoryItem
 
 
 def random_description(length=30):
@@ -99,3 +99,18 @@ def fake_inventory_item(values={}):
         condition=values.get("condition", ItemCondition.NONE),
         created=values.get("created", random_datetime()),
         replacement_cost=values.get("replacement_cost", random_price()))
+
+
+def fake_contract_item(inventory_item, values={}):
+    """
+    Generates a fake ContractItem.
+    """
+    return ContractItem(
+        inventory_item=inventory_item,
+        code=values.get("code", random_string(6)),
+        price_1=values.get("price_1", random_price()),
+        price_2=values.get("price_2", random_price()),
+        price_3=values.get("price_3", random_price()),
+        price_4=values.get("price_4", random_price()),
+        price_5=values.get("price_5", random_price()),
+        price_6=values.get("price_6", random_price()))

@@ -32,6 +32,7 @@ from pxi.models import (
     WebSortcode)
 from tests import DatabaseTestCase
 from tests.fakes import (
+    fake_contract_item,
     fake_inventory_item,
     random_datetime,
     random_item_code,
@@ -230,16 +231,16 @@ class ImporterTests(DatabaseTestCase):
         imported_items_count = 10
         rows = fake_inventory_items_datagrid_rows(imported_items_count)
         rows[0]["item_code"] = seeded_inv_items[0].code
+        mock_load_rows.return_value = rows
 
         # Run the import.
-        mock_load_rows.return_value = rows
         import_inventory_items(
             fake_inv_items_datagrid_filepath,
             self.session)
-        mock_load_rows.assert_called_with(fake_inv_items_datagrid_filepath)
 
         # Expect to insert 9 items, update 1, leaving a total of 11
         # InventoryItems in the database.
+        mock_load_rows.assert_called_with(fake_inv_items_datagrid_filepath)
         # pylint:disable=no-member
         inventory_items = self.session.query(InventoryItem).all()
         expected_items_count = 1 + imported_items_count
@@ -250,28 +251,39 @@ class ImporterTests(DatabaseTestCase):
         """
         Import Contract Items from Pronto datagrid.
         """
+
+        # Seed the database with ten InventoryItems and two ContractItems, then
+        # mock an import for another 10 ContractItems, but where the first
+        # imported row has the same item code as the first seeded ContractItem.
+        imported_items_count = 10
         fake_inv_items_datagrid_filepath = random_string(20)
         fake_con_items_datagrid_filepath = random_string(20)
-        imported_items_count = 10
-        rows = fake_inventory_items_datagrid_rows(imported_items_count)
-        mock_load_rows.return_value = rows
-        import_inventory_items(
-            fake_inv_items_datagrid_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(fake_inv_items_datagrid_filepath)
-        item_codes = [row["item_code"] for row in rows]
+        seeded_inv_items = [
+            fake_inventory_item() for _ in range(imported_items_count)]
+        seeded_con_items = [
+            fake_contract_item(seeded_inv_items[0]),
+            fake_contract_item(seeded_inv_items[0]),
+        ]
+        self.seed(seeded_inv_items + seeded_con_items)
         rows = [fake_contract_items_datagrid_row({
-            "item_code": item_code,
-        }) for item_code in item_codes]
+            "item_code": inv_item.code,
+        }) for inv_item in seeded_inv_items]
+        rows[0]["item_code"] = seeded_con_items[0].inventory_item.code
+        rows[0]["item_code"] = seeded_con_items[0].code
         mock_load_rows.return_value = rows
+
+        # Run the import.
         import_contract_items(
             fake_con_items_datagrid_filepath,
             self.session)
+
+        # Expect to insert 9 items, update 1, leaving a total of 11
+        # ContractItems in the database.
         mock_load_rows.assert_called_with(fake_con_items_datagrid_filepath)
-        self.assertEqual(mock_load_rows.call_count, 2)
         # pylint:disable=no-member
         contract_items = self.session.query(ContractItem).all()
-        self.assertEqual(len(contract_items), imported_items_count)
+        expected_items_count = 1 + imported_items_count
+        self.assertEqual(len(contract_items), expected_items_count)
 
     @patch("pxi.importers.load_rows")
     def test_import_warehouse_stock_items(self, mock_load_rows):
