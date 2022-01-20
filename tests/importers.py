@@ -32,6 +32,7 @@ from pxi.models import (
     WebSortcode)
 from tests import DatabaseTestCase
 from tests.fakes import (
+    fake_inventory_item,
     random_datetime,
     random_item_code,
     random_price_factor,
@@ -216,8 +217,12 @@ class ImporterTests(DatabaseTestCase):
         """
         Imports inventory items from Pronto datagrid.
         """
+        self.seed([
+            fake_inventory_item()
+        ])
         fake_inv_items_datagrid_filepath = random_string(20)
         imported_items_count = 10
+        total_items_count = 1 + imported_items_count
         rows = fake_inventory_items_datagrid_rows(imported_items_count)
         mock_load_rows.return_value = rows
         import_inventory_items(
@@ -226,7 +231,7 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.assert_called_with(fake_inv_items_datagrid_filepath)
         # pylint:disable=no-member
         inventory_items = self.session.query(InventoryItem).all()
-        self.assertEqual(len(inventory_items), imported_items_count)
+        self.assertEqual(len(inventory_items), total_items_count)
 
     @patch("pxi.importers.load_rows")
     def test_import_contract_items(self, mock_load_rows):
