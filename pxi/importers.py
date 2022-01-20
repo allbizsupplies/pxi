@@ -308,19 +308,21 @@ def import_gtin_items(filepath, db_session):
                     insert_count += 1
     db_session.commit()
     logging.info(
-        f"Import GTINITem: {insert_count} inserted, {update_count} updated")
+        f"Import GTINItem: {insert_count} inserted, {update_count} updated")
+
+
+def load_spl_rows(filepath):
+    with open(filepath, "r", encoding="iso8859-14") as file:
+        return csv.DictReader(file, SPL_FIELDNAMES)
 
 
 def import_supplier_pricelist_items(filepath):
-    print("Importing supplier pricelist items...")
-    file = open(filepath, "r", encoding="iso8859-14")
-    supplier_pricelist_reader = csv.DictReader(file, SPL_FIELDNAMES)
-    supplier_pricelist_items = {}
     overridden_supplier_items_count = 0
     invalid_record_count = 0
+    supplier_pricelist_items = {}
     # Collect supplier pricelist items. If an item has the same item code
     # and supplier code as a previous item then it will override it.
-    for row in supplier_pricelist_reader:
+    for row in load_spl_rows(filepath):
         item_code = row["item_code"]
         supplier_code = row["supplier_code"]
         uom = row["supp_uom"]
@@ -332,20 +334,18 @@ def import_supplier_pricelist_items(filepath):
         if supplier_code in supplier_pricelist_items[item_code].keys():
             overridden_supplier_items_count += 1
         supplier_pricelist_items[item_code][supplier_code] = row
-    file.close()
+
     # Flatten the list of items.
     supplier_pricelist_items_flattened = []
     for rows in supplier_pricelist_items.values():
         for row in rows.values():
             supplier_pricelist_items_flattened.append(row)
-    # Report warnings.
-    if invalid_record_count > 0:
-        print(f"  Warning: {invalid_record_count}"
-              f" invalid records were skipped.")
-    if overridden_supplier_items_count > 0:
-        print(f"  Warning: {overridden_supplier_items_count}"
-              f" records were overridden.")
-    print(f"{len(supplier_pricelist_items)} supplier pricelist items imported.")
+
+    logging.info(
+        f"Import SPL records: "
+        f"{len(supplier_pricelist_items_flattened)} inserted, "
+        f"{invalid_record_count} skipped, "
+        f"{overridden_supplier_items_count} overridden.")
     return supplier_pricelist_items_flattened
 
 
@@ -358,11 +358,13 @@ def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
         )
         db_session.add(web_sortcode)
         count += 1
-    print(f"{count} web sortcodes imported.")
+
+    logging.info(
+        f"Import WebSortcode: "
+        f"{count} inserted.")
 
 
 def import_web_sortcode_mappings(filepath, db_session, worksheet_name="rules"):
-    print("Importing web sortcode mappings...")
     web_sortcode_mappings = {}
     for row in load_rows(filepath, worksheet_name):
         rule_code = row["rule_code"]
@@ -376,7 +378,10 @@ def import_web_sortcode_mappings(filepath, db_session, worksheet_name="rules"):
             web_sortcode_mappings[rule_code] = web_sortcode
         else:
             web_sortcode_mappings[rule_code] = menu_name
-    print(f"{len(web_sortcode_mappings)} web sortcode mappings imported.")
+
+    logging.info(
+        f"Import web sortcode mappings: "
+        f"{len(web_sortcode_mappings)} inserted.")
     return web_sortcode_mappings
 
 
@@ -399,7 +404,10 @@ def import_website_images_report(filepath, db_session):
             "inventory_item": inventory_item,
             "filename": get_image(row)
         })
-    print(f"website image data imported for {len(images_data)} items.")
+
+    logging.info(
+        f"Import website image data: "
+        f"{len(images_data)} inserted.")
     return images_data
 
 
