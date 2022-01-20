@@ -31,55 +31,14 @@ from pxi.models import (
     WarehouseStockItem,
     WebSortcode)
 from tests import DatabaseTestCase
-
-
-def random_string(length):
-    """
-    Generates a random string of uppercase ASCII letters.
-    """
-    return "".join([
-        random_choice(string.ascii_uppercase) for x in range(length)])
-
-
-def random_datetime(start=None, end=None):
-    """
-    Generates a random datetime between two given datetimes.
-    """
-    if start is None:
-        start = datetime.fromtimestamp(0)
-    if end is None:
-        end = datetime.now()
-    return datetime.fromtimestamp(randint(
-        int(time.mktime(start.timetuple())),
-        int(time.mktime(end.timetuple()))))
-
-
-def random_price_string():
-    """
-    Generate a random price string with format '0.00'.
-    """
-    return f"{randint(1, 100)}.{randint(0, 99):02d}"
-
-
-def random_price_factor():
-    """
-    Generate a random price multiplication factor with format '0.00'.
-    """
-    return f"{randint(1, 5)}.{(randint(0, 19) * 5):02d}"
-
-
-def random_quantity():
-    """
-    Generate a random quantity between 0 and 999999, inclusive.
-    """
-    return str(randint(0, 999999))
-
-
-def random_item_code():
-    """
-    Generate a random item code.
-    """
-    return random_string(16)
+from tests.fakes import (
+    random_datetime,
+    random_item_code,
+    random_price_factor,
+    random_price_string,
+    random_quantity,
+    random_string
+)
 
 
 def fake_inventory_items_datagrid_row(values={}):
@@ -258,8 +217,8 @@ class ImporterTests(DatabaseTestCase):
         Imports inventory items from Pronto datagrid.
         """
         fake_inv_items_datagrid_filepath = random_string(20)
-        expected_item_count = 10
-        rows = fake_inventory_items_datagrid_rows(expected_item_count)
+        imported_items_count = 10
+        rows = fake_inventory_items_datagrid_rows(imported_items_count)
         mock_load_rows.return_value = rows
         import_inventory_items(
             fake_inv_items_datagrid_filepath,
@@ -267,7 +226,7 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.assert_called_with(fake_inv_items_datagrid_filepath)
         # pylint:disable=no-member
         inventory_items = self.session.query(InventoryItem).all()
-        self.assertEqual(len(inventory_items), expected_item_count)
+        self.assertEqual(len(inventory_items), imported_items_count)
 
     @patch("pxi.importers.load_rows")
     def test_import_contract_items(self, mock_load_rows):
@@ -276,8 +235,8 @@ class ImporterTests(DatabaseTestCase):
         """
         fake_inv_items_datagrid_filepath = random_string(20)
         fake_con_items_datagrid_filepath = random_string(20)
-        expected_item_count = 10
-        rows = fake_inventory_items_datagrid_rows(expected_item_count)
+        imported_items_count = 10
+        rows = fake_inventory_items_datagrid_rows(imported_items_count)
         mock_load_rows.return_value = rows
         import_inventory_items(
             fake_inv_items_datagrid_filepath,
@@ -295,7 +254,7 @@ class ImporterTests(DatabaseTestCase):
         self.assertEqual(mock_load_rows.call_count, 2)
         # pylint:disable=no-member
         contract_items = self.session.query(ContractItem).all()
-        self.assertEqual(len(contract_items), expected_item_count)
+        self.assertEqual(len(contract_items), imported_items_count)
 
     @patch("pxi.importers.load_rows")
     def test_import_warehouse_stock_items(self, mock_load_rows):
@@ -303,8 +262,8 @@ class ImporterTests(DatabaseTestCase):
         Import Warehouse Stock Items from Pronto datagrid.
         """
         fake_inv_items_datagrid_filepath = random_string(20)
-        expected_item_count = 10
-        rows = fake_inventory_items_datagrid_rows(expected_item_count)
+        imported_items_count = 10
+        rows = fake_inventory_items_datagrid_rows(imported_items_count)
         mock_load_rows.return_value = rows
         import_inventory_items(
             fake_inv_items_datagrid_filepath,
@@ -316,7 +275,7 @@ class ImporterTests(DatabaseTestCase):
         self.assertEqual(mock_load_rows.call_count, 2)
         # pylint:disable=no-member
         warehouse_stock_items = self.session.query(WarehouseStockItem).all()
-        self.assertEqual(len(warehouse_stock_items), expected_item_count)
+        self.assertEqual(len(warehouse_stock_items), imported_items_count)
 
     @patch("pxi.importers.load_rows")
     def test_import_price_rules(self, mock_load_rows):
@@ -324,14 +283,14 @@ class ImporterTests(DatabaseTestCase):
         Import Price Rules from Pronto datagrid.
         """
         fake_price_rules_datagrid_filepath = random_string(20)
-        expected_item_count = 10
-        rows = fake_price_rules_datagrid_rows(expected_item_count)
+        imported_items_count = 10
+        rows = fake_price_rules_datagrid_rows(imported_items_count)
         mock_load_rows.return_value = rows
         import_price_rules(fake_price_rules_datagrid_filepath, self.session)
         mock_load_rows.assert_called_with(fake_price_rules_datagrid_filepath)
         # pylint:disable=no-member
         price_rules = self.session.query(PriceRule).all()
-        self.assertEqual(len(price_rules), expected_item_count)
+        self.assertEqual(len(price_rules), imported_items_count)
 
     @patch("pxi.importers.load_rows")
     def test_import_price_regions(self, mock_load_rows):
@@ -340,8 +299,8 @@ class ImporterTests(DatabaseTestCase):
         """
         fake_inv_items_datagrid_filepath = random_string(20)
         fake_pr_items_datagrid_filepath = random_string(20)
-        expected_item_count = 10
-        rows = fake_inventory_items_datagrid_rows(expected_item_count)
+        imported_items_count = 10
+        rows = fake_inventory_items_datagrid_rows(imported_items_count)
         mock_load_rows.return_value = rows
         import_inventory_items(
             fake_inv_items_datagrid_filepath,
@@ -359,7 +318,7 @@ class ImporterTests(DatabaseTestCase):
         self.assertEqual(mock_load_rows.call_count, 2)
         # pylint:disable=no-member
         price_region_items = self.session.query(PriceRegionItem).all()
-        self.assertEqual(len(price_region_items), expected_item_count)
+        self.assertEqual(len(price_region_items), imported_items_count)
 
     @patch("pxi.importers.load_rows")
     def test_import_supplier_items(self, mock_load_rows):
@@ -368,8 +327,8 @@ class ImporterTests(DatabaseTestCase):
         """
         fake_inv_items_datagrid_filepath = random_string(20)
         fake_supp_items_datagrid_filepath = random_string(20)
-        expected_item_count = 10
-        rows = fake_inventory_items_datagrid_rows(expected_item_count)
+        imported_items_count = 10
+        rows = fake_inventory_items_datagrid_rows(imported_items_count)
         mock_load_rows.return_value = rows
         import_inventory_items(
             fake_inv_items_datagrid_filepath,
@@ -387,7 +346,7 @@ class ImporterTests(DatabaseTestCase):
         self.assertEqual(mock_load_rows.call_count, 2)
         # pylint:disable=no-member
         supplier_items = self.session.query(SupplierItem).all()
-        self.assertEqual(len(supplier_items), expected_item_count)
+        self.assertEqual(len(supplier_items), imported_items_count)
 
     @patch("pxi.importers.load_rows")
     def test_import_gtin_items(self, mock_load_rows):
@@ -396,8 +355,8 @@ class ImporterTests(DatabaseTestCase):
         """
         fake_inv_items_datagrid_filepath = random_string(20)
         fake_gtin_items_datagrid_filepath = random_string(20)
-        expected_item_count = 10
-        rows = fake_inventory_items_datagrid_rows(expected_item_count)
+        imported_items_count = 10
+        rows = fake_inventory_items_datagrid_rows(imported_items_count)
         mock_load_rows.return_value = rows
         import_inventory_items(
             fake_inv_items_datagrid_filepath,
@@ -415,7 +374,7 @@ class ImporterTests(DatabaseTestCase):
         self.assertEqual(mock_load_rows.call_count, 2)
         # pylint:disable=no-member
         gtin_items = self.session.query(GTINItem).all()
-        self.assertEqual(len(gtin_items), expected_item_count)
+        self.assertEqual(len(gtin_items), imported_items_count)
 
     @patch("pxi.importers.load_spl_rows")
     def test_import_supplier_pricelist_items(self, mock_load_rows):
@@ -423,13 +382,13 @@ class ImporterTests(DatabaseTestCase):
         Import Supplier Pricelist Items from CSV.
         """
         fake_supplier_pricelist_filepath = random_string(20)
-        expected_item_count = 10
+        imported_items_count = 10
         rows = fake_supplier_pricelist_rows(10)
         mock_load_rows.return_value = rows
         supplier_pricelist_items = import_supplier_pricelist_items(
             fake_supplier_pricelist_filepath)
         mock_load_rows.assert_called_with(fake_supplier_pricelist_filepath)
-        self.assertEqual(len(supplier_pricelist_items), expected_item_count)
+        self.assertEqual(len(supplier_pricelist_items), imported_items_count)
 
     @patch("pxi.importers.load_rows")
     def test_import_web_sortcodes(self, mock_load_rows):
@@ -437,7 +396,7 @@ class ImporterTests(DatabaseTestCase):
         Import web sortcodes from metadata spreadsheet.
         """
         fake_web_sortcodes_filepath = random_string(20)
-        expected_item_count = 10
+        imported_items_count = 10
         rows = fake_web_sortcodes_rows(10)
         mock_load_rows.return_value = rows
         import_web_sortcodes(
@@ -448,7 +407,7 @@ class ImporterTests(DatabaseTestCase):
             "sortcodes")
         # pylint:disable=no-member
         web_sortcodes = self.session.query(WebSortcode).all()
-        self.assertEqual(len(web_sortcodes), expected_item_count)
+        self.assertEqual(len(web_sortcodes), imported_items_count)
 
     @patch("pxi.importers.load_rows")
     def test_import_inventory_web_data_items(self, mock_load_rows):
@@ -458,7 +417,7 @@ class ImporterTests(DatabaseTestCase):
         fake_inv_items_datagrid_filepath = random_string(20)
         fake_web_sortcodes_filepath = random_string(20)
         fake_web_data_items_datagrid_filepath = random_string(20)
-        expected_item_count = 10
+        imported_items_count = 10
         rows = fake_web_sortcodes_rows(10)
         mock_load_rows.return_value = rows
         import_web_sortcodes(
@@ -469,7 +428,7 @@ class ImporterTests(DatabaseTestCase):
             "sortcodes")
         menu_names = [
             f"{row['parent_name']}/{row['child_name']}" for row in rows]
-        rows = fake_inventory_items_datagrid_rows(expected_item_count)
+        rows = fake_inventory_items_datagrid_rows(imported_items_count)
         mock_load_rows.return_value = rows
         import_inventory_items(
             fake_inv_items_datagrid_filepath,
@@ -479,7 +438,7 @@ class ImporterTests(DatabaseTestCase):
         rows = [fake_web_data_items_datagrid_row({
             "stock_code": item_codes[i],
             "menu_name": menu_names[i],
-        }) for i in range(expected_item_count)]
+        }) for i in range(imported_items_count)]
         mock_load_rows.return_value = rows
         import_inventory_web_data_items(
             fake_web_data_items_datagrid_filepath,
@@ -490,7 +449,7 @@ class ImporterTests(DatabaseTestCase):
         # pylint:disable=no-member
         inventory_web_data_items = self.session.query(
             InventoryWebDataItem).all()
-        self.assertEqual(len(inventory_web_data_items), expected_item_count)
+        self.assertEqual(len(inventory_web_data_items), imported_items_count)
 
     @patch("pxi.importers.load_rows")
     def test_import_web_sortcode_mappings(self, mock_load_rows):
@@ -498,7 +457,7 @@ class ImporterTests(DatabaseTestCase):
         Import web sortcodes from metadata spreadsheet.
         """
         fake_web_sortcodes_filepath = random_string(20)
-        expected_item_count = 10
+        imported_items_count = 10
         rows = fake_web_sortcodes_rows(10)
         mock_load_rows.return_value = rows
         import_web_sortcodes(
@@ -522,8 +481,8 @@ class ImporterTests(DatabaseTestCase):
         self.assertEqual(mock_load_rows.call_count, 2)
         # pylint:disable=no-member
         web_sortcodes = self.session.query(WebSortcode).all()
-        self.assertEqual(len(web_sortcodes), expected_item_count)
-        self.assertEqual(len(web_sortcode_mappings), expected_item_count)
+        self.assertEqual(len(web_sortcodes), imported_items_count)
+        self.assertEqual(len(web_sortcode_mappings), imported_items_count)
 
     @patch("pxi.importers.load_rows")
     def test_import_website_images_report(self, mock_load_rows):
@@ -532,8 +491,8 @@ class ImporterTests(DatabaseTestCase):
         """
         fake_inv_items_datagrid_filepath = random_string(20)
         fake_website_images_report_filepath = random_string(20)
-        expected_item_count = 10
-        rows = fake_inventory_items_datagrid_rows(expected_item_count)
+        imported_items_count = 10
+        rows = fake_inventory_items_datagrid_rows(imported_items_count)
         mock_load_rows.return_value = rows
         import_inventory_items(
             fake_inv_items_datagrid_filepath,
@@ -549,4 +508,4 @@ class ImporterTests(DatabaseTestCase):
             self.session)
         mock_load_rows.assert_called_with(fake_website_images_report_filepath)
         # pylint:disable=no-member
-        self.assertEqual(len(images_data), expected_item_count)
+        self.assertEqual(len(images_data), imported_items_count)
