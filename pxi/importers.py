@@ -27,8 +27,12 @@ from pxi.spl_update import SPL_FIELDNAMES
 
 
 def import_contract_items(filepath, db_session):
-    insert_count = 0
-    update_count = 0
+    """
+    Imports ContractItems from a datagrid.
+    """
+    inserted_count = 0
+    updated_count = 0
+    skipped_count = 0
     for row in load_rows(filepath):
         item_code = row["item_code"]
         inventory_item = db_session.query(InventoryItem).filter(
@@ -52,18 +56,23 @@ def import_contract_items(filepath, db_session):
             ).scalar()
             if contract_item:
                 update(contract_item, attributes)
-                update_count += 1
+                updated_count += 1
             else:
                 db_session.add(ContractItem(**attributes))
-                insert_count += 1
+                inserted_count += 1
+        else:
+            skipped_count += 1
     db_session.commit()
     logging.info(
-        f"Import ContractItem: {insert_count} inserted, {update_count} updated")
+        f"Import ContractItems: "
+        f"{inserted_count} inserted, "
+        f"{updated_count} updated, "
+        f"{skipped_count} skipped.")
 
 
 def import_inventory_items(filepath, db_session):
-    insert_count = 0
-    update_count = 0
+    inserted_count = 0
+    updated_count = 0
     for row in load_rows(filepath):
         item_code = row["item_code"]
         inventory_item = db_session.query(InventoryItem).filter(
@@ -85,20 +94,21 @@ def import_inventory_items(filepath, db_session):
         }
         if inventory_item:
             update(inventory_item, attributes)
-            update_count += 1
+            updated_count += 1
         else:
             db_session.add(InventoryItem(**attributes))
-            insert_count += 1
+            inserted_count += 1
     db_session.commit()
     logging.info(
-        f"Import InventoryItem: "
-        f"{insert_count} inserted, "
-        f"{update_count} updated")
+        f"Import InventoryItems: "
+        f"{inserted_count} inserted, "
+        f"{updated_count} updated.")
 
 
 def import_inventory_web_data_items(filepath, db_session):
-    insert_count = 0
-    update_count = 0
+    inserted_count = 0
+    updated_count = 0
+    skipped_count = 0
     for row in load_rows(filepath):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["stock_code"]
@@ -121,20 +131,24 @@ def import_inventory_web_data_items(filepath, db_session):
             ).scalar()
             if inv_web_data_item:
                 update(inv_web_data_item, attributes)
-                update_count += 1
+                updated_count += 1
             else:
                 db_session.add(InventoryWebDataItem(**attributes))
-                insert_count += 1
+                inserted_count += 1
+        else:
+            skipped_count += 1
     db_session.commit()
     logging.info(
-        f"Import InventoryWebDataItem: "
-        f"{insert_count} inserted, "
-        f"{update_count} updated")
+        f"Import InventoryWebDataItems: "
+        f"{inserted_count} inserted, "
+        f"{updated_count} updated, "
+        f"{skipped_count} skipped.")
 
 
 def import_price_region_items(filepath, db_session):
-    insert_count = 0
-    update_count = 0
+    inserted_count = 0
+    updated_count = 0
+    skipped_count = 0
     for row in load_rows(filepath):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
@@ -169,18 +183,23 @@ def import_price_region_items(filepath, db_session):
             ).scalar()
             if price_region_item:
                 update(price_region_item, attributes)
-                update_count += 1
+                updated_count += 1
             else:
                 db_session.add(PriceRegionItem(**attributes))
-                insert_count += 1
+                inserted_count += 1
+        else:
+            skipped_count += 1
     db_session.commit()
     logging.info(
-        f"Import PriceRegionItem: {insert_count} inserted, {update_count} updated")
+        f"Import PriceRegionItems: "
+        f"{inserted_count} inserted, "
+        f"{updated_count} updated, "
+        f"{skipped_count} skipped.")
 
 
 def import_price_rules(filepath, db_session):
-    insert_count = 0
-    update_count = 0
+    inserted_count = 0
+    updated_count = 0
     for row in load_rows(filepath):
         rule_code = row["rule"]
         price_rule = db_session.query(PriceRule).filter(
@@ -206,19 +225,22 @@ def import_price_rules(filepath, db_session):
         }
         if price_rule:
             update(price_rule, attributes)
-            update_count += 1
+            updated_count += 1
         else:
             price_rule = PriceRule(**attributes)
             db_session.add(price_rule)
-        insert_count += 1
+        inserted_count += 1
     db_session.commit()
     logging.info(
-        f"Import PriceRule: {insert_count} inserted, {update_count} updated")
+        f"Import PriceRules: "
+        f"{inserted_count} inserted, "
+        f"{updated_count} updated.")
 
 
 def import_warehouse_stock_items(filepath, db_session):
-    insert_count = 0
-    update_count = 0
+    inserted_count = 0
+    updated_count = 0
+    skipped_count = 0
     for row in load_rows(filepath):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
@@ -239,19 +261,25 @@ def import_warehouse_stock_items(filepath, db_session):
             }
             if warehouse_stock_item:
                 update(warehouse_stock_item, attributes)
-                update_count += 1
+                updated_count += 1
             else:
                 warehouse_stock_item = WarehouseStockItem(**attributes)
                 db_session.add(warehouse_stock_item)
-                insert_count += 1
+                inserted_count += 1
+        else:
+            skipped_count += 1
     db_session.commit()
     logging.info(
-        f"Import WarehouseStockItem: {insert_count} inserted, {update_count} updated")
+        f"Import WarehouseStockItems: "
+        f"{inserted_count} inserted, "
+        f"{updated_count} updated, "
+        f"{skipped_count} skipped.")
 
 
 def import_supplier_items(filepath, db_session):
-    insert_count = 0
-    update_count = 0
+    inserted_count = 0
+    updated_count = 0
+    skipped_count = 0
     for row in load_rows(filepath):
         if not row["supplier_item"]:
             continue
@@ -277,18 +305,24 @@ def import_supplier_items(filepath, db_session):
             ).scalar()
             if supplier_item:
                 update(supplier_item, attributes)
-                update_count += 1
+                updated_count += 1
             else:
                 db_session.add(SupplierItem(**attributes))
-                insert_count += 1
+                inserted_count += 1
+        else:
+            skipped_count += 1
     db_session.commit()
     logging.info(
-        f"Import SupplierItem: {insert_count} inserted, {update_count} updated")
+        f"Import SupplierItems: "
+        f"{inserted_count} inserted, "
+        f"{updated_count} updated, "
+        f"{skipped_count} skipped.")
 
 
 def import_gtin_items(filepath, db_session):
-    insert_count = 0
-    update_count = 0
+    inserted_count = 0
+    updated_count = 0
+    skipped_count = 0
     gtin_item_uids = []
     for row in load_rows(filepath):
         gtin_code = row["gtin"]
@@ -314,13 +348,20 @@ def import_gtin_items(filepath, db_session):
                 }
                 if gtin_item:
                     update(gtin_item, attributes)
-                    update_count += 1
+                    updated_count += 1
                 else:
                     db_session.add(GTINItem(**attributes))
-                    insert_count += 1
+                    inserted_count += 1
+            else:
+                skipped_count += 1
+        else:
+            skipped_count += 1
     db_session.commit()
     logging.info(
-        f"Import GTINItem: {insert_count} inserted, {update_count} updated")
+        f"Import GTINItems: "
+        f"{inserted_count} inserted, "
+        f"{updated_count} updated, "
+        f"{skipped_count} skipped.")
 
 
 def load_spl_rows(filepath):
@@ -379,7 +420,7 @@ def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
             skipped_count += 1
 
     logging.info(
-        f"Import WebSortcode: "
+        f"Import WebSortcodes: "
         f"{import_count} inserted, "
         f"{skipped_count} skipped.")
 
@@ -400,7 +441,7 @@ def import_web_sortcode_mappings(filepath, db_session, worksheet_name="rules"):
             web_sortcode_mappings[rule_code] = menu_name
 
     logging.info(
-        f"Import web sortcode mappings: "
+        f"Import WebSortcode mappings: "
         f"{len(web_sortcode_mappings)} inserted.")
     return web_sortcode_mappings
 
