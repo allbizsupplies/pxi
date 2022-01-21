@@ -72,10 +72,6 @@ def fake_inventory_items_datagrid_row(values={}):
     }
 
 
-def fake_inventory_items_datagrid_rows(count):
-    return [fake_inventory_items_datagrid_row() for _ in range(count)]
-
-
 def fake_contract_items_datagrid_row(values={}):
     return {
         "item_code": values.get("item_code", random_string(6)),
@@ -176,10 +172,6 @@ def fake_web_sortcodes_row(values={}):
     }
 
 
-def fake_web_sortcodes_rows(count):
-    return [fake_web_sortcodes_row() for _ in range(count)]
-
-
 def fake_web_sortcodes_mappings_row(values={}):
     return {
         "rule_code": values.get("rule_code", random_string(4)),
@@ -196,10 +188,6 @@ def fake_supplier_pricelist_row(values={}):
         "supp_uom": values.get("supp_uom", random_string(4)),
         "supp_price_1": values.get("supp_price_1", random_price_string()),
     }
-
-
-def fake_supplier_pricelist_rows(count):
-    return [fake_supplier_pricelist_row() for _ in range(count)]
 
 
 def fake_website_images_report_row(values={}):
