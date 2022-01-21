@@ -18,8 +18,7 @@ from pxi.importers import (
     import_warehouse_stock_items,
     import_web_sortcodes,
     import_web_sortcode_mappings,
-    import_website_images_report
-)
+    import_website_images_report)
 from pxi.models import (
     ContractItem,
     InventoryItem,
@@ -46,8 +45,7 @@ from tests.fakes import (
     random_price_factor,
     random_price_string,
     random_quantity,
-    random_string
-)
+    random_string)
 
 
 def fake_inventory_items_datagrid_row(values={}):
@@ -256,9 +254,10 @@ class ImporterTests(DatabaseTestCase):
         """
 
         # Seed the database with two InventoryItems and two ContractItems, then
-        # mock an import for another two ContractItems, but where the first
+        # mock an import for another three ContractItems, but where the first
         # imported row has the same item code and contract code as the first
-        # seeded ContractItem.
+        # seeded ContractItem, and the last imported row doesn't have a
+        # matching InventoryItem.
         fake_filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item(),
@@ -266,7 +265,7 @@ class ImporterTests(DatabaseTestCase):
         ]
         seeded_con_items = [
             fake_contract_item(seeded_inv_items[0]),
-            fake_contract_item(seeded_inv_items[0]),
+            fake_contract_item(seeded_inv_items[1]),
         ]
         self.seed(seeded_inv_items + seeded_con_items)
         rows = [
@@ -277,6 +276,7 @@ class ImporterTests(DatabaseTestCase):
             fake_contract_items_datagrid_row({
                 "item_code": seeded_inv_items[1].code,
             }),
+            fake_contract_items_datagrid_row()
         ]
         mock_load_rows.return_value = rows
 
@@ -299,7 +299,8 @@ class ImporterTests(DatabaseTestCase):
         # Seed the database with two InventoryItems and two WarehouseStockItems,
         # then mock an import for another two WarehouseStockItems, but where the
         # first imported row has the same item code and warehouse code as the
-        # first seeded WarehouseStockItem.
+        # first seeded WarehouseStockItem, and the last imported row doesn't
+        # have a matching InventoryItem.
         fake_filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item(),
@@ -318,6 +319,7 @@ class ImporterTests(DatabaseTestCase):
             fake_inventory_items_datagrid_row({
                 "item_code": seeded_inv_items[1].code,
             }),
+            fake_inventory_items_datagrid_row(),
         ]
         mock_load_rows.return_value = rows
 
@@ -374,7 +376,8 @@ class ImporterTests(DatabaseTestCase):
         # PriceRegionItems, then mock an import for another two
         # PriceRegionItems, but where the first imported row has the same
         # item code, price rule and price region code as the first seeded
-        # PriceRegionItem.
+        # PriceRegionItem, and the last row doesn't have a matching
+        # InventoryItem.
         fake_filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item(),
@@ -400,6 +403,7 @@ class ImporterTests(DatabaseTestCase):
                 "item_code": seeded_inv_items[1].code,
                 "rule": seeded_price_rules[1].code,
             }),
+            fake_price_region_items_datagrid_row(),
         ]
         mock_load_rows.return_value = rows
 
@@ -422,7 +426,8 @@ class ImporterTests(DatabaseTestCase):
         # Seed the database with two InventoryItems and two SupplierItems,
         # then mock an import for another two SupplierItems, but where the
         # first imported row has the same item code and supplier code as the
-        # first seeded SupplierItem.
+        # first seeded SupplierItem, and the last row doesn't have a matching
+        # InventoryItem.
         fake_filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item(),
@@ -441,6 +446,7 @@ class ImporterTests(DatabaseTestCase):
             fake_supplier_items_datagrid_row({
                 "item_code": seeded_inv_items[1].code,
             }),
+            fake_supplier_items_datagrid_row()
         ]
         mock_load_rows.return_value = rows
 
@@ -463,7 +469,8 @@ class ImporterTests(DatabaseTestCase):
         # Seed the database with two InventoryItems and two GTINItems, then
         # mock an import for another two GTINItems, but where the first
         # imported row has the same item code, GTIN and UOM as the first
-        # seeded GTINItem.
+        # seeded GTINItem, and the last row doesn't have a matching
+        # InventoryItem.
         fake_filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item(),
@@ -483,6 +490,7 @@ class ImporterTests(DatabaseTestCase):
             fake_gtin_items_datagrid_row({
                 "item_code": seeded_inv_items[1].code,
             }),
+            fake_gtin_items_datagrid_row(),
         ]
         mock_load_rows.return_value = rows
 
@@ -576,7 +584,8 @@ class ImporterTests(DatabaseTestCase):
         # Seed the database with three InventoryItems, three WebSortcodes and
         # two InventoryWebDataItems, then mock an import for another two
         # InventoryWebDataItems, but where the first imported row has the same
-        # item code, as the first seeded InventoryWebDataItem.
+        # item code, as the first seeded InventoryWebDataItem, and the last
+        # row doesn't have a matching InventoryItem.
         fake_filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item(),
@@ -607,6 +616,7 @@ class ImporterTests(DatabaseTestCase):
                 "stock_code": seeded_inv_items[2].code,
                 "menu_name": seeded_web_sortcodes[2].name,
             }),
+            fake_inv_web_data_items_datagrid_row(),
         ]
         mock_load_rows.return_value = rows
 
@@ -624,11 +634,12 @@ class ImporterTests(DatabaseTestCase):
     @ patch("pxi.importers.load_rows")
     def test_import_web_sortcode_mappings(self, mock_load_rows):
         """
-        Import web sortcode mappings from metadata spreadsheet.
+        Import WebSortcode mappings from metadata spreadsheet.
         """
 
-        # Seed the database with one WebSortcodes, and mock an import for one
-        # web sortcode mapping.
+        # Seed the database with one WebSortcode, and mock an import for two
+        # WebSortcode mapping, but where the second row doesn't have a
+        # matching WebSortcode.
         fake_filepath = random_string(20)
         fake_worksheet_name = random_string(20)
         seeded_web_sortcodes = [
@@ -639,6 +650,7 @@ class ImporterTests(DatabaseTestCase):
             fake_web_sortcodes_mappings_row({
                 "menu_name": seeded_web_sortcodes[0].name
             }),
+            fake_web_sortcodes_mappings_row(),
         ]
         mock_load_rows.return_value = rows
 
@@ -648,11 +660,11 @@ class ImporterTests(DatabaseTestCase):
             self.session,
             worksheet_name=fake_worksheet_name)
 
-        # Expect to import one web sortcode mapping.
+        # Expect to import both web sortcode mappings.
         mock_load_rows.assert_called_with(fake_filepath, fake_worksheet_name)
         # pylint:disable=no-member
         web_sortcodes = self.session.query(WebSortcode).all()
-        self.assertEqual(len(web_sortcode_mappings), 1)
+        self.assertEqual(len(web_sortcode_mappings), 2)
 
     @ patch("pxi.importers.load_rows")
     def test_import_website_images_report(self, mock_load_rows):
@@ -660,8 +672,9 @@ class ImporterTests(DatabaseTestCase):
         Import product image information from report.
         """
 
-        # Seed the database with one InventoryItem, and mock an import of one
-        # image data record.
+        # Seed the database with one InventoryItem, and mock an import of two
+        # image data record, where the second row doesn't have a matching
+        # InventoryItem.
         fake_filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item()
@@ -670,7 +683,8 @@ class ImporterTests(DatabaseTestCase):
         rows = [
             fake_website_images_report_row({
                 "productcode": seeded_inv_items[0].code,
-            })
+            }),
+            fake_website_images_report_row(),
         ]
         mock_load_rows.return_value = rows
 
