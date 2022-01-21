@@ -6,7 +6,7 @@ def progress(iterable, show=False):
     """
     Optionally wraps iterable in progress bar.
 
-    Args:
+    Params:
         iterable: any iterable.
         show: whether of not to show a progress bar
 
