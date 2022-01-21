@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from random import randint, choice as random_choice
+from random import randint, choice as random_choice, seed
 import string
 import time
 from unittest.mock import patch
@@ -33,8 +33,14 @@ from pxi.models import (
 from tests import DatabaseTestCase
 from tests.fakes import (
     fake_contract_item,
+    fake_gtin_item,
+    fake_inv_web_data_item,
     fake_inventory_item,
+    fake_price_region_item,
+    fake_price_rule,
+    fake_supplier_item,
     fake_warehouse_stock_item,
+    fake_web_sortcode,
     random_datetime,
     random_item_code,
     random_price_factor,
@@ -128,7 +134,7 @@ def fake_gtin_items_datagrid_row(values={}):
     }
 
 
-def fake_web_data_items_datagrid_row(values={}):
+def fake_inv_web_data_items_datagrid_row(values={}):
     return {
         "stock_code": values.get("stock_code"),
         "menu_name": values.get(
@@ -163,10 +169,6 @@ def fake_price_rules_datagrid_row(values={}):
         "rec_retail_factor": values.get("rec_retail_factor", 0),
         "rrp_inc_tax_factor": values.get("rrp_inc_tax_factor", 0),
     }
-
-
-def fake_price_rules_datagrid_rows(count):
-    return [fake_price_rules_datagrid_row() for _ in range(count)]
 
 
 def fake_web_sortcodes_row(values={}):
@@ -221,29 +223,31 @@ class ImporterTests(DatabaseTestCase):
         """
 
         # Seed the database with two InventoryItems and then mock an import
-        # for another 10, but where the first imported row has the same item
+        # for another two, but where the first imported row has the same item
         # code as the first seeded item.
+        fake_filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item(),
             fake_inventory_item(),
         ]
         self.seed(seeded_inv_items)
-        fake_filepath = random_string(20)
-        imported_items_count = 10
-        rows = fake_inventory_items_datagrid_rows(imported_items_count)
-        rows[0]["item_code"] = seeded_inv_items[0].code
+        rows = [
+            fake_inventory_items_datagrid_row({
+                "item_code": seeded_inv_items[0].code
+            }),
+            fake_inventory_items_datagrid_row(),
+        ]
         mock_load_rows.return_value = rows
 
         # Run the import.
         import_inventory_items(fake_filepath, self.session)
 
-        # Expect to insert 9 items, update 1, leaving a total of 11
+        # Expect to insert 2 items, update 1, leaving a total of 3
         # InventoryItems in the database.
         mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
         inventory_items = self.session.query(InventoryItem).all()
-        expected_items_count = 1 + imported_items_count
-        self.assertEqual(len(inventory_items), expected_items_count)
+        self.assertEqual(len(inventory_items), 3)
 
     @patch("pxi.importers.load_rows")
     def test_import_contract_items(self, mock_load_rows):
@@ -251,36 +255,40 @@ class ImporterTests(DatabaseTestCase):
         Import ContractItems from Pronto datagrid.
         """
 
-        # Seed the database with ten InventoryItems and two ContractItems, then
-        # mock an import for another 10 ContractItems, but where the first
+        # Seed the database with two InventoryItems and two ContractItems, then
+        # mock an import for another two ContractItems, but where the first
         # imported row has the same item code and contract code as the first
         # seeded ContractItem.
-        imported_items_count = 10
         fake_filepath = random_string(20)
         seeded_inv_items = [
-            fake_inventory_item() for _ in range(imported_items_count)]
+            fake_inventory_item(),
+            fake_inventory_item(),
+        ]
         seeded_con_items = [
             fake_contract_item(seeded_inv_items[0]),
             fake_contract_item(seeded_inv_items[0]),
         ]
         self.seed(seeded_inv_items + seeded_con_items)
-        rows = [fake_contract_items_datagrid_row({
-            "item_code": inv_item.code,
-        }) for inv_item in seeded_inv_items]
-        rows[0]["item_code"] = seeded_con_items[0].inventory_item.code
-        rows[0]["contract_no"] = seeded_con_items[0].code
+        rows = [
+            fake_contract_items_datagrid_row({
+                "item_code": seeded_inv_items[0].code,
+                "contract_no": seeded_con_items[0].code,
+            }),
+            fake_contract_items_datagrid_row({
+                "item_code": seeded_inv_items[1].code,
+            }),
+        ]
         mock_load_rows.return_value = rows
 
         # Run the import.
         import_contract_items(fake_filepath, self.session)
 
-        # Expect to insert 9 items, update 1, leaving a total of 11
+        # Expect to insert 2 items, update 1, leaving a total of 3
         # ContractItems in the database.
         mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
         contract_items = self.session.query(ContractItem).all()
-        expected_items_count = 1 + imported_items_count
-        self.assertEqual(len(contract_items), expected_items_count)
+        self.assertEqual(len(contract_items), 3)
 
     @patch("pxi.importers.load_rows")
     def test_import_warehouse_stock_items(self, mock_load_rows):
@@ -288,266 +296,388 @@ class ImporterTests(DatabaseTestCase):
         Import WarehouseStockItems from Pronto datagrid.
         """
 
-        # Seed the database with ten InventoryItems and two WarehouseStockItems,
-        # then mock an import for another 10 WarehouseStockItems, but where the
-        # first imported row has the same item code and contract code as the
+        # Seed the database with two InventoryItems and two WarehouseStockItems,
+        # then mock an import for another two WarehouseStockItems, but where the
+        # first imported row has the same item code and warehouse code as the
         # first seeded WarehouseStockItem.
-        imported_items_count = 10
         fake_filepath = random_string(20)
         seeded_inv_items = [
-            fake_inventory_item() for _ in range(imported_items_count)]
+            fake_inventory_item(),
+            fake_inventory_item(),
+        ]
         seeded_whse_stock_items = [
             fake_warehouse_stock_item(seeded_inv_items[0]),
-            fake_warehouse_stock_item(seeded_inv_items[0]),
+            fake_warehouse_stock_item(seeded_inv_items[1]),
         ]
         self.seed(seeded_inv_items + seeded_whse_stock_items)
-        rows = [fake_inventory_items_datagrid_row({
-            "item_code": inv_item.code,
-        }) for inv_item in seeded_inv_items]
-        rows[0]["item_code"] = seeded_whse_stock_items[0].inventory_item.code
-        rows[0]["whse"] = seeded_whse_stock_items[0].code
+        rows = [
+            fake_inventory_items_datagrid_row({
+                "item_code": seeded_inv_items[0].code,
+                "whse": seeded_whse_stock_items[0].code,
+            }),
+            fake_inventory_items_datagrid_row({
+                "item_code": seeded_inv_items[1].code,
+            }),
+        ]
         mock_load_rows.return_value = rows
 
         # Run the import.
         import_warehouse_stock_items(fake_filepath, self.session)
 
-        # Expect to insert 9 items, update 1, leaving a total of 11
+        # Expect to insert 2 items, update 1, leaving a total of 3
         # WarehouseStockItems in the database.
         mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
         whse_stock_items = self.session.query(WarehouseStockItem).all()
-        expected_items_count = 1 + imported_items_count
-        self.assertEqual(len(whse_stock_items), expected_items_count)
+        self.assertEqual(len(whse_stock_items), 3)
 
     @patch("pxi.importers.load_rows")
     def test_import_price_rules(self, mock_load_rows):
         """
-        Import Price Rules from Pronto datagrid.
+        Import PriceRules from Pronto datagrid.
         """
-        fake_price_rules_datagrid_filepath = random_string(20)
-        imported_items_count = 10
-        rows = fake_price_rules_datagrid_rows(imported_items_count)
+
+        # Seed the database with two PriceRules and then mock an import
+        # for another two, but where the first imported row has the same rule
+        # code as the first seeded item.
+        fake_filepath = random_string(20)
+        seeded_price_rules = [
+            fake_price_rule(),
+            fake_price_rule(),
+        ]
+        self.seed(seeded_price_rules)
+        rows = [
+            fake_price_rules_datagrid_row({
+                "rule": seeded_price_rules[0].code
+            }),
+            fake_price_rules_datagrid_row(),
+        ]
         mock_load_rows.return_value = rows
-        import_price_rules(fake_price_rules_datagrid_filepath, self.session)
-        mock_load_rows.assert_called_with(fake_price_rules_datagrid_filepath)
+
+        # Run the import.
+        import_price_rules(fake_filepath, self.session)
+
+        # Expect to insert 2 items, update 1, leaving a total of 3 PriceRules
+        # in the database.
+        mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
         price_rules = self.session.query(PriceRule).all()
-        self.assertEqual(len(price_rules), imported_items_count)
+        self.assertEqual(len(price_rules), 3)
 
     @patch("pxi.importers.load_rows")
-    def test_import_price_regions(self, mock_load_rows):
+    def test_import_price_region_items(self, mock_load_rows):
         """
-        Import Price Regions from Pronto datagrid.
+        Import PriceRegionItems from Pronto datagrid.
         """
-        fake_inv_items_datagrid_filepath = random_string(20)
-        fake_pr_items_datagrid_filepath = random_string(20)
-        imported_items_count = 10
-        rows = fake_inventory_items_datagrid_rows(imported_items_count)
+
+        # Seed the database with two InventoryItems, two PriceRules and two
+        # PriceRegionItems, then mock an import for another two
+        # PriceRegionItems, but where the first imported row has the same
+        # item code, price rule and price region code as the first seeded
+        # PriceRegionItem.
+        fake_filepath = random_string(20)
+        seeded_inv_items = [
+            fake_inventory_item(),
+            fake_inventory_item(),
+        ]
+        seeded_price_rules = [
+            fake_price_rule(),
+            fake_price_rule(),
+        ]
+        seeded_price_region_items = [
+            fake_price_region_item(seeded_inv_items[0], seeded_price_rules[0]),
+            fake_price_region_item(seeded_inv_items[1], seeded_price_rules[1]),
+        ]
+        self.seed(
+            seeded_inv_items + seeded_price_rules + seeded_price_region_items)
+        rows = [
+            fake_price_region_items_datagrid_row({
+                "item_code": seeded_inv_items[0].code,
+                "rule": seeded_price_rules[0].code,
+                "region": seeded_price_region_items[0].code,
+            }),
+            fake_price_region_items_datagrid_row({
+                "item_code": seeded_inv_items[1].code,
+                "rule": seeded_price_rules[1].code,
+            }),
+        ]
         mock_load_rows.return_value = rows
-        import_inventory_items(
-            fake_inv_items_datagrid_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(fake_inv_items_datagrid_filepath)
-        item_codes = [row["item_code"] for row in rows]
-        rows = [fake_price_region_items_datagrid_row({
-            "item_code": item_code,
-        }) for item_code in item_codes]
-        mock_load_rows.return_value = rows
-        import_price_region_items(
-            fake_pr_items_datagrid_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(fake_pr_items_datagrid_filepath)
-        self.assertEqual(mock_load_rows.call_count, 2)
+
+        # Run the import.
+        import_price_region_items(fake_filepath, self.session)
+
+        # Expect to insert 2 items, update 1, leaving a total of 3
+        # PriceRegionItems in the database.
+        mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
         price_region_items = self.session.query(PriceRegionItem).all()
-        self.assertEqual(len(price_region_items), imported_items_count)
+        self.assertEqual(len(price_region_items), 3)
 
     @patch("pxi.importers.load_rows")
     def test_import_supplier_items(self, mock_load_rows):
         """
-        Import Supplier Items from Pronto datagrid.
+        Import SupplierItems from Pronto datagrid.
         """
-        fake_inv_items_datagrid_filepath = random_string(20)
-        fake_supp_items_datagrid_filepath = random_string(20)
-        imported_items_count = 10
-        rows = fake_inventory_items_datagrid_rows(imported_items_count)
+
+        # Seed the database with two InventoryItems and two SupplierItems,
+        # then mock an import for another two SupplierItems, but where the
+        # first imported row has the same item code and supplier code as the
+        # first seeded SupplierItem.
+        fake_filepath = random_string(20)
+        seeded_inv_items = [
+            fake_inventory_item(),
+            fake_inventory_item(),
+        ]
+        seeded_supp_items = [
+            fake_supplier_item(seeded_inv_items[0]),
+            fake_supplier_item(seeded_inv_items[1]),
+        ]
+        self.seed(seeded_inv_items + seeded_supp_items)
+        rows = [
+            fake_supplier_items_datagrid_row({
+                "item_code": seeded_inv_items[0].code,
+                "supplier": seeded_supp_items[0].code,
+            }),
+            fake_supplier_items_datagrid_row({
+                "item_code": seeded_inv_items[1].code,
+            }),
+        ]
         mock_load_rows.return_value = rows
-        import_inventory_items(
-            fake_inv_items_datagrid_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(fake_inv_items_datagrid_filepath)
-        item_codes = [row["item_code"] for row in rows]
-        rows = [fake_supplier_items_datagrid_row({
-            "item_code": item_code,
-        }) for item_code in item_codes]
-        mock_load_rows.return_value = rows
-        import_supplier_items(
-            fake_supp_items_datagrid_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(fake_supp_items_datagrid_filepath)
-        self.assertEqual(mock_load_rows.call_count, 2)
+
+        # Run the import.
+        import_supplier_items(fake_filepath, self.session)
+
+        # Expect to insert 2 items, update 1, leaving a total of 3
+        # SupplierItems in the database.
+        mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
         supplier_items = self.session.query(SupplierItem).all()
-        self.assertEqual(len(supplier_items), imported_items_count)
+        self.assertEqual(len(supplier_items), 3)
 
     @patch("pxi.importers.load_rows")
     def test_import_gtin_items(self, mock_load_rows):
         """
-        Import GTIN Items from Pronto datagrid.
+        Import GTINItems from Pronto datagrid.
         """
-        fake_inv_items_datagrid_filepath = random_string(20)
-        fake_gtin_items_datagrid_filepath = random_string(20)
-        imported_items_count = 10
-        rows = fake_inventory_items_datagrid_rows(imported_items_count)
+
+        # Seed the database with two InventoryItems and two GTINItems, then
+        # mock an import for another two GTINItems, but where the first
+        # imported row has the same item code, GTIN and UOM as the first
+        # seeded GTINItem.
+        fake_filepath = random_string(20)
+        seeded_inv_items = [
+            fake_inventory_item(),
+            fake_inventory_item(),
+        ]
+        seeded_gtin_items = [
+            fake_gtin_item(seeded_inv_items[0]),
+            fake_gtin_item(seeded_inv_items[1]),
+        ]
+        self.seed(seeded_inv_items + seeded_gtin_items)
+        rows = [
+            fake_gtin_items_datagrid_row({
+                "item_code": seeded_inv_items[0].code,
+                "gtin": seeded_gtin_items[0].code,
+                "uom": seeded_gtin_items[0].uom,
+            }),
+            fake_gtin_items_datagrid_row({
+                "item_code": seeded_inv_items[1].code,
+            }),
+        ]
         mock_load_rows.return_value = rows
-        import_inventory_items(
-            fake_inv_items_datagrid_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(fake_inv_items_datagrid_filepath)
-        item_codes = [row["item_code"] for row in rows]
-        rows = [fake_gtin_items_datagrid_row({
-            "item_code": item_code,
-        }) for item_code in item_codes]
-        mock_load_rows.return_value = rows
-        import_gtin_items(
-            fake_gtin_items_datagrid_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(fake_gtin_items_datagrid_filepath)
-        self.assertEqual(mock_load_rows.call_count, 2)
+
+        # Run the import.
+        import_gtin_items(fake_filepath, self.session)
+
+        # Expect to insert 2 items, update 1, leaving a total of 3 GTINItems
+        # in the database.
+        mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
         gtin_items = self.session.query(GTINItem).all()
-        self.assertEqual(len(gtin_items), imported_items_count)
+        self.assertEqual(len(gtin_items), 3)
 
     @patch("pxi.importers.load_spl_rows")
-    def test_import_supplier_pricelist_items(self, mock_load_rows):
+    def test_import_supplier_pricelist_items(self, mock_load_spl_rows):
         """
         Import Supplier Pricelist Items from CSV.
         """
-        fake_supplier_pricelist_filepath = random_string(20)
-        imported_items_count = 10
-        rows = fake_supplier_pricelist_rows(10)
-        mock_load_rows.return_value = rows
-        supplier_pricelist_items = import_supplier_pricelist_items(
-            fake_supplier_pricelist_filepath)
-        mock_load_rows.assert_called_with(fake_supplier_pricelist_filepath)
-        self.assertEqual(len(supplier_pricelist_items), imported_items_count)
 
-    @patch("pxi.importers.load_rows")
+        # Mock an import for four SPL items, but make the first and third items
+        # share the same item code and supplier code, and make the first and
+        # last items share the same item code but not the same supplier code.
+        fake_filepath = random_string(20)
+        fake_item_code = random_item_code()
+        fake_supp_code = random_string(3)
+        rows = [
+            fake_supplier_pricelist_row({
+                "item_code": fake_item_code,
+                "supplier_code": fake_supp_code,
+            }),
+            fake_supplier_pricelist_row(),
+            fake_supplier_pricelist_row({
+                "item_code": fake_item_code,
+                "supplier_code": fake_supp_code,
+            }),
+            fake_supplier_pricelist_row({
+                "item_code": fake_item_code,
+            }),
+        ]
+        mock_load_spl_rows.return_value = rows
+
+        # Run the import.
+        spl_items = import_supplier_pricelist_items(fake_filepath)
+
+        # Expect to return only three out of the four items.
+        mock_load_spl_rows.assert_called_with(fake_filepath)
+        self.assertEqual(len(spl_items), 3)
+
+    @ patch("pxi.importers.load_rows")
     def test_import_web_sortcodes(self, mock_load_rows):
         """
-        Import web sortcodes from metadata spreadsheet.
+        Import WebSortcodes from metadata spreadsheet.
         """
-        fake_web_sortcodes_filepath = random_string(20)
-        imported_items_count = 10
-        rows = fake_web_sortcodes_rows(10)
+
+        # Seed the database with two WebSortcodes and then mock an import
+        # for another two, but where the first imported row has the same menu
+        # name as first seeded sortcode.
+        fake_filepath = random_string(20)
+        fake_worksheet_name = random_string(20)
+        seeded_web_sortcodes = [
+            fake_web_sortcode(),
+            fake_web_sortcode(),
+        ]
+        self.seed(seeded_web_sortcodes)
+        rows = [
+            fake_web_sortcodes_row({
+                "parent_name": seeded_web_sortcodes[0].parent_name,
+                "child_name": seeded_web_sortcodes[0].child_name,
+            }),
+            fake_web_sortcodes_row(),
+        ]
         mock_load_rows.return_value = rows
-        import_web_sortcodes(
-            fake_web_sortcodes_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(
-            fake_web_sortcodes_filepath,
-            "sortcodes")
+
+        # Run the import.
+        import_web_sortcodes(fake_filepath, self.session,
+                             worksheet_name=fake_worksheet_name)
+
+        # Expect to insert 2 items, update 1, leaving a total of 3
+        # WebSortcodes in the database.
+        mock_load_rows.assert_called_with(fake_filepath, fake_worksheet_name)
         # pylint:disable=no-member
         web_sortcodes = self.session.query(WebSortcode).all()
-        self.assertEqual(len(web_sortcodes), imported_items_count)
+        self.assertEqual(len(web_sortcodes), 3)
 
-    @patch("pxi.importers.load_rows")
+    @ patch("pxi.importers.load_rows")
     def test_import_inventory_web_data_items(self, mock_load_rows):
         """
-        Import Inventory Web Data Items from Pronto datagrids.
+        Import InventoryWebDataItems from Pronto datagrids.
         """
-        fake_inv_items_datagrid_filepath = random_string(20)
-        fake_web_sortcodes_filepath = random_string(20)
-        fake_web_data_items_datagrid_filepath = random_string(20)
-        imported_items_count = 10
-        rows = fake_web_sortcodes_rows(10)
-        mock_load_rows.return_value = rows
-        import_web_sortcodes(
-            fake_web_sortcodes_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(
-            fake_web_sortcodes_filepath,
-            "sortcodes")
-        menu_names = [
-            f"{row['parent_name']}/{row['child_name']}" for row in rows]
-        rows = fake_inventory_items_datagrid_rows(imported_items_count)
-        mock_load_rows.return_value = rows
-        import_inventory_items(
-            fake_inv_items_datagrid_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(fake_inv_items_datagrid_filepath)
-        item_codes = [row["item_code"] for row in rows]
-        rows = [fake_web_data_items_datagrid_row({
-            "stock_code": item_codes[i],
-            "menu_name": menu_names[i],
-        }) for i in range(imported_items_count)]
-        mock_load_rows.return_value = rows
-        import_inventory_web_data_items(
-            fake_web_data_items_datagrid_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(
-            fake_web_data_items_datagrid_filepath)
-        self.assertEqual(mock_load_rows.call_count, 3)
-        # pylint:disable=no-member
-        inventory_web_data_items = self.session.query(
-            InventoryWebDataItem).all()
-        self.assertEqual(len(inventory_web_data_items), imported_items_count)
 
-    @patch("pxi.importers.load_rows")
+        # Seed the database with three InventoryItems, three WebSortcodes and
+        # two InventoryWebDataItems, then mock an import for another two
+        # InventoryWebDataItems, but where the first imported row has the same
+        # item code, as the first seeded InventoryWebDataItem.
+        fake_filepath = random_string(20)
+        seeded_inv_items = [
+            fake_inventory_item(),
+            fake_inventory_item(),
+            fake_inventory_item(),
+        ]
+        seeded_web_sortcodes = [
+            fake_web_sortcode(),
+            fake_web_sortcode(),
+            fake_web_sortcode(),
+        ]
+        seeded_inv_web_data_items = [
+            fake_inv_web_data_item(
+                seeded_inv_items[0],
+                seeded_web_sortcodes[0]),
+            fake_inv_web_data_item(
+                seeded_inv_items[1],
+                seeded_web_sortcodes[1]),
+        ]
+        self.seed(
+            seeded_inv_items + seeded_web_sortcodes + seeded_inv_web_data_items)
+        rows = [
+            fake_inv_web_data_items_datagrid_row({
+                "stock_code": seeded_inv_items[0].code,
+                "menu_name": seeded_web_sortcodes[0].name,
+            }),
+            fake_inv_web_data_items_datagrid_row({
+                "stock_code": seeded_inv_items[2].code,
+                "menu_name": seeded_web_sortcodes[2].name,
+            }),
+        ]
+        mock_load_rows.return_value = rows
+
+        # Run the import.
+        import_inventory_web_data_items(fake_filepath, self.session)
+
+        # Expect to insert 2 items, update 1, leaving a total of 3
+        # InventoryWebDataItems in the database.
+        mock_load_rows.assert_called_with(fake_filepath)
+        # pylint:disable=no-member
+        inv_web_data_items = self.session.query(
+            InventoryWebDataItem).all()
+        self.assertEqual(len(inv_web_data_items), 3)
+
+    @ patch("pxi.importers.load_rows")
     def test_import_web_sortcode_mappings(self, mock_load_rows):
         """
-        Import web sortcodes from metadata spreadsheet.
+        Import web sortcode mappings from metadata spreadsheet.
         """
-        fake_web_sortcodes_filepath = random_string(20)
-        imported_items_count = 10
-        rows = fake_web_sortcodes_rows(10)
+
+        # Seed the database with one WebSortcodes, and mock an import for one
+        # web sortcode mapping.
+        fake_filepath = random_string(20)
+        fake_worksheet_name = random_string(20)
+        seeded_web_sortcodes = [
+            fake_web_sortcode(),
+        ]
+        self.seed(seeded_web_sortcodes)
+        rows = [
+            fake_web_sortcodes_mappings_row({
+                "menu_name": seeded_web_sortcodes[0].name
+            }),
+        ]
         mock_load_rows.return_value = rows
-        import_web_sortcodes(
-            fake_web_sortcodes_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(
-            fake_web_sortcodes_filepath,
-            "sortcodes")
-        menu_names = [
-            f"{row['parent_name']}/{row['child_name']}" for row in rows]
-        rows = [fake_web_sortcodes_mappings_row({
-            "menu_name": menu_name
-        }) for menu_name in menu_names]
-        mock_load_rows.return_value = rows
+
+        # Run the import.
         web_sortcode_mappings = import_web_sortcode_mappings(
-            fake_web_sortcodes_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(
-            fake_web_sortcodes_filepath,
-            "rules")
-        self.assertEqual(mock_load_rows.call_count, 2)
+            fake_filepath,
+            self.session,
+            worksheet_name=fake_worksheet_name)
+
+        # Expect to import one web sortcode mapping.
+        mock_load_rows.assert_called_with(fake_filepath, fake_worksheet_name)
         # pylint:disable=no-member
         web_sortcodes = self.session.query(WebSortcode).all()
-        self.assertEqual(len(web_sortcodes), imported_items_count)
-        self.assertEqual(len(web_sortcode_mappings), imported_items_count)
+        self.assertEqual(len(web_sortcode_mappings), 1)
 
-    @patch("pxi.importers.load_rows")
+    @ patch("pxi.importers.load_rows")
     def test_import_website_images_report(self, mock_load_rows):
         """
         Import product image information from report.
         """
-        fake_inv_items_datagrid_filepath = random_string(20)
-        fake_website_images_report_filepath = random_string(20)
-        imported_items_count = 10
-        rows = fake_inventory_items_datagrid_rows(imported_items_count)
+
+        # Seed the database with one InventoryItem, and mock an import of one
+        # image data record.
+        fake_filepath = random_string(20)
+        seeded_inv_items = [
+            fake_inventory_item()
+        ]
+        self.seed(seeded_inv_items)
+        rows = [
+            fake_website_images_report_row({
+                "productcode": seeded_inv_items[0].code,
+            })
+        ]
         mock_load_rows.return_value = rows
-        import_inventory_items(
-            fake_inv_items_datagrid_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(fake_inv_items_datagrid_filepath)
-        item_codes = [row["item_code"] for row in rows]
-        rows = [fake_website_images_report_row({
-            "productcode": item_code,
-        }) for item_code in item_codes]
-        mock_load_rows.return_value = rows
-        images_data = import_website_images_report(
-            fake_website_images_report_filepath,
-            self.session)
-        mock_load_rows.assert_called_with(fake_website_images_report_filepath)
+
+        # Run the import.
+        images_data = import_website_images_report(fake_filepath, self.session)
+
+        # Expect to import one image data record.
+        mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
-        self.assertEqual(len(images_data), imported_items_count)
+        self.assertEqual(len(images_data), 1)

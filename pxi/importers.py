@@ -91,11 +91,14 @@ def import_inventory_items(filepath, db_session):
             insert_count += 1
     db_session.commit()
     logging.info(
-        f"Import InventoryItem: {insert_count} inserted, {update_count} updated")
+        f"Import InventoryItem: "
+        f"{insert_count} inserted, "
+        f"{update_count} updated")
 
 
 def import_inventory_web_data_items(filepath, db_session):
     insert_count = 0
+    update_count = 0
     for row in load_rows(filepath):
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["stock_code"]
@@ -108,16 +111,25 @@ def import_inventory_web_data_items(filepath, db_session):
                 WebSortcode.child_name == child_name
             ).scalar()
         if inventory_item:
-            inventory_web_data_item = InventoryWebDataItem(
-                description=row["description"],
-                inventory_item=inventory_item,
-                web_sortcode=web_sortcode
-            )
-            db_session.add(inventory_web_data_item)
-            insert_count += 1
+            attributes = {
+                "inventory_item": inventory_item,
+                "web_sortcode": web_sortcode,
+                "description": row["description"],
+            }
+            inv_web_data_item = db_session.query(InventoryWebDataItem).filter(
+                InventoryWebDataItem.inventory_item == inventory_item
+            ).scalar()
+            if inv_web_data_item:
+                update(inv_web_data_item, attributes)
+                update_count += 1
+            else:
+                db_session.add(InventoryWebDataItem(**attributes))
+                insert_count += 1
     db_session.commit()
     logging.info(
-        f"Import InventoryWebDataItem: {insert_count} inserted.")
+        f"Import InventoryWebDataItem: "
+        f"{insert_count} inserted, "
+        f"{update_count} updated")
 
 
 def import_price_region_items(filepath, db_session):
@@ -350,18 +362,26 @@ def import_supplier_pricelist_items(filepath):
 
 
 def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
-    count = 0
+    import_count = 0
+    skipped_count = 0
     for row in load_rows(filepath, worksheet_name):
-        web_sortcode = WebSortcode(
-            parent_name=row["parent_name"].strip(),
-            child_name=row["child_name"].strip(),
-        )
-        db_session.add(web_sortcode)
-        count += 1
+        web_sortcode = db_session.query(WebSortcode).filter(
+            WebSortcode.parent_name == row["parent_name"],
+            WebSortcode.child_name == row["child_name"],
+        ).scalar()
+        if not web_sortcode:
+            db_session.add(WebSortcode(
+                parent_name=row["parent_name"].strip(),
+                child_name=row["child_name"].strip(),
+            ))
+            import_count += 1
+        else:
+            skipped_count += 1
 
     logging.info(
         f"Import WebSortcode: "
-        f"{count} inserted.")
+        f"{import_count} inserted, "
+        f"{skipped_count} skipped.")
 
 
 def import_web_sortcode_mappings(filepath, db_session, worksheet_name="rules"):
