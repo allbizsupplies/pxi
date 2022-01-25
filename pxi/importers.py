@@ -1,6 +1,5 @@
 import csv
 from datetime import datetime
-from hashlib import md5
 import logging
 import os
 import time
@@ -28,17 +27,24 @@ from pxi.spl_update import SPL_FIELDNAMES
 
 def import_contract_items(filepath, db_session):
     """
-    Imports ContractItems from a datagrid.
+    Imports ContractItems from a datagrid into the database.
+
+    Params:
+        filepath: The path to the contract items datagrid.
+        db_session: The database session.
     """
-    inserted_count = 0
-    updated_count = 0
-    skipped_count = 0
+    inserted_count = 0  # The number of new records inserted.
+    updated_count = 0   # The number of existing records updated.
+    skipped_count = 0   # The number of rows skipped.
+
+    # Update or insert the ContractItem if the corresponding InventoryItem
+    # exists, otherwise skip it.
     for row in load_rows(filepath):
-        item_code = row["item_code"]
         inventory_item = db_session.query(InventoryItem).filter(
-            InventoryItem.code == item_code
+            InventoryItem.code == row["item_code"]
         ).scalar()
         if inventory_item:
+            # Extract the ContractItem attributes from the datagrid row.
             contract_code = row["contract_no"]
             attributes = {
                 "inventory_item": inventory_item,
@@ -50,6 +56,8 @@ def import_contract_items(filepath, db_session):
                 "price_5": row["price_5"],
                 "price_6": row["price_6"],
             }
+
+            # Update/insert the ContractItem.
             contract_item = db_session.query(ContractItem).filter(
                 ContractItem.code == contract_code,
                 ContractItem.inventory_item == inventory_item
@@ -62,6 +70,8 @@ def import_contract_items(filepath, db_session):
                 inserted_count += 1
         else:
             skipped_count += 1
+
+    # Commit the database queries and log the results.
     db_session.commit()
     logging.info(
         f"Import ContractItems: "
@@ -71,13 +81,20 @@ def import_contract_items(filepath, db_session):
 
 
 def import_inventory_items(filepath, db_session):
-    inserted_count = 0
-    updated_count = 0
+    """
+    Imports InventoryItems from a datagrid into the database.
+
+    Params:
+        filepath: The path to the inventory items datagrid.
+        db_session: The database session.
+    """
+    inserted_count = 0  # The number of new records inserted.
+    updated_count = 0   # The number of existing records updated.
+
+    # Update or insert rows as InventoryItems.
     for row in load_rows(filepath):
+        # Extract the InventoryItem attributes from the datagrid row.
         item_code = row["item_code"]
-        inventory_item = db_session.query(InventoryItem).filter(
-            InventoryItem.code == item_code
-        ).scalar()
         attributes = {
             "code": row["item_code"],
             "description_line_1": row["item_description"],
@@ -92,12 +109,19 @@ def import_inventory_items(filepath, db_session):
             "condition": ItemCondition(row["condition"]),
             "replacement_cost": row["replacement_cost"],
         }
+
+        # Update/insert the InventoryItem.
+        inventory_item = db_session.query(InventoryItem).filter(
+            InventoryItem.code == item_code
+        ).scalar()
         if inventory_item:
             update(inventory_item, attributes)
             updated_count += 1
         else:
             db_session.add(InventoryItem(**attributes))
             inserted_count += 1
+
+    # Commit the database queries and log the results.
     db_session.commit()
     logging.info(
         f"Import InventoryItems: "
@@ -106,10 +130,21 @@ def import_inventory_items(filepath, db_session):
 
 
 def import_inventory_web_data_items(filepath, db_session):
-    inserted_count = 0
-    updated_count = 0
-    skipped_count = 0
+    """
+    Imports InventoryWebDataItems from a datagrid into the database.
+
+    Params:
+        filepath: The path to the inventory web data items datagrid.
+        db_session: The database session.
+    """
+    inserted_count = 0  # The number of new records inserted.
+    updated_count = 0   # The number of existing records updated.
+    skipped_count = 0   # The number of rows skipped.
+
+    # Update or insert the InventoryWebDataItem if the corresponding
+    # InventoryItem exists, otherwise skip it.
     for row in load_rows(filepath):
+        # Find the corresponding InventoryItem and WebSortcode for this row.
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["stock_code"]
         ).scalar()
@@ -120,12 +155,19 @@ def import_inventory_web_data_items(filepath, db_session):
                 WebSortcode.parent_name == parent_name,
                 WebSortcode.child_name == child_name
             ).scalar()
+
+        # Update/insert the InventoryWebDataItem if the corresponding
+        # InventoryItem exists in the database, otherwise skip it.
         if inventory_item:
+            # Extract the InventoryWebDataItem attributes from the datagrid
+            # row.
             attributes = {
                 "inventory_item": inventory_item,
                 "web_sortcode": web_sortcode,
                 "description": row["description"],
             }
+
+            # Update/insert the InventoryWebDataItem.
             inv_web_data_item = db_session.query(InventoryWebDataItem).filter(
                 InventoryWebDataItem.inventory_item == inventory_item
             ).scalar()
@@ -137,6 +179,8 @@ def import_inventory_web_data_items(filepath, db_session):
                 inserted_count += 1
         else:
             skipped_count += 1
+
+    # Commit the database queries and log the results.
     db_session.commit()
     logging.info(
         f"Import InventoryWebDataItems: "
@@ -146,10 +190,20 @@ def import_inventory_web_data_items(filepath, db_session):
 
 
 def import_price_region_items(filepath, db_session):
-    inserted_count = 0
-    updated_count = 0
-    skipped_count = 0
+    """
+    Imports PriceRegionItems from a datagrid into the database.
+
+    Params:
+        filepath: The path to the price region items datagrid.
+        db_session: The database session.
+    """
+    inserted_count = 0  # The number of new records inserted.
+    updated_count = 0   # The number of existing records updated.
+    skipped_count = 0   # The number of rows skipped.
+
+    # Skip, update or insert rows as PriceRegionItems.
     for row in load_rows(filepath):
+        # Find the corresponding InventoryItem for this row.
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
@@ -177,6 +231,8 @@ def import_price_region_items(filepath, db_session):
                 "rrp_excl_tax": row["retail_price"],
                 "rrp_incl_tax": row["rrp_inc_tax"]
             }
+
+            # Update/insert the PriceRegionItem.
             price_region_item = db_session.query(PriceRegionItem).filter(
                 PriceRegionItem.inventory_item == inventory_item,
                 PriceRegionItem.code == price_region_code
@@ -189,6 +245,8 @@ def import_price_region_items(filepath, db_session):
                 inserted_count += 1
         else:
             skipped_count += 1
+
+    # Commit the database queries and log the results.
     db_session.commit()
     logging.info(
         f"Import PriceRegionItems: "
@@ -198,13 +256,17 @@ def import_price_region_items(filepath, db_session):
 
 
 def import_price_rules(filepath, db_session):
-    inserted_count = 0
-    updated_count = 0
+    """
+    Imports PriceRules from a datagrid into the database.
+
+    Params:
+        filepath: The path to the price rules datagrid.
+        db_session: The database session.
+    """
+    inserted_count = 0  # The number of new records inserted.
+    updated_count = 0   # The number of existing records updated.
     for row in load_rows(filepath):
         rule_code = row["rule"]
-        price_rule = db_session.query(PriceRule).filter(
-            PriceRule.code == rule_code
-        ).scalar()
         attributes = {
             "code": rule_code,
             "description": row["comments"],
@@ -223,6 +285,11 @@ def import_price_rules(filepath, db_session):
             "rrp_excl_factor": row["rec_retail_factor"],
             "rrp_incl_factor": row["rrp_inc_tax_factor"]
         }
+
+        # Update/insert the PriceRule.
+        price_rule = db_session.query(PriceRule).filter(
+            PriceRule.code == rule_code
+        ).scalar()
         if price_rule:
             update(price_rule, attributes)
             updated_count += 1
@@ -230,6 +297,8 @@ def import_price_rules(filepath, db_session):
             price_rule = PriceRule(**attributes)
             db_session.add(price_rule)
         inserted_count += 1
+
+    # Commit the database queries and log the results.
     db_session.commit()
     logging.info(
         f"Import PriceRules: "
@@ -238,18 +307,22 @@ def import_price_rules(filepath, db_session):
 
 
 def import_warehouse_stock_items(filepath, db_session):
-    inserted_count = 0
-    updated_count = 0
-    skipped_count = 0
+    """
+    Imports WarehouseStockItems from a datagrid into the database.
+
+    Params:
+        filepath: The path to the inventory items datagrid.
+        db_session: The database session.
+    """
+    inserted_count = 0  # The number of new records inserted.
+    updated_count = 0   # The number of existing records updated.
+    skipped_count = 0   # The number of rows skipped.
     for row in load_rows(filepath):
+        # Find the corresponding InventoryItem for this row.
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
         if inventory_item:
-            warehouse_stock_item = db_session.query(WarehouseStockItem).filter(
-                WarehouseStockItem.inventory_item == inventory_item,
-                WarehouseStockItem.code == row["whse"]
-            ).scalar()
             attributes = {
                 "inventory_item": inventory_item,
                 "code": row["whse"],
@@ -259,6 +332,12 @@ def import_warehouse_stock_items(filepath, db_session):
                 "bin_location": row["bin_loc"],
                 "bulk_location": row["bulk_loc"],
             }
+
+            # Update/insert the WarehouseStockItem.
+            warehouse_stock_item = db_session.query(WarehouseStockItem).filter(
+                WarehouseStockItem.inventory_item == inventory_item,
+                WarehouseStockItem.code == row["whse"]
+            ).scalar()
             if warehouse_stock_item:
                 update(warehouse_stock_item, attributes)
                 updated_count += 1
@@ -268,6 +347,8 @@ def import_warehouse_stock_items(filepath, db_session):
                 inserted_count += 1
         else:
             skipped_count += 1
+
+    # Commit the database queries and log the results.
     db_session.commit()
     logging.info(
         f"Import WarehouseStockItems: "
@@ -277,17 +358,23 @@ def import_warehouse_stock_items(filepath, db_session):
 
 
 def import_supplier_items(filepath, db_session):
-    inserted_count = 0
-    updated_count = 0
-    skipped_count = 0
+    """
+    Imports SupplierItems from a datagrid into the database.
+
+    Params:
+        filepath: The path to the supplier items datagrid.
+        db_session: The database session.
+    """
+    inserted_count = 0  # The number of new records inserted.
+    updated_count = 0   # The number of existing records updated.
+    skipped_count = 0   # The number of rows skipped.
     for row in load_rows(filepath):
-        if not row["supplier_item"]:
-            continue
+        # Find the corresponding InventoryItem for this row.
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
         supplier_code = row["supplier"]
-        if inventory_item:
+        if inventory_item and supplier_code:
             attributes = {
                 "inventory_item": inventory_item,
                 "code": supplier_code,
@@ -299,6 +386,8 @@ def import_supplier_items(filepath, db_session):
                 "moq": row["eoq"],
                 "buy_price": row["current_buy_price"],
             }
+
+            # Update/insert the SupplierItem.
             supplier_item = db_session.query(SupplierItem).filter(
                 SupplierItem.code == supplier_code,
                 SupplierItem.inventory_item == inventory_item
@@ -311,6 +400,8 @@ def import_supplier_items(filepath, db_session):
                 inserted_count += 1
         else:
             skipped_count += 1
+
+    # Commit the database queries and log the results.
     db_session.commit()
     logging.info(
         f"Import SupplierItems: "
@@ -320,32 +411,40 @@ def import_supplier_items(filepath, db_session):
 
 
 def import_gtin_items(filepath, db_session):
-    inserted_count = 0
-    updated_count = 0
-    skipped_count = 0
+    """
+    Imports GTINItems from a datagrid into the database.
+
+    Params:
+        filepath: The path to the gtin items datagrid.
+        db_session: The database session.
+    """
+    inserted_count = 0  # The number of new records inserted.
+    updated_count = 0   # The number of existing records updated.
+    skipped_count = 0   # The number of rows skipped.
     gtin_item_uids = []
     for row in load_rows(filepath):
-        gtin_code = row["gtin"]
-        if not gtin_code:
-            continue
+        # Find the corresponding InventoryItem for this row.
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == row["item_code"]
         ).scalar()
-        if inventory_item:
+        gtin_code = row["gtin"]
+        if inventory_item and gtin_code:
             # Ignore duplicate rows.
             uid = f"{inventory_item.code}--{row['gtin']}"
             if uid not in gtin_item_uids:
                 gtin_item_uids.append(uid)
-                gtin_item = db_session.query(GTINItem).filter(
-                    GTINItem.inventory_item == inventory_item,
-                    GTINItem.code == gtin_code
-                ).scalar()
                 attributes = {
                     "inventory_item": inventory_item,
                     "code": row["gtin"],
                     "uom": row["uom"],
                     "conv_factor": row["conversion"]
                 }
+
+                # Update/insert the GTINITem.
+                gtin_item = db_session.query(GTINItem).filter(
+                    GTINItem.inventory_item == inventory_item,
+                    GTINItem.code == gtin_code
+                ).scalar()
                 if gtin_item:
                     update(gtin_item, attributes)
                     updated_count += 1
@@ -356,6 +455,8 @@ def import_gtin_items(filepath, db_session):
                 skipped_count += 1
         else:
             skipped_count += 1
+
+    # Commit the database queries and log the results.
     db_session.commit()
     logging.info(
         f"Import GTINItems: "
@@ -365,16 +466,36 @@ def import_gtin_items(filepath, db_session):
 
 
 def load_spl_rows(filepath):
+    """
+    Loads the rows from a supplier pricelist file.
+
+    Params:
+        filepath: The path to the supplier pricelist file.
+
+    Returns:
+        The DictReader for the supplier pricelist file.
+    """
     with open(filepath, "r", encoding="iso8859-14") as file:
         return csv.DictReader(file, SPL_FIELDNAMES)
 
 
 def import_supplier_pricelist_items(filepath):
-    overridden_supplier_items_count = 0
-    invalid_record_count = 0
-    supplier_pricelist_items = {}
+    """
+    Imports supplier pricelist items from file.
+
+    Params:
+        filepath: The path to the supplier pricelist file.
+
+    Returns:
+        The list of SPL items.
+    """
+    overridden_record_count = 0  # The number of records overridden.
+    invalid_record_count = 0     # The number of invalid records.
+    spl_items = {}  # Hashmap of SPL items keyed by item code and supp code.
+
     # Collect supplier pricelist items. If an item has the same item code
-    # and supplier code as a previous item then it will override it.
+    # and supplier code as a previous item then the new item will take its
+    # place. The previous item is counted as an overridden record.
     for row in load_spl_rows(filepath):
         item_code = row["item_code"]
         supplier_code = row["supplier_code"]
@@ -382,27 +503,32 @@ def import_supplier_pricelist_items(filepath):
         if uom == "":
             invalid_record_count += 1
             continue
-        if item_code not in supplier_pricelist_items.keys():
-            supplier_pricelist_items[item_code] = {}
-        if supplier_code in supplier_pricelist_items[item_code].keys():
-            overridden_supplier_items_count += 1
-        supplier_pricelist_items[item_code][supplier_code] = row
+        if item_code not in spl_items.keys():
+            spl_items[item_code] = {}
+        if supplier_code in spl_items[item_code].keys():
+            overridden_record_count += 1
+        spl_items[item_code][supplier_code] = row
 
-    # Flatten the list of items.
-    supplier_pricelist_items_flattened = []
-    for rows in supplier_pricelist_items.values():
+    # Log the results and return the collected SPL items as a flattened list.
+    spl_items_flattened = []
+    for rows in spl_items.values():
         for row in rows.values():
-            supplier_pricelist_items_flattened.append(row)
-
+            spl_items_flattened.append(row)
     logging.info(
         f"Import SPL records: "
-        f"{len(supplier_pricelist_items_flattened)} inserted, "
+        f"{len(spl_items_flattened)} inserted, "
         f"{invalid_record_count} skipped, "
-        f"{overridden_supplier_items_count} overridden.")
-    return supplier_pricelist_items_flattened
+        f"{overridden_record_count} overridden.")
+    return spl_items_flattened
 
 
 def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
+    """
+    Import WebSortcodes from datagrid.
+
+    Params:
+        filepath: The path to the gtin items datagrid.
+    """
     import_count = 0
     skipped_count = 0
     for row in load_rows(filepath, worksheet_name):
@@ -419,6 +545,8 @@ def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
         else:
             skipped_count += 1
 
+    # Commit the database queries and log the results.
+    db_session.commit()
     logging.info(
         f"Import WebSortcodes: "
         f"{import_count} inserted, "
@@ -440,6 +568,7 @@ def import_web_sortcode_mappings(filepath, db_session, worksheet_name="rules"):
         else:
             web_sortcode_mappings[rule_code] = menu_name
 
+    # Log the results and return the list of mappings.
     logging.info(
         f"Import WebSortcode mappings: "
         f"{len(web_sortcode_mappings)} inserted.")
@@ -466,6 +595,7 @@ def import_website_images_report(filepath, db_session):
             "filename": get_image(row)
         })
 
+    # Log the results and return the list of images.
     logging.info(
         f"Import website image data: "
         f"{len(images_data)} inserted.")
@@ -507,6 +637,9 @@ MODEL_IMPORTS = [
 
 
 def update(record, attributes):
+    """
+    Update a record with values from a dict.
+    """
     for key, value in attributes.items():
         setattr(record, key, value)
 
