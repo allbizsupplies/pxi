@@ -5,7 +5,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
-from pxi.enum import ItemType, ItemCondition, PriceBasis, WebStatus, TaxCode
+from pxi.enum import ItemType, ItemCondition, PriceBasis, TaxCode
 
 
 Base = declarative_base()
