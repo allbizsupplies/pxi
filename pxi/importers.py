@@ -25,6 +25,50 @@ from pxi.models import (
 from pxi.spl_update import SPL_FIELDNAMES
 
 
+def get_inventory_items(db_session):
+    """
+    Builds a hashmap of all InventoryItems in the database, keyed by code.
+    """
+    return {inv_item.code: inv_item
+            for inv_item in db_session.query(InventoryItem).all()}
+
+
+def upserter(db_session, model, records):
+    """
+    Creates an upsert function for a given model and records.
+
+    Params:
+        db_session: The SQLAlchemy database session.
+        model: The SQLAlchemy model.
+        records: A dict containing all records.
+
+    Returns:
+        The upsert function.
+    """
+    def upsert(key, attributes):
+        """
+        Updates or inserts a record depending on whether or not it exists.
+
+        Params:
+            key: The key identifying the record.
+            attributes: The record attributes required to update or add 
+                the record.
+        Returns:
+            A boolean flag indicating whether the record was updated.
+        """
+        if key in records:
+            record = records[key]
+            for key, value in attributes.items():
+                setattr(record, key, value)
+            return True
+        record = model(**attributes)
+        db_session.add(record)
+        records[key] = record
+        return False
+
+    return upsert
+
+
 def import_contract_items(filepath, db_session):
     """
     Imports ContractItems from a datagrid into the database.
@@ -37,36 +81,33 @@ def import_contract_items(filepath, db_session):
     updated_count = 0   # The number of existing records updated.
     skipped_count = 0   # The number of rows skipped.
 
-    # Update or insert the ContractItem if the corresponding InventoryItem
-    # exists, otherwise skip it.
+    # Get a hashmap of InventoryItems keyed by code.
+    inv_items = get_inventory_items(db_session)
+
+    # Create an upserter for ContractItem.
+    upsert = upserter(db_session, ContractItem, {
+        f"{con_item.code}--{con_item.inventory_item.code}": con_item
+        for con_item in db_session.query(ContractItem).all()})
+
+    # Update/insert rows as ContractItems where InventoryItem exists.
     for row in load_rows(filepath):
-        inventory_item = db_session.query(InventoryItem).filter(
-            InventoryItem.code == row["item_code"]
-        ).scalar()
-        if inventory_item:
-            # Extract the ContractItem attributes from the datagrid row.
-            contract_code = row["contract_no"]
-            attributes = {
-                "inventory_item": inventory_item,
-                "code": contract_code,
+        inv_item_code = row["item_code"]
+        if inv_item_code in inv_items:
+            con_code = row["contract_no"]
+            con_item_key = f"{con_code}--{inv_item_code}"
+            updated = upsert(con_item_key, {
+                "inventory_item": inv_items[inv_item_code],
+                "code": con_code,
                 "price_1": row["price_1"],
                 "price_2": row["price_2"],
                 "price_3": row["price_3"],
                 "price_4": row["price_4"],
                 "price_5": row["price_5"],
                 "price_6": row["price_6"],
-            }
-
-            # Update/insert the ContractItem.
-            contract_item = db_session.query(ContractItem).filter(
-                ContractItem.code == contract_code,
-                ContractItem.inventory_item == inventory_item
-            ).scalar()
-            if contract_item:
-                update(contract_item, attributes)
+            })
+            if updated:
                 updated_count += 1
             else:
-                db_session.add(ContractItem(**attributes))
                 inserted_count += 1
         else:
             skipped_count += 1
@@ -91,12 +132,15 @@ def import_inventory_items(filepath, db_session):
     inserted_count = 0  # The number of new records inserted.
     updated_count = 0   # The number of existing records updated.
 
-    # Update or insert rows as InventoryItems.
+    # Create an upserter for InventoryItem.
+    upsert = upserter(db_session, InventoryItem,
+                      get_inventory_items(db_session))
+
+    # Update/insert rows as InventoryItems.
     for row in load_rows(filepath):
-        # Extract the InventoryItem attributes from the datagrid row.
-        item_code = row["item_code"]
-        attributes = {
-            "code": row["item_code"],
+        inv_item_code = row["item_code"]
+        updated = upsert(inv_item_code, {
+            "code": inv_item_code,
             "description_line_1": row["item_description"],
             "description_line_2": row["description_2"],
             "description_line_3": row["description_3"],
@@ -108,17 +152,10 @@ def import_inventory_items(filepath, db_session):
             "item_type": ItemType(row["status"]),
             "condition": ItemCondition(row["condition"]),
             "replacement_cost": row["replacement_cost"],
-        }
-
-        # Update/insert the InventoryItem.
-        inventory_item = db_session.query(InventoryItem).filter(
-            InventoryItem.code == item_code
-        ).scalar()
-        if inventory_item:
-            update(inventory_item, attributes)
+        })
+        if updated:
             updated_count += 1
         else:
-            db_session.add(InventoryItem(**attributes))
             inserted_count += 1
 
     # Commit the database queries and log the results.
@@ -141,41 +178,37 @@ def import_inventory_web_data_items(filepath, db_session):
     updated_count = 0   # The number of existing records updated.
     skipped_count = 0   # The number of rows skipped.
 
-    # Update or insert the InventoryWebDataItem if the corresponding
-    # InventoryItem exists, otherwise skip it.
-    for row in load_rows(filepath):
-        # Find the corresponding InventoryItem and WebSortcode for this row.
-        inventory_item = db_session.query(InventoryItem).filter(
-            InventoryItem.code == row["stock_code"]
-        ).scalar()
-        web_sortcode = None
-        if row["menu_name"] is not None:
-            parent_name, child_name = row["menu_name"].split("/")
-            web_sortcode = db_session.query(WebSortcode).filter(
-                WebSortcode.parent_name == parent_name,
-                WebSortcode.child_name == child_name
-            ).scalar()
+    # Get a hashmap of InventoryItems keyed by code.
+    inv_items = get_inventory_items(db_session)
 
-        # Update/insert the InventoryWebDataItem if the corresponding
-        # InventoryItem exists in the database, otherwise skip it.
-        if inventory_item:
-            # Extract the InventoryWebDataItem attributes from the datagrid
-            # row.
-            attributes = {
-                "inventory_item": inventory_item,
+    # Get a hashmap of WebSortcodes keyed by name.
+    web_sortcodes = {
+        web_sortcode.name: web_sortcode
+        for web_sortcode in db_session.query(WebSortcode).all()}
+
+    # Create an upserter for InventoryWebDataItems.
+    upsert = upserter(db_session, InventoryWebDataItem, {
+        iwd_item.inventory_item.code: iwd_item
+        for iwd_item in db_session.query(InventoryWebDataItem).all()})
+
+    # Update/insert rows as InventoryWebDataItems where InventoryItem exists.
+    for row in load_rows(filepath):
+        inv_item_code = row["stock_code"]
+        web_sortcode_name = row["menu_name"]
+        has_valid_web_sortcode = web_sortcode_name is None \
+            or web_sortcode_name in web_sortcodes
+        if inv_item_code in inv_items and has_valid_web_sortcode:
+            web_sortcode = None
+            if web_sortcode_name:
+                web_sortcode = web_sortcodes[web_sortcode_name]
+            updated = upsert(inv_item_code, {
+                "inventory_item": inv_items[inv_item_code],
                 "web_sortcode": web_sortcode,
                 "description": row["description"],
-            }
-
-            # Update/insert the InventoryWebDataItem.
-            inv_web_data_item = db_session.query(InventoryWebDataItem).filter(
-                InventoryWebDataItem.inventory_item == inventory_item
-            ).scalar()
-            if inv_web_data_item:
-                update(inv_web_data_item, attributes)
+            })
+            if updated:
                 updated_count += 1
             else:
-                db_session.add(InventoryWebDataItem(**attributes))
                 inserted_count += 1
         else:
             skipped_count += 1
@@ -201,24 +234,37 @@ def import_price_region_items(filepath, db_session):
     updated_count = 0   # The number of existing records updated.
     skipped_count = 0   # The number of rows skipped.
 
-    # Skip, update or insert rows as PriceRegionItems.
+    # Get a hashmap of InventoryItems keyed by code.
+    inv_items = get_inventory_items(db_session)
+
+    # Build a hashmap of PriceRules keyed by code.
+    price_rules = {
+        price_rule.code: price_rule
+        for price_rule in db_session.query(PriceRule).all()}
+
+    # Create an upserter for PriceRegionItem.
+    upsert = upserter(db_session, PriceRegionItem, {
+        f"{pr_item.code}--{pr_item.inventory_item.code}": pr_item
+        for pr_item in db_session.query(PriceRegionItem).all()})
+
+    # Update/insert rows as PriceRegionItems where InventoryItem exists.
     for row in load_rows(filepath):
-        # Find the corresponding InventoryItem for this row.
-        inventory_item = db_session.query(InventoryItem).filter(
-            InventoryItem.code == row["item_code"]
-        ).scalar()
-        if inventory_item:
+        inv_item_code = row["item_code"]
+        price_rule_code = row["rule"]
+        has_valid_price_rule = price_rule_code is None \
+            or price_rule_code in price_rules
+        if inv_item_code in inv_items and has_valid_price_rule:
             price_region_code = row["region"] if row["region"] else ""
             price_rule = None
-            if row["rule"]:
-                price_rule = db_session.query(PriceRule).filter(
-                    PriceRule.code == row["rule"]
-                ).scalar()
-            attributes = {
-                "inventory_item": inventory_item,
+            if price_rule_code:
+                price_rule = price_rules[price_rule_code]
+            pr_item_key = f"{price_region_code}--{inv_item_code}"
+            updated = upsert(pr_item_key, {
+                "inventory_item": inv_items[inv_item_code],
                 "price_rule": price_rule,
                 "code": price_region_code,
-                "tax_code": TaxCode.TAXABLE if row["tax_rate"] else TaxCode.EXEMPT,
+                "tax_code": TaxCode.TAXABLE
+                if row["tax_rate"] else TaxCode.EXEMPT,
                 "quantity_1": row["pr_1_corpa_qty"],
                 "quantity_2": row["pr_2_corp_b_qty"],
                 "quantity_3": row["pr_3_corp_c_qty"],
@@ -230,18 +276,10 @@ def import_price_region_items(filepath, db_session):
                 "price_4": row["pr_4_bulk"],
                 "rrp_excl_tax": row["retail_price"],
                 "rrp_incl_tax": row["rrp_inc_tax"]
-            }
-
-            # Update/insert the PriceRegionItem.
-            price_region_item = db_session.query(PriceRegionItem).filter(
-                PriceRegionItem.inventory_item == inventory_item,
-                PriceRegionItem.code == price_region_code
-            ).scalar()
-            if price_region_item:
-                update(price_region_item, attributes)
+            })
+            if updated:
                 updated_count += 1
             else:
-                db_session.add(PriceRegionItem(**attributes))
                 inserted_count += 1
         else:
             skipped_count += 1
@@ -265,10 +303,16 @@ def import_price_rules(filepath, db_session):
     """
     inserted_count = 0  # The number of new records inserted.
     updated_count = 0   # The number of existing records updated.
+
+    upsert = upserter(db_session, PriceRule, {
+        price_rule.code: price_rule
+        for price_rule in db_session.query(PriceRule).all()})
+
+    # Update/insert rows as PriceRules.
     for row in load_rows(filepath):
-        rule_code = row["rule"]
-        attributes = {
-            "code": rule_code,
+        price_rule_code = row["rule"]
+        updated = upsert(price_rule_code, {
+            "code": price_rule_code,
             "description": row["comments"],
             "price_0_basis": PriceBasis(row["price0_based_on"]),
             "price_1_basis": PriceBasis(row["price1_based_on"]),
@@ -284,19 +328,11 @@ def import_price_rules(filepath, db_session):
             "price_4_factor": row["price4_factor"],
             "rrp_excl_factor": row["rec_retail_factor"],
             "rrp_incl_factor": row["rrp_inc_tax_factor"]
-        }
-
-        # Update/insert the PriceRule.
-        price_rule = db_session.query(PriceRule).filter(
-            PriceRule.code == rule_code
-        ).scalar()
-        if price_rule:
-            update(price_rule, attributes)
+        })
+        if updated:
             updated_count += 1
         else:
-            price_rule = PriceRule(**attributes)
-            db_session.add(price_rule)
-        inserted_count += 1
+            inserted_count += 1
 
     # Commit the database queries and log the results.
     db_session.commit()
@@ -317,33 +353,33 @@ def import_warehouse_stock_items(filepath, db_session):
     inserted_count = 0  # The number of new records inserted.
     updated_count = 0   # The number of existing records updated.
     skipped_count = 0   # The number of rows skipped.
+
+    # Get a hashmap of InventoryItems keyed by code.
+    inv_items = get_inventory_items(db_session)
+
+    # Create upserter for WarehouseStockItem.
+    upsert = upserter(db_session, WarehouseStockItem, {
+        f"{ws_item.code}--{ws_item.inventory_item.code}": ws_item
+        for ws_item in db_session.query(WarehouseStockItem).all()})
+
+    # Update/insert rows as WarehouseStockItems where InventoryItem exists.
     for row in load_rows(filepath):
-        # Find the corresponding InventoryItem for this row.
-        inventory_item = db_session.query(InventoryItem).filter(
-            InventoryItem.code == row["item_code"]
-        ).scalar()
-        if inventory_item:
-            attributes = {
-                "inventory_item": inventory_item,
+        inv_item_code = row["item_code"]
+        whse_code = row["whse"]
+        if inv_item_code in inv_items:
+            ws_item_key = f"{whse_code}--{inv_item_code}"
+            updated = upsert(ws_item_key, {
+                "inventory_item": inv_items[inv_item_code],
                 "code": row["whse"],
                 "minimum": row["minimum_stock"],
                 "maximum": row["maximum_stock"],
                 "on_hand": row["on_hand"],
                 "bin_location": row["bin_loc"],
                 "bulk_location": row["bulk_loc"],
-            }
-
-            # Update/insert the WarehouseStockItem.
-            warehouse_stock_item = db_session.query(WarehouseStockItem).filter(
-                WarehouseStockItem.inventory_item == inventory_item,
-                WarehouseStockItem.code == row["whse"]
-            ).scalar()
-            if warehouse_stock_item:
-                update(warehouse_stock_item, attributes)
+            })
+            if updated:
                 updated_count += 1
             else:
-                warehouse_stock_item = WarehouseStockItem(**attributes)
-                db_session.add(warehouse_stock_item)
                 inserted_count += 1
         else:
             skipped_count += 1
@@ -368,15 +404,23 @@ def import_supplier_items(filepath, db_session):
     inserted_count = 0  # The number of new records inserted.
     updated_count = 0   # The number of existing records updated.
     skipped_count = 0   # The number of rows skipped.
+
+    # Get a hashmap of InventoryItems keyed by code.
+    inv_items = get_inventory_items(db_session)
+
+    # Create upserter for SupplierItem.
+    upsert = upserter(db_session, WarehouseStockItem, {
+        f"{supp_item.code}--{supp_item.inventory_item.code}": supp_item
+        for supp_item in db_session.query(SupplierItem).all()})
+
+    # Update/insert rows as SupplierItems where InventoryItem exists.
     for row in load_rows(filepath):
-        # Find the corresponding InventoryItem for this row.
-        inventory_item = db_session.query(InventoryItem).filter(
-            InventoryItem.code == row["item_code"]
-        ).scalar()
+        inv_item_code = row["item_code"]
         supplier_code = row["supplier"]
-        if inventory_item and supplier_code:
-            attributes = {
-                "inventory_item": inventory_item,
+        if inv_item_code in inv_items and supplier_code:
+            key = f"{supplier_code}--{inv_item_code}"
+            updated = upsert(key, {
+                "inventory_item": inv_items[inv_item_code],
                 "code": supplier_code,
                 "item_code": row["supplier_item"],
                 "priority": row["priority"],
@@ -385,18 +429,10 @@ def import_supplier_items(filepath, db_session):
                 "pack_quantity": row["pack_qty"],
                 "moq": row["eoq"],
                 "buy_price": row["current_buy_price"],
-            }
-
-            # Update/insert the SupplierItem.
-            supplier_item = db_session.query(SupplierItem).filter(
-                SupplierItem.code == supplier_code,
-                SupplierItem.inventory_item == inventory_item
-            ).scalar()
-            if supplier_item:
-                update(supplier_item, attributes)
+            })
+            if updated:
                 updated_count += 1
             else:
-                db_session.add(SupplierItem(**attributes))
                 inserted_count += 1
         else:
             skipped_count += 1
@@ -421,35 +457,35 @@ def import_gtin_items(filepath, db_session):
     inserted_count = 0  # The number of new records inserted.
     updated_count = 0   # The number of existing records updated.
     skipped_count = 0   # The number of rows skipped.
-    gtin_item_uids = []
+
+    # Get a hashmap of InventoryItems keyed by code.
+    inv_items = get_inventory_items(db_session)
+
+    # Create an upserter for GTINItem.
+    upsert = upserter(db_session, GTINItem, {
+        f"{gtin_item.code}--{gtin_item.inventory_item.code}": gtin_item
+        for gtin_item in db_session.query(GTINItem).all()})
+
+    # Update/insert rows as GTINItems where InventoryItem exists, and skip
+    # duplicate rows.
+    seen_keys = []  # List of keys already seen in datagrid.
     for row in load_rows(filepath):
-        # Find the corresponding InventoryItem for this row.
-        inventory_item = db_session.query(InventoryItem).filter(
-            InventoryItem.code == row["item_code"]
-        ).scalar()
+        inv_item_code = row["item_code"]
         gtin_code = row["gtin"]
-        if inventory_item and gtin_code:
+        if inv_item_code in inv_items and gtin_code:
+            key = f"{inv_item_code}--{gtin_code}"
             # Ignore duplicate rows.
-            uid = f"{inventory_item.code}--{row['gtin']}"
-            if uid not in gtin_item_uids:
-                gtin_item_uids.append(uid)
-                attributes = {
-                    "inventory_item": inventory_item,
+            if key not in seen_keys:
+                seen_keys.append(key)
+                updated = upsert(key, {
+                    "inventory_item": inv_items[inv_item_code],
                     "code": row["gtin"],
                     "uom": row["uom"],
                     "conv_factor": row["conversion"]
-                }
-
-                # Update/insert the GTINITem.
-                gtin_item = db_session.query(GTINItem).filter(
-                    GTINItem.inventory_item == inventory_item,
-                    GTINItem.code == gtin_code
-                ).scalar()
-                if gtin_item:
-                    update(gtin_item, attributes)
+                })
+                if updated:
                     updated_count += 1
                 else:
-                    db_session.add(GTINItem(**attributes))
                     inserted_count += 1
             else:
                 skipped_count += 1
@@ -634,14 +670,6 @@ MODEL_IMPORTS = [
         "contract_items_datagrid"
     ),
 ]
-
-
-def update(record, attributes):
-    """
-    Update a record with values from a dict.
-    """
-    for key, value in attributes.items():
-        setattr(record, key, value)
 
 
 def import_data(db_session, paths, models=None, force_imports=False):
