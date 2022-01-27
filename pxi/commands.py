@@ -153,7 +153,7 @@ class Commands:
                 updated_contract_items)
             export_tickets_list(
                 export_paths["tickets_list"],
-                ticketed_whse_stock_items())
+                ticketed_whse_stock_items)
 
             # Log results.
             logging.info(
