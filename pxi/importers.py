@@ -409,7 +409,7 @@ def import_supplier_items(filepath, db_session):
     inv_items = get_inventory_items(db_session)
 
     # Create upserter for SupplierItem.
-    upsert = upserter(db_session, WarehouseStockItem, {
+    upsert = upserter(db_session, SupplierItem, {
         f"{supp_item.code}--{supp_item.inventory_item.code}": supp_item
         for supp_item in db_session.query(SupplierItem).all()})
 
@@ -473,7 +473,7 @@ def import_gtin_items(filepath, db_session):
         inv_item_code = row["item_code"]
         gtin_code = row["gtin"]
         if inv_item_code in inv_items and gtin_code:
-            key = f"{inv_item_code}--{gtin_code}"
+            key = f"{gtin_code}--{inv_item_code}"
             # Ignore duplicate rows.
             if key not in seen_keys:
                 seen_keys.append(key)
