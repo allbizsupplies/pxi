@@ -179,8 +179,7 @@ class CommandTests(DatabaseTestCase):
             mock_export_pricelist,
             mock_export_product_price_task,
             mock_export_contract_item_task,
-            mock_export_tickets_list,
-    ):
+            mock_export_tickets_list):
         """
         price_calc command imports data, calculates prices, exports 
         reports/data.
