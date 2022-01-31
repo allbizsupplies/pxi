@@ -11,15 +11,18 @@ from pxi.exporters import (
     export_price_changes_report,
     export_pricelist,
     export_product_price_task,
+    export_supplier_price_changes_report,
+    export_supplier_pricelist,
     export_tickets_list,
 )
-from pxi.importers import import_data
-from pxi.models import ContractItem, InventoryItem, PriceRegionItem, PriceRule, WarehouseStockItem
+from pxi.importers import import_data, import_supplier_pricelist_items
+from pxi.models import ContractItem, InventoryItem, PriceRegionItem, PriceRule, SupplierItem, WarehouseStockItem
 from pxi.price_calc import (
     recalculate_contract_prices,
     recalculate_sell_prices
 )
 from pxi.scp import get_scp_client
+from pxi.spl_update import update_supplier_items
 
 
 class CommandBase:
@@ -88,6 +91,8 @@ class Commands:
                 InventoryItem.item_type != ItemType.LABOUR,
                 InventoryItem.item_type != ItemType.INDENT_ITEM
             ).all()
+
+            # Calculate new prices and get price changes.
             price_changes = recalculate_sell_prices(
                 pr_items, self.db_session)
             updated_pr_items = [
@@ -162,6 +167,46 @@ class Commands:
             logging.info(
                 f"ContractItems updated: "
                 f"{len(updated_con_items)}")
+
+    class generate_spl(CommandBase):
+        """
+        Generate a SPL for supplier prices that have changed.
+        """
+        aliases = ["gspl"]
+
+        def execute(self, options):
+
+            # Import all data related to SupplierItems.
+            import_paths = self.config["paths"]["import"]
+            import_data(self.db_session, import_paths, [
+                InventoryItem,
+                SupplierItem,
+            ], force_imports=options.get("force_imports", False))
+
+            # Import SupplierPricelistItems.
+            spl_items = import_supplier_pricelist_items(
+                import_paths["supplier_pricelist"])
+
+            # Update supplier prices and record changes.
+            supp_price_changes = update_supplier_items(
+                spl_items, self.db_session)
+
+            # Export report and data file:
+            # - Supplier price changes report
+            # - Pronto-format supplier pricelist
+            export_paths = self.config["paths"]["export"]
+            export_supplier_price_changes_report(
+                export_paths["supplier_price_changes_report"],
+                supp_price_changes)
+            export_supplier_pricelist(
+                export_paths["supplier_pricelist"], [
+                    price_change.supplier_item
+                    for price_change in supp_price_changes])
+
+            # Log results.
+            logging.info(
+                f"Update SupplierItems: "
+                f"{len(supp_price_changes)} updated.")
 
     class download_spl(CommandBase):
         """

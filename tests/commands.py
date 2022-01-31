@@ -27,11 +27,12 @@ def get_mock_config():
                 "pricelist": "path/import/pricelist",
             },
             "export": {
-                "supplier_pricelist": "path/export/supplier_pricelist",
                 "pricelist": "path/export/pricelist",
                 "price_changes_report": "path/export/price_changes_report",
                 "product_price_task": "path/export/product_price_task",
                 "contract_item_task": "path/export/contract_item_task",
+                "supplier_pricelist": "path/export/supplier_pricelist",
+                "supplier_price_changes_report": "path/export/supplier_price_changes_report",
                 "tickets_list": "path/export/tickets_list",
             },
             "remote": {
@@ -66,6 +67,7 @@ class CommandTests(DatabaseTestCase):
         """
         expected_commands = [
             Commands.download_spl,
+            Commands.generate_spl,
             Commands.help,
             Commands.price_calc,
             Commands.upload_pricelist,
@@ -95,6 +97,9 @@ class CommandTests(DatabaseTestCase):
             ("upload_spl", Commands.upload_spl),
             ("upload-spl", Commands.upload_spl),
             ("uspl", Commands.upload_spl),
+            ("generate_spl", Commands.generate_spl),
+            ("generate-spl", Commands.generate_spl),
+            ("gspl", Commands.generate_spl),
         ]
 
         for command_name, expected_command in fixtures:
@@ -236,3 +241,52 @@ class CommandTests(DatabaseTestCase):
         mock_export_tickets_list.assert_called_with(
             export_paths["tickets_list"],
             [ws_item])
+
+    @patch("pxi.commands.export_supplier_pricelist")
+    @patch("pxi.commands.export_supplier_price_changes_report")
+    @patch("pxi.commands.update_supplier_items")
+    @patch("pxi.commands.import_supplier_pricelist_items")
+    @patch("pxi.commands.import_data")
+    def test_generate_spl(
+            self,
+            mock_import_data,
+            mock_import_supplier_pricelist_items,
+            mock_update_supplier_items,
+            mock_export_supplier_price_changes_report,
+            mock_export_supplier_pricelist):
+        """
+        generate_spl command imports data, generates SPL, exports reports/data.
+        """
+        mock_config = get_mock_config()
+        import_paths = mock_config["paths"]["import"]
+        export_paths = mock_config["paths"]["export"]
+
+        inv_item = fake_inventory_item()
+        supp_item = fake_supplier_item(inv_item)
+        spl_item = fake_supplier_pricelist_item(supp_item)
+        price_change = fake_buy_price_change(supp_item)
+        self.seed([
+            inv_item,
+            supp_item,
+        ])
+        mock_import_supplier_pricelist_items.return_value = [spl_item]
+        mock_update_supplier_items.return_value = [price_change]
+
+        command = Commands.generate_spl(mock_config)
+        command.db_session = self.db_session
+        command()
+
+        mock_import_data.assert_called_with(command.db_session, import_paths, [
+            InventoryItem,
+            SupplierItem,
+        ], force_imports=False)
+        mock_import_supplier_pricelist_items.assert_called_with(
+            import_paths["supplier_pricelist"])
+        mock_update_supplier_items.assert_called_with(
+            [spl_item], command.db_session)
+        mock_export_supplier_price_changes_report.assert_called_with(
+            export_paths["supplier_price_changes_report"],
+            [price_change])
+        mock_export_supplier_pricelist.assert_called_with(
+            export_paths["supplier_pricelist"],
+            [supp_item])
