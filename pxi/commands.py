@@ -157,10 +157,10 @@ class Commands:
 
             # Log results.
             logging.info(
-                f"Price regions updated: ",
+                f"Price regions updated: "
                 f"{len(price_changes)}")
             logging.info(
-                f"Contract items updated: ",
+                f"Contract items updated: "
                 f"{len(updated_contract_items)}")
 
     class download_spl(CommandBase):
