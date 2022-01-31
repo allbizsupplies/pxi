@@ -1,8 +1,11 @@
 import csv
 from datetime import datetime
+from decimal import Decimal
 import logging
 import os
 import time
+
+from pxi.data import SupplierPricelistItem
 
 from pxi.datagrid import load_rows
 from pxi.enum import (
@@ -517,45 +520,48 @@ def load_spl_rows(filepath):
 
 def import_supplier_pricelist_items(filepath):
     """
-    Imports supplier pricelist items from file.
+    Imports SupplierPricelistItems from file.
 
     Params:
         filepath: The path to the supplier pricelist file.
 
     Returns:
-        The list of SPL items.
+        The list of SupplierPricelistItems.
     """
-    overridden_record_count = 0  # The number of records overridden.
-    invalid_record_count = 0     # The number of invalid records.
-    spl_items = {}  # Hashmap of SPL items keyed by item code and supp code.
+    skipped_count = 0  # The number of records skipped.
+    invalid_count = 0  # The number of invalid records.
+    spl_items = {}     # Hashmap of SPL items keyed by supp code and item code.
 
     # Collect supplier pricelist items. If an item has the same item code
     # and supplier code as a previous item then the new item will take its
     # place. The previous item is counted as an overridden record.
     for row in load_spl_rows(filepath):
-        item_code = row["item_code"]
-        supplier_code = row["supplier_code"]
-        uom = row["supp_uom"]
-        if uom == "":
-            invalid_record_count += 1
-            continue
-        if item_code not in spl_items.keys():
-            spl_items[item_code] = {}
-        if supplier_code in spl_items[item_code].keys():
-            overridden_record_count += 1
-        spl_items[item_code][supplier_code] = row
+        spl_item = SupplierPricelistItem(
+            item_code=row["item_code"],
+            supp_code=row["supplier_code"],
+            supp_item_code=row["supp_item_code"],
+            supp_uom=row["supp_uom"],
+            supp_conv_factor=Decimal(row["supp_conv_factor"]),
+            supp_eoq=row["supp_eoq"],
+            supp_sell_uom=row["supp_sell_uom"],
+            supp_price=Decimal(row["supp_price_1"]).quantize(Decimal("0.01")),
+        )
+        if spl_item.supp_uom == "":
+            invalid_count += 1
+        else:
+            key = f"{spl_item.supp_code}--{spl_item.supp_item_code}"
+            if key not in spl_items:
+                spl_items[key] = spl_item
+            else:
+                skipped_count += 1
 
-    # Log the results and return the collected SPL items as a flattened list.
-    spl_items_flattened = []
-    for rows in spl_items.values():
-        for row in rows.values():
-            spl_items_flattened.append(row)
+    # Log the results and return the collected SPL items as a list.
     logging.info(
-        f"Import SPL records: "
-        f"{len(spl_items_flattened)} inserted, "
-        f"{invalid_record_count} skipped, "
-        f"{overridden_record_count} overridden.")
-    return spl_items_flattened
+        f"Import SupplierPricelistItems: "
+        f"{len(spl_items)} inserted, "
+        f"{invalid_count} invalid, "
+        f"{skipped_count} skipped.")
+    return spl_items.values()
 
 
 def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):

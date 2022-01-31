@@ -5,6 +5,9 @@ from random import randint, choice as random_choice
 import string
 import time
 
+from pxi.data import (
+    BuyPriceChange,
+    SupplierPricelistItem)
 from pxi.enum import (
     ItemCondition,
     ItemType,
@@ -232,3 +235,24 @@ def fake_inv_web_data_item(inventory_item, web_sortcode, values={}):
         inventory_item=inventory_item,
         web_sortcode=web_sortcode,
         description=values.get("description", random_string(20)))
+
+
+def fake_supplier_pricelist_item(supplier_item, values={}):
+    return SupplierPricelistItem(
+        item_code=values.get("item_code", supplier_item.inventory_item.code),
+        supp_code=values.get("supp_code", supplier_item.code),
+        supp_item_code=values.get("supp_item_code", supplier_item.item_code),
+        supp_conv_factor=values.get(
+            "supp_conv_factor", Decimal(supplier_item.conv_factor)),
+        supp_price=values.get("supp_price", Decimal(supplier_item.buy_price)),
+        supp_uom=values.get("supp_uom", supplier_item.uom),
+        supp_sell_uom=values.get(
+            "supp_sell_uom", supplier_item.inventory_item.uom),
+        supp_eoq=values.get("supp_eoq", supplier_item.moq))
+
+
+def fake_price_change(supplier_item, values={}):
+    return BuyPriceChange(
+        supplier_item=supplier_item,
+        price_was=values.get("price_was", random_price()),
+        price_now=values.get("price_now", random_price()))
