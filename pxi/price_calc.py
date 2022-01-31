@@ -2,7 +2,6 @@
 from copy import copy
 from math import ceil
 from decimal import Decimal
-from progressbar import progressbar
 from pxi.data import SellPriceChange
 
 from pxi.enum import PriceBasis, TaxCode
@@ -103,7 +102,7 @@ def apply_price_rule(price_region_item):
 
 def recalculate_sell_prices(price_region_items, db_session):
     price_changes = []
-    for price_region_item in progressbar(price_region_items):
+    for price_region_item in price_region_items:
         price_change = apply_price_rule(price_region_item)
         if price_change:
             price_changes.append(price_change)
@@ -121,7 +120,7 @@ def recalculate_contract_prices(price_changes, db_session):
             price_now = (price_was * price_ratio).quantize(price_was)
             setattr(contract_item, price_field, price_now)
 
-    for price_change in progressbar(price_changes):
+    for price_change in price_changes:
         inventory_item = price_change.price_region_item.inventory_item
         contract_items = db_session.query(ContractItem).filter(
             ContractItem.inventory_item == inventory_item
