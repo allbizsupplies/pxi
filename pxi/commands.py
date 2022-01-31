@@ -57,13 +57,13 @@ class Commands:
 
     class price_calc(CommandBase):
         """
-        Calculates rounded prices for price region items assigned a price rule.
+        Calculates rounded prices for PriceRegionItems assigned a PriceRule.
         """
         aliases = ["pc"]
 
         def execute(self, options):
 
-            # Import all data related to price region items and contract items.
+            # Import all data related to PriceRegionItems and ContractItems.
             import_data(self.db_session, self.config["paths"]["import"], [
                 InventoryItem,
                 WarehouseStockItem,
@@ -72,10 +72,10 @@ class Commands:
                 ContractItem,
             ], force_imports=options.get("force_imports", False))
 
-            # Select all price region items that have a price rule and belong
-            # to an active inventory item.
+            # Select all PriceRegionItems that have a PriceRule and belong
+            # to an active InventoryItem.
             # pylint:disable=no-member
-            price_region_items = self.db_session.query(PriceRegionItem).join(
+            pr_items = self.db_session.query(PriceRegionItem).join(
                 PriceRegionItem.inventory_item
             ).join(
                 PriceRegionItem.price_rule
@@ -89,33 +89,33 @@ class Commands:
                 InventoryItem.item_type != ItemType.INDENT_ITEM
             ).all()
             price_changes = recalculate_sell_prices(
-                price_region_items, self.db_session)
-            updated_price_region_items = [
-                price_change.price_region_item for price_change in price_changes
+                pr_items, self.db_session)
+            updated_pr_items = [
+                price_change.price_region_item
+                for price_change in price_changes
             ]
-            updated_contract_items = recalculate_contract_prices(
+            updated_con_items = recalculate_contract_prices(
                 price_changes, self.db_session)
 
-            # Select all price regions where the retail price has changed by
-            # At least one cent.
-            updated_default_price_regions = []
+            # Select all PriceRegionItems in the default price region, where
+            # the retail price has changed.
+            updated_default_pr_items = []
             for price_change in price_changes:
                 price_region_item = price_change.price_region_item
-                in_default_price_region = price_region_item.code != ""
-                retail_price_diff = price_change.price_diffs[0]
-                price_has_changed = retail_price_diff < Decimal("0.005")
-                if in_default_price_region and price_has_changed:
-                    updated_default_price_regions.append(price_region_item)
+                in_def_price_region = price_region_item.in_default_price_region
+                price_has_changed = price_change.price_0_differs
+                if in_def_price_region and price_has_changed:
+                    updated_default_pr_items.append(price_region_item)
 
-            # Select all warehouse stock items that belong to an inventory item
-            # with an updated default price region, and meet one of the
+            # Select all WarehouseStockItems that belong to an InventoryItem
+            # with an updated default PriceRegionItem, and meet one of the
             # following criteria:
             # - The warehouse has stock on hand for this item.
             # - The warehouse has a minimum order quantity for this item.
             # - The warehouse has a BIN location for this item and the BIN is
             #   not on the ignore list.
             ticketed_whse_stock_items = []
-            for price_region_item in updated_default_price_regions:
+            for price_region_item in updated_default_pr_items:
                 inv_item = price_region_item.inventory_item
                 whse_stock_items = inv_item.warehouse_stock_items
                 for whse_stock_item in whse_stock_items:
@@ -144,24 +144,24 @@ class Commands:
                 price_changes)
             export_pricelist(
                 export_paths["pricelist"],
-                updated_price_region_items)
+                updated_pr_items)
             export_product_price_task(
                 export_paths["product_price_task"],
-                updated_price_region_items)
+                updated_pr_items)
             export_contract_item_task(
                 export_paths["contract_item_task"],
-                updated_contract_items)
+                updated_con_items)
             export_tickets_list(
                 export_paths["tickets_list"],
                 ticketed_whse_stock_items)
 
             # Log results.
             logging.info(
-                f"Price regions updated: "
+                f"PriceRegionItems updated: "
                 f"{len(price_changes)}")
             logging.info(
-                f"Contract items updated: "
-                f"{len(updated_contract_items)}")
+                f"ContractItems updated: "
+                f"{len(updated_con_items)}")
 
     class download_spl(CommandBase):
         """

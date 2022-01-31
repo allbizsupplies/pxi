@@ -52,7 +52,7 @@ class ExporterTests(DatabaseTestCase):
         item_count = 5
         price_region_items = random_pricelist(items=item_count)
         price_changes = recalculate_sell_prices(
-            price_region_items, self.session)
+            price_region_items, self.db_session)
         export_price_changes_report(report_filepath, price_changes)
         report_reader = ReportReader(report_filepath)
         fieldnames = [
@@ -167,10 +167,10 @@ class ExporterTests(DatabaseTestCase):
         for i in range(item_count):
             inventory_item = random_inventory_item()
             # pylint:disable=no-member
-            self.session.add(inventory_item)
+            self.db_session.add(inventory_item)
             supplier_item = random_supplier_item(inventory_item)
             # pylint:disable=no-member
-            self.session.add(supplier_item)
+            self.db_session.add(supplier_item)
             supplier_items.append(supplier_item)
         export_supplier_pricelist(supplier_pricelist_filepath, supplier_items)
         file = open(supplier_pricelist_filepath)
@@ -200,10 +200,10 @@ class ExporterTests(DatabaseTestCase):
         for i in range(item_count):
             inventory_item = random_inventory_item()
             # pylint:disable=no-member
-            self.session.add(inventory_item)
+            self.db_session.add(inventory_item)
             supplier_item = random_supplier_item(inventory_item)
             # pylint:disable=no-member
-            self.session.add(supplier_item)
+            self.db_session.add(supplier_item)
             price_was = supplier_item.buy_price
             price_diff = price_was * Decimal(random.randint(-10, 10)) / 100
             price_diff_percentage = Decimal(1)

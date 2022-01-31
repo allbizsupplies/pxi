@@ -1,8 +1,21 @@
 
+import io
 from unittest.mock import MagicMock, patch
 
-from tests import DatabaseTestCase
 from pxi.commands import Commands, commands, get_command
+from pxi.enum import ItemCondition, ItemType
+from pxi.models import ContractItem, InventoryItem, PriceRegionItem, PriceRule, SupplierItem, WarehouseStockItem
+from tests import DatabaseTestCase
+from tests.fakes import (
+    fake_contract_item,
+    fake_inventory_item,
+    fake_buy_price_change,
+    fake_price_region_item,
+    fake_price_rule,
+    fake_sell_price_change,
+    fake_supplier_item,
+    fake_supplier_pricelist_item,
+    fake_warehouse_stock_item)
 
 
 def get_mock_config():
@@ -16,6 +29,10 @@ def get_mock_config():
             "export": {
                 "supplier_pricelist": "path/export/supplier_pricelist",
                 "pricelist": "path/export/pricelist",
+                "price_changes_report": "path/export/price_changes_report",
+                "product_price_task": "path/export/product_price_task",
+                "contract_item_task": "path/export/contract_item_task",
+                "tickets_list": "path/export/tickets_list",
             },
             "remote": {
                 "pricelist": "path/remote/pricelist",
@@ -27,6 +44,16 @@ def get_mock_config():
             "hostname": "pronto.example.com",
             "username": "prontousername",
             "password": "prontopassword",
+        },
+        "price_rules": {
+            "ignore": [
+                "NA",
+            ]
+        },
+        "bin_locations": {
+            "ignore": [
+                "IGNORED",
+            ]
         }
     }
 
@@ -73,13 +100,19 @@ class CommandTests(DatabaseTestCase):
         for command_name, expected_command in fixtures:
             self.assertEqual(expected_command, get_command(command_name))
 
-    def test_command_help(self):
+    @patch("sys.stdout", new_callable=io.StringIO)
+    def test_command_help(self, mock_stdout):
         """
         Prints a list of commands.
         """
         mock_config = get_mock_config()
-        command = Commands.help(mock_config)
-        command()
+        Commands.help(mock_config)()
+        printed_lines = mock_stdout.getvalue().split("\n")
+        self.assertEqual(printed_lines[1], "Available commands:")
+        for index, command in enumerate(commands()):
+            line = printed_lines[index + 3]
+            self.assertIn(command.__name__, line)
+            self.assertIn(command.__doc__.strip(), line)
 
     @patch("pxi.commands.get_scp_client")
     def test_command_download_spl(self, mock_get_scp_client):
@@ -89,7 +122,9 @@ class CommandTests(DatabaseTestCase):
         mock_config = get_mock_config()
         mock_scp_client = MagicMock()
         mock_get_scp_client.return_value = mock_scp_client
-        command = Commands.download_spl(mock_config)()
+
+        Commands.download_spl(mock_config)()
+
         mock_get_scp_client.assert_called_with(*mock_config["ssh"].values())
         mock_scp_client.get.assert_called_with(
             mock_config["paths"]["remote"]["supplier_pricelist"],
@@ -103,7 +138,9 @@ class CommandTests(DatabaseTestCase):
         mock_config = get_mock_config()
         mock_scp_client = MagicMock()
         mock_get_scp_client.return_value = mock_scp_client
-        command = Commands.upload_spl(mock_config)()
+
+        Commands.upload_spl(mock_config)()
+
         mock_get_scp_client.assert_called_with(*mock_config["ssh"].values())
         mock_scp_client.put.assert_called_with(
             mock_config["paths"]["export"]["supplier_pricelist"],
@@ -117,8 +154,86 @@ class CommandTests(DatabaseTestCase):
         mock_config = get_mock_config()
         mock_scp_client = MagicMock()
         mock_get_scp_client.return_value = mock_scp_client
-        command = Commands.upload_pricelist(mock_config)()
+
+        Commands.upload_pricelist(mock_config)()
+
         mock_get_scp_client.assert_called_with(*mock_config["ssh"].values())
         mock_scp_client.put.assert_called_with(
             mock_config["paths"]["export"]["pricelist"],
             mock_config["paths"]["remote"]["pricelist"])
+
+    @patch("pxi.commands.export_tickets_list")
+    @patch("pxi.commands.export_contract_item_task")
+    @patch("pxi.commands.export_product_price_task")
+    @patch("pxi.commands.export_pricelist")
+    @patch("pxi.commands.export_price_changes_report")
+    @patch("pxi.commands.recalculate_contract_prices")
+    @patch("pxi.commands.recalculate_sell_prices")
+    @patch("pxi.commands.import_data")
+    def test_price_calc(
+            self,
+            mock_import_data,
+            mock_recalculate_sell_prices,
+            mock_recalculate_contract_prices,
+            mock_export_price_changes_report,
+            mock_export_pricelist,
+            mock_export_product_price_task,
+            mock_export_contract_item_task,
+            mock_export_tickets_list,
+    ):
+        """
+        price_calc command imports data, calculates prices, exports 
+        reports/data.
+        """
+        mock_config = get_mock_config()
+        import_paths = mock_config["paths"]["import"]
+        export_paths = mock_config["paths"]["export"]
+
+        inv_item = fake_inventory_item()
+        con_item = fake_contract_item(inv_item)
+        ws_item = fake_warehouse_stock_item(inv_item)
+        price_rule = fake_price_rule()
+        pr_item = fake_price_region_item(inv_item, price_rule, {
+            "code": "",
+        })
+        price_change = fake_sell_price_change(pr_item)
+        mock_recalculate_sell_prices.return_value = [price_change]
+        mock_recalculate_contract_prices.return_value = [con_item]
+        self.seed([
+            inv_item,
+            con_item,
+            ws_item,
+            price_rule,
+            pr_item,
+        ])
+
+        command = Commands.price_calc(mock_config)
+        command.db_session = self.db_session
+        command()
+
+        mock_import_data.assert_called_with(command.db_session, import_paths, [
+            InventoryItem,
+            WarehouseStockItem,
+            PriceRule,
+            PriceRegionItem,
+            ContractItem,
+        ], force_imports=False)
+        mock_recalculate_sell_prices.assert_called_with(
+            [pr_item], command.db_session)
+        mock_recalculate_contract_prices.assert_called_with(
+            [price_change], command.db_session)
+        mock_export_price_changes_report.assert_called_with(
+            export_paths["price_changes_report"],
+            [price_change])
+        mock_export_pricelist.assert_called_with(
+            export_paths["pricelist"],
+            [pr_item])
+        mock_export_product_price_task.assert_called_with(
+            export_paths["product_price_task"],
+            [pr_item])
+        mock_export_contract_item_task.assert_called_with(
+            export_paths["contract_item_task"],
+            [con_item])
+        mock_export_tickets_list.assert_called_with(
+            export_paths["tickets_list"],
+            [ws_item])

@@ -1,10 +1,9 @@
 from decimal import Decimal
+from pxi.data import SellPriceChange
 
-from pxi.enum import (
-    TaxCode)
+from pxi.enum import TaxCode
 from pxi.models import PriceRegionItem
 from pxi.price_calc import (
-    PriceChange,
     apply_price_rule,
     recalculate_contract_prices,
     recalculate_sell_prices,
@@ -77,12 +76,12 @@ class PriceCalcTests(DatabaseTestCase):
         price_rule.price_3_factor = Decimal("3.00")
         price_rule.price_4_factor = Decimal("2.00")
         # pylint:disable=no-member
-        self.session.add(price_rule)
+        self.db_session.add(price_rule)
 
         inventory_item = random_inventory_item()
         inventory_item.replacement_cost = Decimal("10.00")
         # pylint:disable=no-member
-        self.session.add(inventory_item)
+        self.db_session.add(inventory_item)
 
         price_region_item = PriceRegionItem(
             code="",
@@ -101,7 +100,7 @@ class PriceCalcTests(DatabaseTestCase):
             rrp_excl_tax=Decimal("0.00"),
             rrp_incl_tax=Decimal("0.00")
         )
-        self.session.add(price_region_item)
+        self.db_session.add(price_region_item)
 
         price_changes = apply_price_rule(price_region_item)
 
@@ -127,13 +126,13 @@ class PriceCalcTests(DatabaseTestCase):
         """Calculate new prices for items and return a list of changes."""
         price_region_items = random_pricelist(items=5)
         # pylint:disable=no-member
-        [self.session.add(item) for item in price_region_items]
+        [self.db_session.add(item) for item in price_region_items]
         price_changes = recalculate_sell_prices(
-            price_region_items, self.session)
+            price_region_items, self.db_session)
         self.assertIsInstance(price_changes, list)
         for price_change in price_changes:
-            self.assertIsInstance(price_change, PriceChange)
-            self.assertIsNotNone(price_change.price_diffs)
+            self.assertIsInstance(price_change, SellPriceChange)
+            self.assertGreater(len(price_change.price_diffs), 0)
 
     def test_recalculate_contract_prices(self):
         """Calculate new prices for contract items."""
@@ -144,10 +143,10 @@ class PriceCalcTests(DatabaseTestCase):
             inventory_item = price_region_item.inventory_item
             contract_item = random_contract_item(inventory_item)
             # pylint:disable=no-member
-            self.session.add(price_region_item)
+            self.db_session.add(price_region_item)
             contract_items.append(contract_item)
         price_changes = recalculate_sell_prices(
-            price_region_items, self.session)
+            price_region_items, self.db_session)
         updated_contract_items = recalculate_contract_prices(
-            price_changes, self.session)
+            price_changes, self.db_session)
         self.assertEqual(len(updated_contract_items), item_count)

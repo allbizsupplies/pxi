@@ -1,8 +1,8 @@
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 
-from pxi.models import SupplierItem
+from pxi.models import PriceRegionItem, SupplierItem
 
 
 @dataclass
@@ -15,6 +15,23 @@ class SupplierPricelistItem:
     supp_sell_uom: str
     supp_eoq: str
     supp_conv_factor: Decimal
+
+
+@dataclass
+class SellPriceChange:
+    price_region_item: PriceRegionItem
+    price_diffs: list = field(default_factory=list)
+
+    @property
+    def price_differs(self):
+        for price_diff in self.price_diffs:
+            if abs(price_diff) >= Decimal("0.005"):
+                return True
+        return False
+
+    @property
+    def price_0_differs(self):
+        return abs(self.price_diffs[0]) >= Decimal("0.005")
 
 
 @dataclass

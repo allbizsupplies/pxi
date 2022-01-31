@@ -23,27 +23,27 @@ class WebUpdateTests(DatabaseTestCase):
         for i in range(item_count):
             inventory_item = random_inventory_item()
             # pylint:disable=no-member
-            self.session.add(inventory_item)
+            self.db_session.add(inventory_item)
             web_sortcode = random_web_sortcode()
             # pylint:disable=no-member
-            self.session.add(web_sortcode)
+            self.db_session.add(web_sortcode)
             price_rule = random_price_rule()
             # pylint:disable=no-member
-            self.session.add(price_rule)
+            self.db_session.add(price_rule)
             price_region_item = random_price_region_item(
                 inventory_item, price_rule)
             # pylint:disable=no-member
-            self.session.add(price_region_item)
+            self.db_session.add(price_region_item)
             web_sortcode_mappings[price_rule.code] = web_sortcode
             inventory_web_data_item = random_inventory_web_data_item(inventory_item, web_sortcode)
             # pylint:disable=no-member
-            self.session.add(inventory_web_data_item)
+            self.db_session.add(inventory_web_data_item)
             # pylint:disable=no-member
-            self.session.commit()
+            self.db_session.commit()
             inventory_items.append(inventory_item)
 
         updated_inventory_items = update_product_menu(
-            inventory_items, web_sortcode_mappings, self.session)
+            inventory_items, web_sortcode_mappings, self.db_session)
         self.assertEqual(10, len(updated_inventory_items))
 
         web_sortcodes = web_sortcode_mappings.values()

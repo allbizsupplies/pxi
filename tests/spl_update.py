@@ -44,6 +44,6 @@ class SPLUpdateTests(DatabaseTestCase):
         ]
 
         price_changes = update_supplier_items(
-            spl_items, self.session)
+            spl_items, self.db_session)
 
         self.assertEqual(len(price_changes), len(spl_items) - 2)

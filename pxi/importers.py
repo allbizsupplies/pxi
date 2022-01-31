@@ -549,7 +549,7 @@ def import_supplier_pricelist_items(filepath):
         if spl_item.supp_uom == "":
             invalid_count += 1
         else:
-            key = f"{spl_item.supp_code}--{spl_item.supp_item_code}"
+            key = f"{spl_item.supp_code}--{spl_item.item_code}"
             if key not in spl_items:
                 spl_items[key] = spl_item
             else:

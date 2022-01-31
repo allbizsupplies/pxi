@@ -125,6 +125,10 @@ class PriceRegionItem(Base):
     price_rule = relationship("PriceRule",
                               back_populates="price_region_items")
 
+    @property
+    def in_default_price_region(self):
+        return self.code == ""
+
     def __repr__(self):
         return (f"<PriceRegionItem(code='{self.code}',"
                 f" inventory_item='{self.inventory_item.code}')>")

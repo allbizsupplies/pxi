@@ -124,7 +124,7 @@ class operations:
             downloaded_images_report, downloaded_images, missing_images)
         print("Done.")
 
-    @ staticmethod
+    @staticmethod
     def generate_spl(
         inventory_items_datagrid,
         supplier_items_datagrid,
@@ -142,7 +142,8 @@ class operations:
         supplier_price_changes, uom_errors = update_supplier_items(
             supplier_pricelist_items, session)
         updated_supplier_items = [
-            price_change["supplier_item"] for price_change in supplier_price_changes
+            price_change["supplier_item"]
+            for price_change in supplier_price_changes
         ]
         print(f"{len(updated_supplier_items)} supplier items have been updated.")
         if len(uom_errors) > 0:
@@ -156,94 +157,7 @@ class operations:
             updated_supplier_pricelist, updated_supplier_items)
         print("Done.")
 
-    @ staticmethod
-    def price_calc(
-        inventory_items_datagrid,
-        price_rules_datagrid,
-        pricelist_datagrid,
-        contract_items_datagrid,
-        price_changes_report,
-        pricelist,
-        product_price_task,
-        contract_item_task,
-        tickets_list
-    ):
-        session = db_session()
-        import_inventory_items(inventory_items_datagrid, session)
-        import_warehouse_stock_items(inventory_items_datagrid, session)
-        import_price_rules(price_rules_datagrid, session)
-        import_price_region_items(pricelist_datagrid, session)
-        import_contract_items(contract_items_datagrid, session)
-
-        # pylint:disable=no-member
-        price_region_items = session.query(PriceRegionItem).join(
-            PriceRegionItem.inventory_item
-        ).join(
-            PriceRegionItem.price_rule
-        ).filter(
-            PriceRegionItem.price_rule_id.isnot(None),
-            ~PriceRule.code.in_(IGNORED_PRICE_RULES),
-            InventoryItem.condition != ItemCondition.DISCONTINUED,
-            InventoryItem.condition != ItemCondition.INACTIVE,
-            InventoryItem.item_type != ItemType.CROSS_REFERENCE,
-            InventoryItem.item_type != ItemType.LABOUR,
-            InventoryItem.item_type != ItemType.INDENT_ITEM
-        ).all()
-
-        print(f"{len(price_region_items)} price region items"
-              f" selected for price calculation.")
-
-        print("Recalculating sell prices...")
-        price_changes = recalculate_sell_prices(price_region_items, session)
-        updated_price_region_items = [
-            price_change.price_region_item for price_change in price_changes
-        ]
-        print(
-            f"{len(updated_price_region_items)} price region items have been updated.")
-        print("Recalculating contract prices...")
-        updated_contract_items = recalculate_contract_prices(
-            price_changes, session)
-        print(f"{len(updated_contract_items)} contract items have been updated.")
-
-        def updated_default_price_regions():
-            for price_change in price_changes:
-                price_region_item = price_change.price_region_item
-                # Ignore items without a price rule.
-                if price_region_item.code != "":
-                    continue
-                # Ignore items that have an unchanged level 0 price.
-                if price_change.price_diffs[0] < Decimal("0.005"):
-                    continue
-                yield price_region_item
-
-        def warehouse_stock_items_needing_tickets():
-            for price_region_item in updated_default_price_regions():
-                inventory_item = price_region_item.inventory_item
-                warehouse_stock_items = inventory_item.warehouse_stock_items
-                for warehouse_stock_item in warehouse_stock_items:
-                    if warehouse_stock_item.on_hand > 0:
-                        yield warehouse_stock_item
-                    elif warehouse_stock_item.minimum > 0:
-                        yield warehouse_stock_item
-                    elif warehouse_stock_item.bin_location:
-                        if warehouse_stock_item.bin_location not in ["OWNUSE"]:
-                            yield warehouse_stock_item
-
-        print("Exporting price changes report...")
-        export_price_changes_report(price_changes_report, price_changes)
-        print("Exporting pricelist...")
-        export_pricelist(pricelist, updated_price_region_items)
-        print("Exporting product price task...")
-        export_product_price_task(
-            product_price_task, updated_price_region_items)
-        print("Exporting contract item task...")
-        export_contract_item_task(contract_item_task, updated_contract_items)
-        print("Exporting tickets list...")
-        export_tickets_list(
-            tickets_list, warehouse_stock_items_needing_tickets())
-        print("Done.")
-
-    @ staticmethod
+    @staticmethod
     def web_update(
         inventory_items_datagrid,
         inventory_web_data_items_datagrid,
@@ -297,7 +211,7 @@ class operations:
             updated_inventory_items)
         print("Done.")
 
-    @ staticmethod
+    @staticmethod
     def missing_gtin(
         inventory_items_datagrid,
         gtin_items_datagrid,

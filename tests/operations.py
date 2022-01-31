@@ -17,7 +17,7 @@ class OperationTests(DatabaseTestCase):
     def setUp(self):
         super().setUp()
         pathlib.Path("tmp").mkdir(parents=True, exist_ok=True)
-        
+
     def test_generate_spl(self):
         supplier_price_changes_report = "tmp/supplier_price_changes_report.xlsx"
         updated_supplier_pricelist = "tmp/supplier_pricelist.csv"
@@ -39,29 +39,6 @@ class OperationTests(DatabaseTestCase):
             gtin_report=gtin_report
         )
         # delete_temporary_file(gtin_report)
-
-    def test_price_calc(self):
-        price_changes_report = "tmp/price_changes_report.xlsx"
-        pricelist = "tmp/pricelist.csv"
-        product_price_task = "tmp/product_price_task.txt"
-        contract_item_task = "tmp/contract_item_task.txt"
-        tickets_list = "tmp/tickets_list.txt"
-        operations.price_calc(
-            inventory_items_datagrid="tests/fixtures/inventory_items.xlsx",
-            price_rules_datagrid="tests/fixtures/price_rules.xlsx",
-            pricelist_datagrid="tests/fixtures/pricelist.xlsx",
-            contract_items_datagrid="tests/fixtures/contract_items.xlsx",
-            price_changes_report=price_changes_report,
-            pricelist=pricelist,
-            product_price_task=product_price_task,
-            contract_item_task=contract_item_task,
-            tickets_list=tickets_list
-        )
-        delete_temporary_file(price_changes_report)
-        delete_temporary_file(pricelist)
-        delete_temporary_file(product_price_task)
-        delete_temporary_file(contract_item_task)
-        delete_temporary_file(tickets_list)
 
     def test_web_update(self):
         web_product_menu_data = "tmp/test_web_update__web_product_menu_data.txt"

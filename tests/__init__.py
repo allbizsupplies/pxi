@@ -23,7 +23,7 @@ class DatabaseTestCase(PXITestCase):
         super().setUp()
         self.db = create_engine('sqlite://')
         Base.metadata.create_all(self.db)
-        self.session = sessionmaker(bind=self.db)()
+        self.db_session = sessionmaker(bind=self.db)()
 
     def tearDown(self):
         """
@@ -31,13 +31,13 @@ class DatabaseTestCase(PXITestCase):
         """
         super().tearDown()
         for tbl in reversed(Base.metadata.sorted_tables):
-            self.session.execute(tbl.delete())
-        self.session.commit()
+            self.db_session.execute(tbl.delete())
+        self.db_session.commit()
 
     def seed(self, records):
         """
         Add records to database.
         """
         for record in records:
-            self.session.add(record)
-        self.session.commit()
+            self.db_session.add(record)
+        self.db_session.commit()

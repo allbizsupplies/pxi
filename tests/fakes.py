@@ -7,6 +7,7 @@ import time
 
 from pxi.data import (
     BuyPriceChange,
+    SellPriceChange,
     SupplierPricelistItem)
 from pxi.enum import (
     ItemCondition,
@@ -251,8 +252,20 @@ def fake_supplier_pricelist_item(supplier_item, values={}):
         supp_eoq=values.get("supp_eoq", supplier_item.moq))
 
 
-def fake_price_change(supplier_item, values={}):
+def fake_sell_price_change(price_region_item, values={}):
+    return SellPriceChange(
+        price_region_item,
+        values.get("price_diffs", [
+            random_price(),
+            random_price(),
+            random_price(),
+            random_price(),
+            random_price(),
+        ]))
+
+
+def fake_buy_price_change(supplier_item, values={}):
     return BuyPriceChange(
-        supplier_item=supplier_item,
-        price_was=values.get("price_was", random_price()),
-        price_now=values.get("price_now", random_price()))
+        supplier_item,
+        values.get("price_was", random_price()),
+        values.get("price_now", random_price()))

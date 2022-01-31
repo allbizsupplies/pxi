@@ -187,6 +187,9 @@ def fake_supplier_pricelist_row(values={}):
         "supp_item_code": values.get("supp_item_code", random_item_code()),
         "supp_uom": values.get("supp_uom", random_string(4)),
         "supp_price_1": values.get("supp_price_1", random_price_string()),
+        "supp_conv_factor": values.get("supp_conv_factor", 1),
+        "supp_eoq": values.get("supp_eoq", 1),
+        "supp_sell_uom": values.get("supp_sell_uom", random_string(4)),
     }
 
 
@@ -226,13 +229,13 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_inventory_items(fake_filepath, self.session)
+        import_inventory_items(fake_filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # InventoryItems in the database.
         mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
-        inventory_items = self.session.query(InventoryItem).all()
+        inventory_items = self.db_session.query(InventoryItem).all()
         self.assertEqual(len(inventory_items), 3)
 
     @patch("pxi.importers.load_rows")
@@ -269,13 +272,13 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_contract_items(fake_filepath, self.session)
+        import_contract_items(fake_filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # ContractItems in the database.
         mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
-        contract_items = self.session.query(ContractItem).all()
+        contract_items = self.db_session.query(ContractItem).all()
         self.assertEqual(len(contract_items), 3)
 
     @patch("pxi.importers.load_rows")
@@ -312,13 +315,13 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_warehouse_stock_items(fake_filepath, self.session)
+        import_warehouse_stock_items(fake_filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # WarehouseStockItems in the database.
         mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
-        whse_stock_items = self.session.query(WarehouseStockItem).all()
+        whse_stock_items = self.db_session.query(WarehouseStockItem).all()
         self.assertEqual(len(whse_stock_items), 3)
 
     @patch("pxi.importers.load_rows")
@@ -345,13 +348,13 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_price_rules(fake_filepath, self.session)
+        import_price_rules(fake_filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3 PriceRules
         # in the database.
         mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
-        price_rules = self.session.query(PriceRule).all()
+        price_rules = self.db_session.query(PriceRule).all()
         self.assertEqual(len(price_rules), 3)
 
     @patch("pxi.importers.load_rows")
@@ -396,13 +399,13 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_price_region_items(fake_filepath, self.session)
+        import_price_region_items(fake_filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # PriceRegionItems in the database.
         mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
-        price_region_items = self.session.query(PriceRegionItem).all()
+        price_region_items = self.db_session.query(PriceRegionItem).all()
         self.assertEqual(len(price_region_items), 3)
 
     @patch("pxi.importers.load_rows")
@@ -439,13 +442,13 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_supplier_items(fake_filepath, self.session)
+        import_supplier_items(fake_filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # SupplierItems in the database.
         mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
-        supplier_items = self.session.query(SupplierItem).all()
+        supplier_items = self.db_session.query(SupplierItem).all()
         self.assertEqual(len(supplier_items), 3)
 
     @patch("pxi.importers.load_rows")
@@ -483,13 +486,13 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_gtin_items(fake_filepath, self.session)
+        import_gtin_items(fake_filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3 GTINItems
         # in the database.
         mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
-        gtin_items = self.session.query(GTINItem).all()
+        gtin_items = self.db_session.query(GTINItem).all()
         self.assertEqual(len(gtin_items), 3)
 
     @patch("pxi.importers.load_spl_rows")
@@ -553,14 +556,14 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_web_sortcodes(fake_filepath, self.session,
+        import_web_sortcodes(fake_filepath, self.db_session,
                              worksheet_name=fake_worksheet_name)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # WebSortcodes in the database.
         mock_load_rows.assert_called_with(fake_filepath, fake_worksheet_name)
         # pylint:disable=no-member
-        web_sortcodes = self.session.query(WebSortcode).all()
+        web_sortcodes = self.db_session.query(WebSortcode).all()
         self.assertEqual(len(web_sortcodes), 3)
 
     @ patch("pxi.importers.load_rows")
@@ -609,13 +612,13 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_inventory_web_data_items(fake_filepath, self.session)
+        import_inventory_web_data_items(fake_filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # InventoryWebDataItems in the database.
         mock_load_rows.assert_called_with(fake_filepath)
         # pylint:disable=no-member
-        inv_web_data_items = self.session.query(
+        inv_web_data_items = self.db_session.query(
             InventoryWebDataItem).all()
         self.assertEqual(len(inv_web_data_items), 3)
 
@@ -645,13 +648,13 @@ class ImporterTests(DatabaseTestCase):
         # Run the import.
         web_sortcode_mappings = import_web_sortcode_mappings(
             fake_filepath,
-            self.session,
+            self.db_session,
             worksheet_name=fake_worksheet_name)
 
         # Expect to import both web sortcode mappings.
         mock_load_rows.assert_called_with(fake_filepath, fake_worksheet_name)
         # pylint:disable=no-member
-        web_sortcodes = self.session.query(WebSortcode).all()
+        web_sortcodes = self.db_session.query(WebSortcode).all()
         self.assertEqual(len(web_sortcode_mappings), 2)
 
     @ patch("pxi.importers.load_rows")
@@ -677,7 +680,8 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        images_data = import_website_images_report(fake_filepath, self.session)
+        images_data = import_website_images_report(
+            fake_filepath, self.db_session)
 
         # Expect to import one image data record.
         mock_load_rows.assert_called_with(fake_filepath)

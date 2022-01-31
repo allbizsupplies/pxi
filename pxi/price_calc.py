@@ -3,6 +3,7 @@ from copy import copy
 from math import ceil
 from decimal import Decimal
 from progressbar import progressbar
+from pxi.data import SellPriceChange
 
 from pxi.enum import PriceBasis, TaxCode
 from pxi.models import ContractItem, PriceRegionItem
@@ -15,15 +16,15 @@ def d(amount):
 
 TAX_FACTOR = d("1.10")
 
-"""
-min: the smallest amount the rule applies to.
-rounding_step: the amount is rounded to the nearesr multiple of this value.
-charm rules:
-    - step: each charm price is a multiple of this value, minus the offset
-    - offset: this is subtracted from the step to get the charm price
-    - range: any amount within this distance from the charm price will become
-             the charm price.
-"""
+PRICE_LEVELS = 5
+
+# min: the smallest amount the rule applies to.
+# rounding_step: the amount is rounded to the nearesr multiple of this value.
+# charm rules:
+#     - step: each charm price is a multiple of this value, minus the offset
+#     - offset: this is subtracted from the step to get the charm price
+#     - range: any amount within this distance from the charm price will become
+#              the charm price.
 ROUNDING_RULES = [
     {
         "min": d("0.00"),
@@ -60,21 +61,12 @@ ROUNDING_RULES = [
 ]
 
 
-class PriceChange:
-
-    def __init__(self, price_region_item, price_diffs):
-        assert(isinstance(price_region_item, PriceRegionItem))
-        self.price_region_item = price_region_item
-        self.price_diffs = price_diffs
-
-
 def apply_price_rule(price_region_item):
     """Recalculate prices for price region."""
     inventory_item = price_region_item.inventory_item
     price_rule = price_region_item.price_rule
-    price_diffs = []
-    price_has_changed = False
-    for i in range(5):
+    price_change = SellPriceChange(price_region_item)
+    for i in range(PRICE_LEVELS):
         basis = getattr(price_rule, f"price_{i}_basis")
         factor = getattr(price_rule, f"price_{i}_factor")
         base_price = None
@@ -102,21 +94,20 @@ def apply_price_rule(price_region_item):
         rounded_price = round_price(price, tax_exempt=tax_exempt)
         price_was = getattr(price_region_item, f"price_{i}")
         price_diff = rounded_price - price_was
-        if abs(price_diff) >= Decimal("0.005"):
-            price_has_changed = True
-        price_diffs.append(price_diff)
+        price_change.price_diffs.append(price_diff)
         setattr(price_region_item, f"price_{i}", rounded_price)
-    if price_has_changed:
-        return PriceChange(price_region_item, price_diffs)
+    if price_change.price_differs:
+        return price_change
+    return None
 
 
 def recalculate_sell_prices(price_region_items, db_session):
     price_changes = []
     for price_region_item in progressbar(price_region_items):
         price_change = apply_price_rule(price_region_item)
-        db_session.commit()
         if price_change:
             price_changes.append(price_change)
+        db_session.commit()
     return price_changes
 
 
