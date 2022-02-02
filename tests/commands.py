@@ -4,7 +4,13 @@ from unittest.mock import MagicMock, patch
 
 from pxi.commands import Commands, commands, get_command
 from pxi.enum import ItemCondition, ItemType
-from pxi.models import ContractItem, InventoryItem, PriceRegionItem, PriceRule, SupplierItem, WarehouseStockItem
+from pxi.models import (
+    ContractItem,
+    nventoryItem,
+    PriceRegionItem,
+    PriceRule,
+    SupplierItem,
+    WarehouseStockItem)
 from tests import DatabaseTestCase
 from tests.fakes import (
     fake_contract_item,
