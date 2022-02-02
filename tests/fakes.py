@@ -4,6 +4,7 @@ from decimal import Decimal
 from random import randint, choice as random_choice
 import string
 import time
+from typing import Dict, Optional
 
 from pxi.data import (
     BuyPriceChange,
@@ -26,14 +27,16 @@ from pxi.models import (
     WebSortcode)
 
 
-def random_description(length=30):
+def random_description(length: int = 30):
     """
     Makes a random description.
     """
     return random_string(30)
 
 
-def random_datetime(start=None, end=None):
+def random_datetime(
+        start: Optional[datetime] = None,
+        end: Optional[datetime] = None):
     """
     Makes a random datetime between two given datetimes.
     """
@@ -81,7 +84,7 @@ def random_quantity():
     return str(randint(0, 999999))
 
 
-def random_string(length):
+def random_string(length: int):
     """
     Makes a random string of uppercase ASCII letters.
     """
@@ -89,14 +92,14 @@ def random_string(length):
         random_choice(string.ascii_uppercase) for x in range(length)])
 
 
-def random_uom(length=4):
+def random_uom(length: int = 4):
     """
     Makes a random unit of measure.
     """
     return random_string(length)
 
 
-def fake_inventory_item(values={}):
+def fake_inventory_item(values: Dict[str, any] = {}):
     """
     Makes a fake InventoryItem.
     """
@@ -115,30 +118,34 @@ def fake_inventory_item(values={}):
         item_type=values.get("item_type", ItemType.STOCKED_ITEM),
         condition=values.get("condition", ItemCondition.NONE),
         created=values.get("created", random_datetime()),
-        replacement_cost=values.get("replacement_cost", random_price()))
+        replacement_cost=values.get("replacement_cost", random_price_string()))
 
 
-def fake_contract_item(inventory_item, values={}):
+def fake_contract_item(
+        inv_item: InventoryItem,
+        values: Dict[str, any] = {}):
     """
     Makes a fake ContractItem.
     """
     return ContractItem(
-        inventory_item=inventory_item,
+        inventory_item=inv_item,
         code=values.get("code", random_string(6)),
-        price_1=values.get("price_1", random_price()),
-        price_2=values.get("price_2", random_price()),
-        price_3=values.get("price_3", random_price()),
-        price_4=values.get("price_4", random_price()),
-        price_5=values.get("price_5", random_price()),
-        price_6=values.get("price_6", random_price()))
+        price_1=values.get("price_1", random_price_string()),
+        price_2=values.get("price_2", random_price_string()),
+        price_3=values.get("price_3", random_price_string()),
+        price_4=values.get("price_4", random_price_string()),
+        price_5=values.get("price_5", random_price_string()),
+        price_6=values.get("price_6", random_price_string()))
 
 
-def fake_warehouse_stock_item(inventory_item, values={}):
+def fake_warehouse_stock_item(
+        inv_item: InventoryItem,
+        values: Dict[str, any] = {}):
     """
     Makes a fake WarehouseStockItem.
     """
     return WarehouseStockItem(
-        inventory_item=inventory_item,
+        inventory_item=inv_item,
         code=values.get("code", random_string(4)),
         on_hand=values.get("on_hand", random_quantity()),
         minimum=values.get("minimum", random_quantity()),
@@ -147,35 +154,38 @@ def fake_warehouse_stock_item(inventory_item, values={}):
         bulk_location=values.get("bulk_location", random_string(8)))
 
 
-def fake_price_rule(values={}):
+def fake_price_rule(values: Dict[str, any] = {}):
     """
     Makes a fake PriceRule.
     """
     return PriceRule(
         code=values.get("code", random_string(4)),
         description=values.get("description", random_description()),
-        price_0_basis=values.get("_basis", PriceBasis.REPLACEMENT_COST),
-        price_1_basis=values.get("_basis", PriceBasis.REPLACEMENT_COST),
-        price_2_basis=values.get("_basis", PriceBasis.REPLACEMENT_COST),
-        price_3_basis=values.get("_basis", PriceBasis.REPLACEMENT_COST),
-        price_4_basis=values.get("_basis", PriceBasis.REPLACEMENT_COST),
+        price_0_basis=values.get("price_0_basis", PriceBasis.REPLACEMENT_COST),
+        price_1_basis=values.get("price_1_basis", PriceBasis.REPLACEMENT_COST),
+        price_2_basis=values.get("price_2_basis", PriceBasis.REPLACEMENT_COST),
+        price_3_basis=values.get("price_3_basis", PriceBasis.REPLACEMENT_COST),
+        price_4_basis=values.get("price_4_basis", PriceBasis.REPLACEMENT_COST),
         rrp_excl_basis=values.get("rrp_excl_basis", PriceBasis.RRP_EXCL_TAX),
         rrp_incl_basis=values.get("rrp_incl_basis", PriceBasis.RRP_INCL_TAX),
-        price_0_factor=values.get("_factor", random_price_factor()),
-        price_1_factor=values.get("_factor", random_price_factor()),
-        price_2_factor=values.get("_factor", random_price_factor()),
-        price_3_factor=values.get("_factor", random_price_factor()),
-        price_4_factor=values.get("_factor", random_price_factor()),
+        price_0_factor=values.get("price_0_factor", random_price_factor()),
+        price_1_factor=values.get("price_1_factor", random_price_factor()),
+        price_2_factor=values.get("price_2_factor", random_price_factor()),
+        price_3_factor=values.get("price_3_factor", random_price_factor()),
+        price_4_factor=values.get("price_4_factor", random_price_factor()),
         rrp_excl_factor=values.get("rrp_excl_factor", 0),
         rrp_incl_factor=values.get("rrp_incl_factor", 0))
 
 
-def fake_price_region_item(inventory_item, price_rule, values={}):
+def fake_price_region_item(
+        inv_item: InventoryItem,
+        price_rule: PriceRule,
+        values: Dict[str, any] = {}):
     """
     Makes a fake PriceRegionitem.
     """
     return PriceRegionItem(
-        inventory_item=inventory_item,
+        inventory_item=inv_item,
         price_rule=price_rule,
         code=values.get("code", random_string(4)),
         tax_code=values.get("tax_code", TaxCode.TAXABLE),
@@ -183,21 +193,23 @@ def fake_price_region_item(inventory_item, price_rule, values={}):
         quantity_2=values.get("quantity_2", random_quantity()),
         quantity_3=values.get("quantity_3", random_quantity()),
         quantity_4=values.get("quantity_4", random_quantity()),
-        price_0=values.get("price_0", random_price()),
-        price_1=values.get("price_1", random_price()),
-        price_2=values.get("price_2", random_price()),
-        price_3=values.get("price_3", random_price()),
-        price_4=values.get("price_4", random_price()),
+        price_0=values.get("price_0", random_price_string()),
+        price_1=values.get("price_1", random_price_string()),
+        price_2=values.get("price_2", random_price_string()),
+        price_3=values.get("price_3", random_price_string()),
+        price_4=values.get("price_4", random_price_string()),
         rrp_excl_tax=values.get("rrp_excl_tax", 0),
         rrp_incl_tax=values.get("rrp_incl_tax", 0))
 
 
-def fake_supplier_item(inventory_item, values={}):
+def fake_supplier_item(
+        inv_item: InventoryItem,
+        values: Dict[str, any] = {}):
     """
     Makes a fake SupplierItem.
     """
     return SupplierItem(
-        inventory_item=inventory_item,
+        inventory_item=inv_item,
         code=values.get("code", random_string(3)),
         item_code=values.get("item_code", random_item_code()),
         priority=values.get("priority", randint(1, 9)),
@@ -205,21 +217,23 @@ def fake_supplier_item(inventory_item, values={}):
         conv_factor=values.get("conv_factor", 1),
         pack_quantity=values.get("pack_quantity", 1),
         moq=values.get("moq", 1),
-        buy_price=values.get("buy_price", random_price()))
+        buy_price=values.get("buy_price", random_price_string()))
 
 
-def fake_gtin_item(inventory_item, values={}):
+def fake_gtin_item(
+        inv_item: InventoryItem,
+        values: Dict[str, any] = {}):
     """
     Makes a fake GTINItem.
     """
     return GTINItem(
-        inventory_item=inventory_item,
+        inventory_item=inv_item,
         code=values.get("code", random_item_code()),
         uom=values.get("uom", random_uom()),
         conv_factor=values.get("conv_factor", 1))
 
 
-def fake_web_sortcode(values={}):
+def fake_web_sortcode(values: Dict[str, any] = {}):
     """
     Makes a fake WebSortcode.
     """
@@ -228,33 +242,46 @@ def fake_web_sortcode(values={}):
         child_name=values.get("child_name", random_string(20)))
 
 
-def fake_inv_web_data_item(inventory_item, web_sortcode, values={}):
+def fake_inv_web_data_item(
+        inv_item: InventoryItem,
+        web_sortcode: WebSortcode,
+        values: Dict[str, any] = {}):
     """
     Makes a fake InventoryWebDataItem.
     """
     return InventoryWebDataItem(
-        inventory_item=inventory_item,
+        inventory_item=inv_item,
         web_sortcode=web_sortcode,
         description=values.get("description", random_string(20)))
 
 
-def fake_supplier_pricelist_item(supplier_item, values={}):
+def fake_supplier_pricelist_item(
+        supp_item: SupplierItem,
+        values: Dict[str, any] = {}):
+    """
+    Makes a fake SupplierPricelistItem.
+    """
     return SupplierPricelistItem(
-        item_code=values.get("item_code", supplier_item.inventory_item.code),
-        supp_code=values.get("supp_code", supplier_item.code),
-        supp_item_code=values.get("supp_item_code", supplier_item.item_code),
+        item_code=values.get("item_code", supp_item.inventory_item.code),
+        supp_code=values.get("supp_code", supp_item.code),
+        supp_item_code=values.get("supp_item_code", supp_item.item_code),
         supp_conv_factor=values.get(
-            "supp_conv_factor", Decimal(supplier_item.conv_factor)),
-        supp_price=values.get("supp_price", Decimal(supplier_item.buy_price)),
-        supp_uom=values.get("supp_uom", supplier_item.uom),
+            "supp_conv_factor", Decimal(supp_item.conv_factor)),
+        supp_price=values.get("supp_price", Decimal(supp_item.buy_price)),
+        supp_uom=values.get("supp_uom", supp_item.uom),
         supp_sell_uom=values.get(
-            "supp_sell_uom", supplier_item.inventory_item.uom),
-        supp_eoq=values.get("supp_eoq", supplier_item.moq))
+            "supp_sell_uom", supp_item.inventory_item.uom),
+        supp_eoq=values.get("supp_eoq", supp_item.moq))
 
 
-def fake_sell_price_change(price_region_item, values={}):
+def fake_sell_price_change(
+        pr_item: PriceRegionItem,
+        values: Dict[str, any] = {}):
+    """
+    Makes a fake SellPriceChange.
+    """
     return SellPriceChange(
-        price_region_item,
+        pr_item,
         values.get("price_diffs", [
             random_price(),
             random_price(),
@@ -264,8 +291,13 @@ def fake_sell_price_change(price_region_item, values={}):
         ]))
 
 
-def fake_buy_price_change(supplier_item, values={}):
+def fake_buy_price_change(
+        supp_item: SupplierItem,
+        values: Dict[str, any] = {}):
+    """
+    Makes a fake BuyPriceChange.
+    """
     return BuyPriceChange(
-        supplier_item,
+        supp_item,
         values.get("price_was", random_price()),
         values.get("price_now", random_price()))
