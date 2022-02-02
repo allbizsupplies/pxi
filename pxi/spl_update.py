@@ -1,7 +1,5 @@
 from decimal import Decimal
 from sqlalchemy import or_
-from progressbar import progressbar
-from pxi.data import UOMError
 
 from pxi.models import SupplierItem, InventoryItem
 from pxi.data import BuyPriceChange
@@ -75,18 +73,18 @@ def update_supplier_items(spl_items, db_session):
             SupplierItem.code == spl_item.supp_code,
             SupplierItem.item_code == spl_item.supp_item_code,
         ).all()
-        for supp_item in supp_items:
 
-            # Calculate price change.
+        # Calculate price changes.
+        for supp_item in supp_items:
             price_change = BuyPriceChange(
                 supp_item,
-                supp_item.buy_price,
+                Decimal(supp_item.buy_price),
                 spl_item.supp_price)
             if price_change.price_diff_abs > 0:
                 key = f"{supp_item.code}--{supp_item.item_code}"
                 if key not in updated_supp_item_keys:
                     updated_supp_item_keys.add(key)
-                    supp_item.buy_price = spl_item.supp_price
+                    supp_item.buy_price = str(spl_item.supp_price)
                     db_session.commit()
                     price_changes.append(price_change)
 

@@ -11,17 +11,21 @@ from pxi.price_calc import (
     incl_tax,
     excl_tax)
 from tests import DatabaseTestCase
-from tests.fixtures.models import (
-    random_contract_item,
-    random_inventory_item,
-    random_price_rule,
-    random_pricelist)
+from tests.fakes import (
+    fake_contract_item,
+    fake_inventory_item,
+    fake_price_region_item,
+    fake_price_rule,
+    fake_sell_price_change
+)
 
 
 class PriceCalcTests(DatabaseTestCase):
 
     def test_tax_calc(self):
-        """Add and subtract tax from a price."""
+        """
+        Adds and subtracts tax from a price.
+        """
         price = Decimal("10.00")
         expected_price_inc = Decimal("11.00")
         expected_price_ex = Decimal("9.0909")
@@ -29,7 +33,9 @@ class PriceCalcTests(DatabaseTestCase):
         self.assertEqual(expected_price_ex, excl_tax(price))
 
     def test_round_price(self):
-        """Round prices according to charm price rules."""
+        """
+        Rounds prices according to charm price rules.
+        """
         prices = [(Decimal(x), Decimal(y)) for x, y in [
             ("0.47", "0.47"),
             ("0.99", "0.99"),
@@ -68,85 +74,76 @@ class PriceCalcTests(DatabaseTestCase):
             self.assertEqual(price_rd_excl, expected_price_rd_excl)
 
     def test_apply_price_rule(self):
-        """Recalculate sell prices on an item."""
-        price_rule = random_price_rule()
-        price_rule.price_0_factor = Decimal("6.00")
-        price_rule.price_1_factor = Decimal("5.00")
-        price_rule.price_2_factor = Decimal("4.00")
-        price_rule.price_3_factor = Decimal("3.00")
-        price_rule.price_4_factor = Decimal("2.00")
-        # pylint:disable=no-member
-        self.db_session.add(price_rule)
+        """
+        Recalculates sell prices on an item.
+        """
+        price_rule = fake_price_rule({
+            "price_0_factor": "6.00",
+            "price_1_factor": "5.00",
+            "price_2_factor": "4.00",
+            "price_3_factor": "3.00",
+            "price_4_factor": "2.00",
+        })
+        inv_item = fake_inventory_item({
+            "replacement_cost": "10.00",
+        })
+        pr_item = fake_price_region_item(inv_item, price_rule, {
+            "tax_code": TaxCode.TAXABLE,
+        })
+        self.seed([
+            inv_item,
+            price_rule,
+            pr_item,
+        ])
 
-        inventory_item = random_inventory_item()
-        inventory_item.replacement_cost = Decimal("10.00")
-        # pylint:disable=no-member
-        self.db_session.add(inventory_item)
-
-        price_region_item = PriceRegionItem(
-            code="",
-            inventory_item=inventory_item,
-            price_rule=price_rule,
-            tax_code=TaxCode.TAXABLE,
-            quantity_1=99999999,
-            quantity_2=99999999,
-            quantity_3=99999999,
-            quantity_4=99999999,
-            price_0=Decimal("24.00"),
-            price_1=Decimal("20.00"),
-            price_2=Decimal("16.00"),
-            price_3=Decimal("12.00"),
-            price_4=Decimal("8.00"),
-            rrp_excl_tax=Decimal("0.00"),
-            rrp_incl_tax=Decimal("0.00")
-        )
-        self.db_session.add(price_region_item)
-
-        price_changes = apply_price_rule(price_region_item)
+        price_changes = apply_price_rule(pr_item)
+        self.db_session.commit()
 
         calculated_prices = [
-            price_region_item.price_0,
-            price_region_item.price_1,
-            price_region_item.price_2,
-            price_region_item.price_3,
-            price_region_item.price_4,
+            pr_item.price(level)
+            for level in range(5)
         ]
-        expected_prices = [
+        self.assertListEqual(calculated_prices, [
             Decimal("59.9545"),  # 65.95 incl tax
             Decimal("49.9545"),  # 54.95 incl tax
             Decimal("39.9545"),  # 43.95 incl tax
             Decimal("29.9545"),  # 32.95 incl tax
             Decimal("20.0000"),  # 22.00 incl tax
-        ]
-
-        self.assertListEqual(expected_prices, calculated_prices)
+        ])
         self.assertIsNotNone(price_changes)
 
     def test_recalculate_sell_prices(self):
-        """Calculate new prices for items and return a list of changes."""
-        price_region_items = random_pricelist(items=5)
-        # pylint:disable=no-member
-        [self.db_session.add(item) for item in price_region_items]
+        """
+        Calculate new prices for PriceRegionItemms and return a list of 
+        SellPriceChanges.
+        """
+        inv_item = fake_inventory_item()
+        price_rule = fake_price_rule()
+        pr_item = fake_price_region_item(inv_item, price_rule)
+        self.seed([
+            inv_item,
+            price_rule,
+            pr_item,
+        ])
         price_changes = recalculate_sell_prices(
-            price_region_items, self.db_session)
-        self.assertIsInstance(price_changes, list)
+            [pr_item], self.db_session)
         for price_change in price_changes:
-            self.assertIsInstance(price_change, SellPriceChange)
             self.assertGreater(len(price_change.price_diffs), 0)
 
     def test_recalculate_contract_prices(self):
-        """Calculate new prices for contract items."""
-        item_count = 5
-        contract_items = []
-        price_region_items = random_pricelist(items=item_count)
-        for price_region_item in price_region_items:
-            inventory_item = price_region_item.inventory_item
-            contract_item = random_contract_item(inventory_item)
-            # pylint:disable=no-member
-            self.db_session.add(price_region_item)
-            contract_items.append(contract_item)
-        price_changes = recalculate_sell_prices(
-            price_region_items, self.db_session)
+        """
+        Calculate new prices for ContractItems.
+        """
+        inv_item = fake_inventory_item()
+        price_rule = fake_price_rule()
+        pr_item = fake_price_region_item(inv_item, price_rule)
+        con_item = fake_contract_item(inv_item)
+        self.seed([
+            inv_item,
+            price_rule,
+            pr_item,
+        ])
+        price_change = fake_sell_price_change(pr_item)
         updated_contract_items = recalculate_contract_prices(
-            price_changes, self.db_session)
-        self.assertEqual(len(updated_contract_items), item_count)
+            [price_change], self.db_session)
+        self.assertEqual(len(updated_contract_items), 1)

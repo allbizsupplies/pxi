@@ -214,7 +214,7 @@ class ImporterTests(DatabaseTestCase):
         # Seed the database with two InventoryItems and then mock an import
         # for another two, but where the first imported row has the same item
         # code as the first seeded item.
-        fake_filepath = random_string(20)
+        filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item(),
             fake_inventory_item(),
@@ -229,11 +229,11 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_inventory_items(fake_filepath, self.db_session)
+        import_inventory_items(filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # InventoryItems in the database.
-        mock_load_rows.assert_called_with(fake_filepath)
+        mock_load_rows.assert_called_with(filepath)
         # pylint:disable=no-member
         inventory_items = self.db_session.query(InventoryItem).all()
         self.assertEqual(len(inventory_items), 3)
@@ -249,7 +249,7 @@ class ImporterTests(DatabaseTestCase):
         # imported row has the same item code and contract code as the first
         # seeded ContractItem, and the last imported row doesn't have a
         # matching InventoryItem.
-        fake_filepath = random_string(20)
+        filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item(),
             fake_inventory_item(),
@@ -272,11 +272,11 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_contract_items(fake_filepath, self.db_session)
+        import_contract_items(filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # ContractItems in the database.
-        mock_load_rows.assert_called_with(fake_filepath)
+        mock_load_rows.assert_called_with(filepath)
         # pylint:disable=no-member
         contract_items = self.db_session.query(ContractItem).all()
         self.assertEqual(len(contract_items), 3)
@@ -292,7 +292,7 @@ class ImporterTests(DatabaseTestCase):
         # first imported row has the same item code and warehouse code as the
         # first seeded WarehouseStockItem, and the last imported row doesn't
         # have a matching InventoryItem.
-        fake_filepath = random_string(20)
+        filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item(),
             fake_inventory_item(),
@@ -315,11 +315,11 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_warehouse_stock_items(fake_filepath, self.db_session)
+        import_warehouse_stock_items(filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # WarehouseStockItems in the database.
-        mock_load_rows.assert_called_with(fake_filepath)
+        mock_load_rows.assert_called_with(filepath)
         # pylint:disable=no-member
         whse_stock_items = self.db_session.query(WarehouseStockItem).all()
         self.assertEqual(len(whse_stock_items), 3)
@@ -333,7 +333,7 @@ class ImporterTests(DatabaseTestCase):
         # Seed the database with two PriceRules and then mock an import
         # for another two, but where the first imported row has the same rule
         # code as the first seeded item.
-        fake_filepath = random_string(20)
+        filepath = random_string(20)
         seeded_price_rules = [
             fake_price_rule(),
             fake_price_rule(),
@@ -348,11 +348,11 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_price_rules(fake_filepath, self.db_session)
+        import_price_rules(filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3 PriceRules
         # in the database.
-        mock_load_rows.assert_called_with(fake_filepath)
+        mock_load_rows.assert_called_with(filepath)
         # pylint:disable=no-member
         price_rules = self.db_session.query(PriceRule).all()
         self.assertEqual(len(price_rules), 3)
@@ -369,7 +369,7 @@ class ImporterTests(DatabaseTestCase):
         # item code, price rule and price region code as the first seeded
         # PriceRegionItem, and the last row doesn't have a matching
         # InventoryItem.
-        fake_filepath = random_string(20)
+        filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item(),
             fake_inventory_item(),
@@ -399,11 +399,11 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_price_region_items(fake_filepath, self.db_session)
+        import_price_region_items(filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # PriceRegionItems in the database.
-        mock_load_rows.assert_called_with(fake_filepath)
+        mock_load_rows.assert_called_with(filepath)
         # pylint:disable=no-member
         price_region_items = self.db_session.query(PriceRegionItem).all()
         self.assertEqual(len(price_region_items), 3)
@@ -419,7 +419,7 @@ class ImporterTests(DatabaseTestCase):
         # first imported row has the same item code and supplier code as the
         # first seeded SupplierItem, and the last row doesn't have a matching
         # InventoryItem.
-        fake_filepath = random_string(20)
+        filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item(),
             fake_inventory_item(),
@@ -442,11 +442,11 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_supplier_items(fake_filepath, self.db_session)
+        import_supplier_items(filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # SupplierItems in the database.
-        mock_load_rows.assert_called_with(fake_filepath)
+        mock_load_rows.assert_called_with(filepath)
         # pylint:disable=no-member
         supplier_items = self.db_session.query(SupplierItem).all()
         self.assertEqual(len(supplier_items), 3)
@@ -462,7 +462,7 @@ class ImporterTests(DatabaseTestCase):
         # imported row has the same item code, GTIN and UOM as the first
         # seeded GTINItem, and the last row doesn't have a matching
         # InventoryItem.
-        fake_filepath = random_string(20)
+        filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item(),
             fake_inventory_item(),
@@ -486,11 +486,11 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_gtin_items(fake_filepath, self.db_session)
+        import_gtin_items(filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3 GTINItems
         # in the database.
-        mock_load_rows.assert_called_with(fake_filepath)
+        mock_load_rows.assert_called_with(filepath)
         # pylint:disable=no-member
         gtin_items = self.db_session.query(GTINItem).all()
         self.assertEqual(len(gtin_items), 3)
@@ -504,7 +504,7 @@ class ImporterTests(DatabaseTestCase):
         # Mock an import for four SPL items, but make the first and third items
         # share the same item code and supplier code, and make the first and
         # last items share the same item code but not the same supplier code.
-        fake_filepath = random_string(20)
+        filepath = random_string(20)
         fake_item_code = random_item_code()
         fake_supp_code = random_string(3)
         rows = [
@@ -524,10 +524,10 @@ class ImporterTests(DatabaseTestCase):
         mock_load_spl_rows.return_value = rows
 
         # Run the import.
-        spl_items = import_supplier_pricelist_items(fake_filepath)
+        spl_items = import_supplier_pricelist_items(filepath)
 
         # Expect to return only three out of the four items.
-        mock_load_spl_rows.assert_called_with(fake_filepath)
+        mock_load_spl_rows.assert_called_with(filepath)
         self.assertEqual(len(spl_items), 3)
 
     @ patch("pxi.importers.load_rows")
@@ -539,7 +539,7 @@ class ImporterTests(DatabaseTestCase):
         # Seed the database with two WebSortcodes and then mock an import
         # for another two, but where the first imported row has the same menu
         # name as first seeded sortcode.
-        fake_filepath = random_string(20)
+        filepath = random_string(20)
         fake_worksheet_name = random_string(20)
         seeded_web_sortcodes = [
             fake_web_sortcode(),
@@ -556,12 +556,12 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_web_sortcodes(fake_filepath, self.db_session,
+        import_web_sortcodes(filepath, self.db_session,
                              worksheet_name=fake_worksheet_name)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # WebSortcodes in the database.
-        mock_load_rows.assert_called_with(fake_filepath, fake_worksheet_name)
+        mock_load_rows.assert_called_with(filepath, fake_worksheet_name)
         # pylint:disable=no-member
         web_sortcodes = self.db_session.query(WebSortcode).all()
         self.assertEqual(len(web_sortcodes), 3)
@@ -577,7 +577,7 @@ class ImporterTests(DatabaseTestCase):
         # InventoryWebDataItems, but where the first imported row has the same
         # item code, as the first seeded InventoryWebDataItem, and the last
         # row doesn't have a matching InventoryItem.
-        fake_filepath = random_string(20)
+        filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item(),
             fake_inventory_item(),
@@ -612,11 +612,11 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_inventory_web_data_items(fake_filepath, self.db_session)
+        import_inventory_web_data_items(filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # InventoryWebDataItems in the database.
-        mock_load_rows.assert_called_with(fake_filepath)
+        mock_load_rows.assert_called_with(filepath)
         # pylint:disable=no-member
         inv_web_data_items = self.db_session.query(
             InventoryWebDataItem).all()
@@ -631,7 +631,7 @@ class ImporterTests(DatabaseTestCase):
         # Seed the database with one WebSortcode, and mock an import for two
         # WebSortcode mapping, but where the second row doesn't have a
         # matching WebSortcode.
-        fake_filepath = random_string(20)
+        filepath = random_string(20)
         fake_worksheet_name = random_string(20)
         seeded_web_sortcodes = [
             fake_web_sortcode(),
@@ -647,12 +647,12 @@ class ImporterTests(DatabaseTestCase):
 
         # Run the import.
         web_sortcode_mappings = import_web_sortcode_mappings(
-            fake_filepath,
+            filepath,
             self.db_session,
             worksheet_name=fake_worksheet_name)
 
         # Expect to import both web sortcode mappings.
-        mock_load_rows.assert_called_with(fake_filepath, fake_worksheet_name)
+        mock_load_rows.assert_called_with(filepath, fake_worksheet_name)
         # pylint:disable=no-member
         web_sortcodes = self.db_session.query(WebSortcode).all()
         self.assertEqual(len(web_sortcode_mappings), 2)
@@ -666,7 +666,7 @@ class ImporterTests(DatabaseTestCase):
         # Seed the database with one InventoryItem, and mock an import of two
         # image data record, where the second row doesn't have a matching
         # InventoryItem.
-        fake_filepath = random_string(20)
+        filepath = random_string(20)
         seeded_inv_items = [
             fake_inventory_item()
         ]
@@ -681,9 +681,9 @@ class ImporterTests(DatabaseTestCase):
 
         # Run the import.
         images_data = import_website_images_report(
-            fake_filepath, self.db_session)
+            filepath, self.db_session)
 
         # Expect to import one image data record.
-        mock_load_rows.assert_called_with(fake_filepath)
+        mock_load_rows.assert_called_with(filepath)
         # pylint:disable=no-member
         self.assertEqual(len(images_data), 1)

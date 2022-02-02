@@ -1,7 +1,8 @@
 
+from decimal import Decimal
 from sqlalchemy import (
     Column, UniqueConstraint,
-    Date, DateTime, Enum, ForeignKey, Numeric, Integer, String)
+    Date, DateTime, Enum, ForeignKey, Integer, String)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -26,7 +27,7 @@ class InventoryItem(Base):
     item_type = Column(Enum(ItemType), nullable=False)
     condition = Column(Enum(ItemCondition))
     created = Column(DateTime)
-    replacement_cost = Column(Numeric(precision=15, scale=4), nullable=False)
+    replacement_cost = Column(String(16), nullable=False)
 
     contract_items = relationship("ContractItem",
                                   back_populates="inventory_item")
@@ -53,8 +54,9 @@ class InventoryItem(Base):
     @property
     def default_price_region_item(self):
         for price_region_item in self.price_region_items:
-            if price_region_item.code == "":
+            if price_region_item.in_default_price_region:
                 return price_region_item
+        return None
 
     @property
     def full_description(self):
@@ -79,22 +81,30 @@ class PriceRule(Base):
     price_4_basis = Column(Enum(PriceBasis), nullable=False)
     rrp_excl_basis = Column(Enum(PriceBasis), nullable=False)
     rrp_incl_basis = Column(Enum(PriceBasis), nullable=False)
-    price_0_factor = Column(Numeric(precision=15, scale=4), nullable=False)
-    price_1_factor = Column(Numeric(precision=15, scale=4), nullable=False)
-    price_2_factor = Column(Numeric(precision=15, scale=4), nullable=False)
-    price_3_factor = Column(Numeric(precision=15, scale=4), nullable=False)
-    price_4_factor = Column(Numeric(precision=15, scale=4), nullable=False)
-    rrp_excl_factor = Column(Numeric(precision=15, scale=4), nullable=False)
-    rrp_incl_factor = Column(Numeric(precision=15, scale=4), nullable=False)
+    price_0_factor = Column(String(16), nullable=False)
+    price_1_factor = Column(String(16), nullable=False)
+    price_2_factor = Column(String(16), nullable=False)
+    price_3_factor = Column(String(16), nullable=False)
+    price_4_factor = Column(String(16), nullable=False)
+    rrp_excl_factor = Column(String(16), nullable=False)
+    rrp_incl_factor = Column(String(16), nullable=False)
 
     price_region_items = relationship("PriceRegionItem",
                                       back_populates="price_rule")
+
+    def price_basis(self, level):
+        return getattr(self, f"price_{level}_basis")
+
+    def price_factor(self, level):
+        return getattr(self, f"price_{level}_factor")
 
     def __repr__(self):
         return f"<PriceRule(code='{self.code}')>"
 
 
 class PriceRegionItem(Base):
+    PRICE_LEVELS = 5
+    DEFAULT_REGION_CODE = ""
     __tablename__ = "price_region_items"
 
     id = Column(Integer, primary_key=True)
@@ -103,17 +113,17 @@ class PriceRegionItem(Base):
                                ForeignKey("inventory_items.id"), nullable=False)
     price_rule_id = Column(Integer, ForeignKey("price_rules.id"))
     tax_code = Column(Enum(TaxCode))
-    quantity_1 = Column(Numeric(precision=13, scale=4), nullable=False)
-    quantity_2 = Column(Numeric(precision=13, scale=4), nullable=False)
-    quantity_3 = Column(Numeric(precision=13, scale=4), nullable=False)
-    quantity_4 = Column(Numeric(precision=13, scale=4), nullable=False)
-    price_0 = Column(Numeric(precision=15, scale=4), nullable=False)
-    price_1 = Column(Numeric(precision=15, scale=4), nullable=False)
-    price_2 = Column(Numeric(precision=15, scale=4), nullable=False)
-    price_3 = Column(Numeric(precision=15, scale=4), nullable=False)
-    price_4 = Column(Numeric(precision=15, scale=4), nullable=False)
-    rrp_excl_tax = Column(Numeric(precision=15, scale=4), nullable=False)
-    rrp_incl_tax = Column(Numeric(precision=14, scale=2), nullable=False)
+    quantity_1 = Column(String(14), nullable=False)
+    quantity_2 = Column(String(14), nullable=False)
+    quantity_3 = Column(String(14), nullable=False)
+    quantity_4 = Column(String(14), nullable=False)
+    price_0 = Column(String(16), nullable=False)
+    price_1 = Column(String(16), nullable=False)
+    price_2 = Column(String(16), nullable=False)
+    price_3 = Column(String(16), nullable=False)
+    price_4 = Column(String(16), nullable=False)
+    rrp_excl_tax = Column(String(16), nullable=False)
+    rrp_incl_tax = Column(String(15), nullable=False)
 
     __table_args__ = (
         UniqueConstraint("code", "inventory_item_id"),
@@ -127,7 +137,16 @@ class PriceRegionItem(Base):
 
     @property
     def in_default_price_region(self):
-        return self.code == ""
+        return self.code == self.DEFAULT_REGION_CODE
+
+    def quantity(self, level: int):
+        return Decimal(getattr(self, f"quantity_{level}"))
+
+    def price(self, level: int):
+        return Decimal(getattr(self, f"price_{level}"))
+
+    def set_price(self, level: int, value: Decimal):
+        setattr(self, f"price_{level}", str(value))
 
     def __repr__(self):
         return (f"<PriceRegionItem(code='{self.code}',"
@@ -135,18 +154,19 @@ class PriceRegionItem(Base):
 
 
 class ContractItem(Base):
+    PRICE_LEVELS = 6
     __tablename__ = "contract_items"
 
     id = Column(Integer, primary_key=True)
     code = Column(String(16), nullable=False)
     inventory_item_id = Column(Integer,
                                ForeignKey("inventory_items.id"), nullable=False)
-    price_1 = Column(Numeric(precision=10, scale=4), nullable=False)
-    price_2 = Column(Numeric(precision=10, scale=4), nullable=False)
-    price_3 = Column(Numeric(precision=10, scale=4), nullable=False)
-    price_4 = Column(Numeric(precision=10, scale=4), nullable=False)
-    price_5 = Column(Numeric(precision=10, scale=4), nullable=False)
-    price_6 = Column(Numeric(precision=10, scale=4), nullable=False)
+    price_1 = Column(String(11), nullable=False)
+    price_2 = Column(String(11), nullable=False)
+    price_3 = Column(String(11), nullable=False)
+    price_4 = Column(String(11), nullable=False)
+    price_5 = Column(String(11), nullable=False)
+    price_6 = Column(String(11), nullable=False)
 
     __table_args__ = (
         UniqueConstraint("code", "inventory_item_id"),
@@ -154,6 +174,12 @@ class ContractItem(Base):
 
     inventory_item = relationship("InventoryItem",
                                   back_populates="contract_items")
+
+    def price(self, level: int):
+        return Decimal(getattr(self, f"price_{level}"))
+
+    def set_price(self, level: int, value: Decimal):
+        setattr(self, f"price_{level}", str(value))
 
     def __repr__(self):
         return f"<ContractItem(code='{self.code}')>"
@@ -193,10 +219,10 @@ class SupplierItem(Base):
     item_code = Column(String(2), nullable=False)
     priority = Column(Integer, nullable=False)
     uom = Column(String(4), nullable=False)
-    conv_factor = Column(Numeric(precision=13, scale=7), nullable=False)
+    conv_factor = Column(String(14), nullable=False)
     pack_quantity = Column(Integer, nullable=False)
     moq = Column(Integer, nullable=False)
-    buy_price = Column(Numeric(precision=10, scale=4), nullable=False)
+    buy_price = Column(String(11), nullable=False)
 
     __table_args__ = (
         UniqueConstraint("code", "inventory_item_id"),
@@ -219,7 +245,7 @@ class GTINItem(Base):
     inventory_item_id = Column(Integer,
                                ForeignKey("inventory_items.id"), nullable=False)
     uom = Column(String(4), nullable=False)
-    conv_factor = Column(Numeric(precision=13, scale=7), nullable=False)
+    conv_factor = Column(String(14), nullable=False)
 
     __table_args__ = (
         UniqueConstraint("code", "inventory_item_id", "uom"),

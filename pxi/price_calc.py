@@ -1,22 +1,34 @@
 
-from copy import copy
-from math import ceil
 from decimal import Decimal
-from pxi.data import SellPriceChange
+from sqlalchemy.orm.session import Session
+from typing import List
 
+from pxi.data import SellPriceChange
 from pxi.enum import PriceBasis, TaxCode
 from pxi.models import ContractItem, PriceRegionItem
 
 
-def d(amount):
+def dec(amount: str):
+    """
+    Creates a Decimal object from a string, rounded to the nearest hundredth
+    of a cent.
+
+    Params:
+        amount: A str, int or float representing a price.
+
+    Returns:
+        The Decimal object.
+    """
     if amount is not None:
         return Decimal(amount).quantize(Decimal("0.0001"))
+    return None
 
 
-TAX_FACTOR = d("1.10")
+# The tax factor to use. Equal to Australian GST (10% VAT).
+TAX_FACTOR = dec("1.10")
 
-PRICE_LEVELS = 5
-
+# Rounding rules to be applied to prices.
+#
 # min: the smallest amount the rule applies to.
 # rounding_step: the amount is rounded to the nearesr multiple of this value.
 # charm rules:
@@ -26,48 +38,64 @@ PRICE_LEVELS = 5
 #              the charm price.
 ROUNDING_RULES = [
     {
-        "min": d("0.00"),
-        "rounding_step": d("0.01"),
+        "min": dec("0.00"),
+        "rounding_step": dec("0.01"),
         "charm_rules": None,
     },
     {
-        "min": d("1.00"),
-        "rounding_step": d("0.05"),
+        "min": dec("1.00"),
+        "rounding_step": dec("0.05"),
         "charm_rules": None,
     },
     {
-        "min": d("25.00"),
-        "rounding_step": d("0.05"),
+        "min": dec("25.00"),
+        "rounding_step": dec("0.05"),
         "charm_rules": [
-            (d("1.00"), d("0.05"), d("0.10")),
+            (dec("1.00"), dec("0.05"), dec("0.10")),
         ],
     },
     {
-        "min": d("99.00"),
-        "rounding_step": d("1.00"),
+        "min": dec("99.00"),
+        "rounding_step": dec("1.00"),
         "charm_rules": [
-            (d("10.00"), d("1.00"), d("2.00")),
+            (dec("10.00"), dec("1.00"), dec("2.00")),
         ],
     },
     {
-        "min": d("199.00"),
-        "rounding_step": d("10.00"),
+        "min": dec("199.00"),
+        "rounding_step": dec("10.00"),
         "charm_rules": [
-            (d("10.00"), d("1.00"), d("5.00")),
-            (d("100.00"), d("1.00"), d("10.00")),
+            (dec("10.00"), dec("1.00"), dec("5.00")),
+            (dec("100.00"), dec("1.00"), dec("10.00")),
         ],
     },
 ]
 
 
-def apply_price_rule(price_region_item):
-    """Recalculate prices for price region."""
+def apply_price_rule(price_region_item: PriceRegionItem):
+    """
+    Recalculate prices for price region, using price rule.
+
+    Params:
+        price_region_item: The PriceRegionItem to work on.
+
+    Returns:
+        A SellPriceChange if prices differ, otherwise None.
+    """
     inventory_item = price_region_item.inventory_item
     price_rule = price_region_item.price_rule
+
+    # Calculate and apply new prices for PriceRegionItem and record the
+    # SellPriceChange.
     price_change = SellPriceChange(price_region_item)
-    for i in range(PRICE_LEVELS):
-        basis = getattr(price_rule, f"price_{i}_basis")
-        factor = getattr(price_rule, f"price_{i}_factor")
+    for level in range(PriceRegionItem.PRICE_LEVELS):
+        # Get the price basis and multiplication factor for the given price
+        # level in the PriceRule.
+        basis = price_rule.price_basis(level)
+        factor = price_rule.price_factor(level)
+
+        # Select the base price for the price calculation depending on the
+        # PriceBasis used in the price rule.
         base_price = None
         if basis == PriceBasis.REPLACEMENT_COST:
             base_price = inventory_item.replacement_cost
@@ -85,40 +113,72 @@ def apply_price_rule(price_region_item):
             base_price = price_region_item.price_3
         elif basis == PriceBasis.EXISTING_PRICE_4:
             base_price = price_region_item.price_4
+
+        # Throw an exception if the base price doesn't exist.
         if base_price is None:
             raise Exception(
-                f"no base price for {inventory_item}, {price_region_item}")
-        price = base_price * factor
-        tax_exempt = price_region_item.tax_code == TaxCode.EXEMPT
-        rounded_price = round_price(price, tax_exempt=tax_exempt)
-        price_was = getattr(price_region_item, f"price_{i}")
-        price_diff = rounded_price - price_was
+                f"No base price for {inventory_item}, {price_region_item}")
+
+        # Calculate the rounded price.
+        price_now = round_price(
+            dec(base_price) * dec(factor),
+            tax_exempt=(price_region_item.tax_code == TaxCode.EXEMPT))
+
+        # Fetch the old price before applying the new price.
+        price_was = price_region_item.price(level)
+        price_region_item.set_price(level, price_now)
+
+        # Record the price difference in the SellPriceChange.
+        price_diff = price_now - price_was
         price_change.price_diffs.append(price_diff)
-        setattr(price_region_item, f"price_{i}", rounded_price)
+
+    # Return the price change if the price has actually changed, otherwise
+    # discard it.
     if price_change.price_differs:
         return price_change
     return None
 
 
-def recalculate_sell_prices(price_region_items, db_session):
-    price_changes = []
+def recalculate_sell_prices(
+        price_region_items: List[PriceRegionItem],
+        db_session: Session):
+    """
+    Recalculates sell prices for PriceRegionItems.
+
+    Params:
+        price_region_items: The PriceRegionItems to work on.
+        session: The database sesssion.
+
+    Returns:
+        A list of price changes.
+    """
+    price_changes: List[SellPriceChange] = []
     for price_region_item in price_region_items:
         price_change = apply_price_rule(price_region_item)
         if price_change:
             price_changes.append(price_change)
-        db_session.commit()
+    db_session.commit()
     return price_changes
 
 
-def recalculate_contract_prices(price_changes, db_session):
-    updated_contract_items = []
+def recalculate_contract_prices(
+        price_changes: List[SellPriceChange],
+        db_session: Session):
 
-    def multiply_prices(contract_item, price_ratio):
-        for i in range(1, 7):
-            price_field = f"price_{i}"
-            price_was = getattr(contract_item, price_field)
+    updated_contract_items: List[ContractItem] = []
+
+    def multiply_prices(con_item: ContractItem, price_ratio: Decimal):
+        """
+        Calculate and apply new prices to ContractItem.
+
+        Params:
+            con_item: The ContractItem to work on.
+            price_ratio: The ratio of the new price to the old price.
+        """
+        for level in range(1, ContractItem.PRICE_LEVELS + 1):
+            price_was = con_item.price(level)
             price_now = (price_was * price_ratio).quantize(price_was)
-            setattr(contract_item, price_field, price_now)
+            con_item.set_price(level, price_now)
 
     for price_change in price_changes:
         inventory_item = price_change.price_region_item.inventory_item
@@ -126,7 +186,7 @@ def recalculate_contract_prices(price_changes, db_session):
             ContractItem.inventory_item == inventory_item
         ).all()
         # Adjust the contract prices in proportion to the retail price change.
-        price_now = price_change.price_region_item.price_0
+        price_now = price_change.price_region_item.price(0)
         price_diff = price_change.price_diffs[0]
         price_was = price_now - price_diff
         price_ratio = None

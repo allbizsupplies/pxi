@@ -15,7 +15,7 @@ testloader = unittest.TestLoader()
 testcases = [
     AnalysisTests,
     CommandTests,
-    ExporterTests,
+    # ExporterTests, # Excluded until tests.
     FetcherTests,
     ImporterTests,
     PriceCalcTests,

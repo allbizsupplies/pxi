@@ -1,20 +1,35 @@
-from progressbar import progressbar
+from sqlalchemy.orm.session import Session
+from typing import Dict, List
 
-from pxi.models import WebSortcode
+from pxi.models import InventoryWebDataItem, WebSortcode
 
 
-def update_product_menu(inventory_items, web_sortcode_mappings, session):
-    updated_inventory_items = []
-    for inventory_item in inventory_items:
-        price_region_item = inventory_item.default_price_region_item
+MANUALLY_SORTED = 'man'
+
+
+def update_product_menu(
+        inv_web_data_items: List[InventoryWebDataItem],
+        web_sortcode_mappings: Dict[str, WebSortcode],
+        session: Session):
+    """
+    Maps WebSortcodes to InventoryWebDataItems.
+
+    Params:
+        inv_web_data_items: List of InventoryWebDataItems to work on.
+        web_sortcode_mappings: Map of PriceRules to WebSortcodes.
+        session: The database session.
+
+    Returns:
+        List of updated InventoryWebDataItems.
+    """
+    updated_iwd_items: List[InventoryWebDataItem] = []
+    for iwd_item in inv_web_data_items:
+        inv_item = iwd_item.inventory_item
+        price_region_item = inv_item.default_price_region_item
         rule_code = price_region_item.price_rule.code
-        inventory_web_data_item = inventory_item.inventory_web_data_item
-        try:
-            web_sortcode = web_sortcode_mappings[rule_code]
-            if web_sortcode and web_sortcode != "man":
-                inventory_web_data_item.web_sortcode = web_sortcode
-                session.commit()
-                updated_inventory_items.append(inventory_item)
-        except KeyError:
-            pass
-    return updated_inventory_items
+        web_sortcode = web_sortcode_mappings.get(rule_code)
+        if web_sortcode and web_sortcode != MANUALLY_SORTED:
+            iwd_item.web_sortcode = web_sortcode
+            session.commit()
+            updated_iwd_items.append(iwd_item)
+    return updated_iwd_items
