@@ -36,7 +36,7 @@ def get_inventory_items(db_session):
             for inv_item in db_session.query(InventoryItem).all()}
 
 
-def upserter(db_session, model, records):
+def get_upserter(db_session, model, records):
     """
     Creates an upsert function for a given model and records.
 
@@ -88,7 +88,7 @@ def import_contract_items(filepath, db_session):
     inv_items = get_inventory_items(db_session)
 
     # Create an upserter for ContractItem.
-    upsert = upserter(db_session, ContractItem, {
+    upsert = get_upserter(db_session, ContractItem, {
         f"{con_item.code}--{con_item.inventory_item.code}": con_item
         for con_item in db_session.query(ContractItem).all()})
 
@@ -136,8 +136,8 @@ def import_inventory_items(filepath, db_session):
     updated_count = 0   # The number of existing records updated.
 
     # Create an upserter for InventoryItem.
-    upsert = upserter(db_session, InventoryItem,
-                      get_inventory_items(db_session))
+    upsert = get_upserter(db_session, InventoryItem,
+                          get_inventory_items(db_session))
 
     # Update/insert rows as InventoryItems.
     for row in load_rows(filepath):
@@ -190,7 +190,7 @@ def import_inventory_web_data_items(filepath, db_session):
         for web_sortcode in db_session.query(WebSortcode).all()}
 
     # Create an upserter for InventoryWebDataItems.
-    upsert = upserter(db_session, InventoryWebDataItem, {
+    upsert = get_upserter(db_session, InventoryWebDataItem, {
         iwd_item.inventory_item.code: iwd_item
         for iwd_item in db_session.query(InventoryWebDataItem).all()})
 
@@ -246,7 +246,7 @@ def import_price_region_items(filepath, db_session):
         for price_rule in db_session.query(PriceRule).all()}
 
     # Create an upserter for PriceRegionItem.
-    upsert = upserter(db_session, PriceRegionItem, {
+    upsert = get_upserter(db_session, PriceRegionItem, {
         f"{pr_item.code}--{pr_item.inventory_item.code}": pr_item
         for pr_item in db_session.query(PriceRegionItem).all()})
 
@@ -307,7 +307,7 @@ def import_price_rules(filepath, db_session):
     inserted_count = 0  # The number of new records inserted.
     updated_count = 0   # The number of existing records updated.
 
-    upsert = upserter(db_session, PriceRule, {
+    upsert = get_upserter(db_session, PriceRule, {
         price_rule.code: price_rule
         for price_rule in db_session.query(PriceRule).all()})
 
@@ -361,7 +361,7 @@ def import_warehouse_stock_items(filepath, db_session):
     inv_items = get_inventory_items(db_session)
 
     # Create upserter for WarehouseStockItem.
-    upsert = upserter(db_session, WarehouseStockItem, {
+    upsert = get_upserter(db_session, WarehouseStockItem, {
         f"{ws_item.code}--{ws_item.inventory_item.code}": ws_item
         for ws_item in db_session.query(WarehouseStockItem).all()})
 
@@ -412,7 +412,7 @@ def import_supplier_items(filepath, db_session):
     inv_items = get_inventory_items(db_session)
 
     # Create upserter for SupplierItem.
-    upsert = upserter(db_session, SupplierItem, {
+    upsert = get_upserter(db_session, SupplierItem, {
         f"{supp_item.code}--{supp_item.inventory_item.code}": supp_item
         for supp_item in db_session.query(SupplierItem).all()})
 
@@ -465,7 +465,7 @@ def import_gtin_items(filepath, db_session):
     inv_items = get_inventory_items(db_session)
 
     # Create an upserter for GTINItem.
-    upsert = upserter(db_session, GTINItem, {
+    upsert = get_upserter(db_session, GTINItem, {
         f"{gtin_item.code}--{gtin_item.inventory_item.code}": gtin_item
         for gtin_item in db_session.query(GTINItem).all()})
 
