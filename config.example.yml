@@ -93,3 +93,8 @@ bin_locations:
   ignore:
     - "OWNUSE"
     - "CLEAR"
+
+gtin:
+  # Ignore these brands when checking which products are missing a GTIN.
+  # (Some brands just don't use barcodes.)
+  ignore_brands: []
