@@ -8,21 +8,34 @@ from pxi.database import get_session
 from pxi.enum import ItemCondition, ItemType
 from pxi.exporters import (
     export_contract_item_task,
+    export_downloaded_images_report,
+    export_gtin_report,
     export_price_changes_report,
     export_pricelist,
     export_product_price_task,
     export_supplier_price_changes_report,
     export_supplier_pricelist,
     export_tickets_list,
-)
-from pxi.importers import import_data, import_supplier_pricelist_items
-from pxi.models import ContractItem, InventoryItem, PriceRegionItem, PriceRule, SupplierItem, WarehouseStockItem
+    export_web_data_updates_report,
+    export_web_product_menu_data)
+from pxi.image import fetch_images
+from pxi.importers import import_data, import_supplier_pricelist_items, import_web_sortcode_mappings, import_website_images_report
+from pxi.models import (
+    ContractItem,
+    GTINItem,
+    InventoryItem,
+    InventoryWebDataItem,
+    PriceRegionItem,
+    PriceRule,
+    SupplierItem,
+    WarehouseStockItem,
+    WebSortcode)
 from pxi.price_calc import (
     recalculate_contract_prices,
-    recalculate_sell_prices
-)
+    recalculate_sell_prices)
 from pxi.scp import get_scp_client
 from pxi.spl_update import update_supplier_items
+from pxi.web_update import update_product_menu
 
 
 class CommandBase:
@@ -188,25 +201,186 @@ class Commands:
                 import_paths["supplier_pricelist"])
 
             # Update supplier prices and record changes.
-            supp_price_changes = update_supplier_items(
-                spl_items, self.db_session)
+            bp_changes = update_supplier_items(spl_items, self.db_session)
 
-            # Export report and data file:
+            # Export report and data files:
             # - Supplier price changes report
             # - Pronto-format supplier pricelist
             export_paths = self.config["paths"]["export"]
             export_supplier_price_changes_report(
                 export_paths["supplier_price_changes_report"],
-                supp_price_changes)
+                bp_changes)
             export_supplier_pricelist(
                 export_paths["supplier_pricelist"], [
-                    price_change.supplier_item
-                    for price_change in supp_price_changes])
+                    bp_change.supplier_item
+                    for bp_change in bp_changes])
 
             # Log results.
             logging.info(
                 f"Update SupplierItems: "
-                f"{len(supp_price_changes)} updated.")
+                f"{len(bp_changes)} updated.")
+
+    class web_update(CommandBase):
+        """
+        Sort inventory items into web categories.
+        """
+        aliases = ["wu", "wupd"]
+
+        def execute(self, options):
+
+            # Import all data related to SupplierItems.
+            import_paths = self.config["paths"]["import"]
+            import_data(self.db_session, import_paths, [
+                InventoryItem,
+                WebSortcode,
+                PriceRule,
+                PriceRegionItem,
+                InventoryWebDataItem,
+            ], force_imports=options.get("force_imports", False))
+
+            # Import web sortcode mappings.
+            wsc_mappings = import_web_sortcode_mappings(
+                import_paths["inventory_metadata"],
+                self.db_session,
+                worksheet_name="rules")
+
+            # Select all InventoryWebDataItems that are related to an active
+            # InventoryItem and PriceRule, but not a WebSortcode.
+            # pylint:disable=no-member
+            iwd_items = self.db_session.query(InventoryWebDataItem).join(
+                InventoryWebDataItem.inventory_item
+            ).join(
+                InventoryItem.price_region_items
+            ).filter(
+                PriceRegionItem.price_rule_id.isnot(None),
+                PriceRegionItem.code == "",
+                InventoryWebDataItem.web_sortcode == None,
+                InventoryItem.condition != ItemCondition.DISCONTINUED,
+                InventoryItem.condition != ItemCondition.INACTIVE,
+                InventoryItem.item_type != ItemType.CROSS_REFERENCE,
+                InventoryItem.item_type != ItemType.LABOUR,
+                InventoryItem.item_type != ItemType.INDENT_ITEM,
+            ).all()
+
+            # Update inventory web data and record changes.
+            updated_iwd_items = update_product_menu(
+                iwd_items, wsc_mappings, self.db_session)
+
+            # Export report and data files:
+            # - Inventory web data updates report
+            # - Pronto-format web product menu data
+            export_paths = self.config["paths"]["export"]
+            export_web_product_menu_data(
+                export_paths["web_product_menu_data"],
+                updated_iwd_items)
+            export_web_data_updates_report(
+                export_paths["web_data_updates_report"],
+                updated_iwd_items)
+
+            # Log results.
+            logging.info(
+                f"Update InventoryWebDataItems: "
+                f"{len(updated_iwd_items)} updated.")
+
+    class missing_gtin(CommandBase):
+        """
+        Report on inventory items without a unit GTIN.
+        """
+        aliases = ["mg", "mgtin"]
+
+        def execute(self, options):
+
+            # Import all data related to GTINItems.
+            import_paths = self.config["paths"]["import"]
+            import_data(self.db_session, import_paths, [
+                InventoryItem,
+                GTINItem,
+            ], force_imports=options.get("force_imports", False))
+
+            # Select all active, stocked InventoryItems besides those from
+            # brands that don't have barcodes.
+            # pylint:disable=no-member
+            inv_items = self.db_session.query(InventoryItem).join(
+                InventoryItem.gtin_items
+            ).filter(
+                ~InventoryItem.brand.in_(self.config["gtin"]["ignore_brands"]),
+                InventoryItem.condition != ItemCondition.DISCONTINUED,
+                InventoryItem.condition != ItemCondition.INACTIVE,
+                InventoryItem.item_type != ItemType.CROSS_REFERENCE,
+                InventoryItem.item_type != ItemType.LABOUR,
+                InventoryItem.item_type != ItemType.INDENT_ITEM,
+            ).all()
+
+            def is_missing_gtin(inventory_item):
+                """
+                Checks if InventoryItem is missing a unit barcode.
+
+                Params:
+                    inventory_item: The InventoryItem to check.
+
+                Returns:
+                    Whether the InventoryItem is missing a gtin.
+                """
+                for gtin_item in inventory_item.gtin_items:
+                    if gtin_item.is_unit_barcode:
+                        return False
+                return True
+
+            # Select InventoryItems without a unit barcode.
+            inv_items_no_gtin = []
+            for inv_item in inv_items:
+                if is_missing_gtin(inv_item):
+                    inv_items_no_gtin.append(inv_item)
+
+            # Select InventoryItems without a unit barcode and stock on hand.
+            inv_items_no_gtin_on_hand = []
+            for inv_item in inv_items_no_gtin:
+                for ws_item in inv_item.warehouse_stock_items:
+                    if ws_item.on_hand > 0:
+                        inv_items_no_gtin_on_hand.append(inv_item)
+                        continue  # Yuck!
+
+            # Export GTIN report to file.
+            export_paths = self.config["paths"]["export"]
+            export_gtin_report(
+                export_paths["gtin_report"],
+                inv_items_no_gtin,
+                inv_items_no_gtin_on_hand)
+
+    class fetch_images(CommandBase):
+        """
+        Download and format images for products.
+        """
+        aliases = ["fi", "fimg"]
+
+        def execute(self, options):
+
+            # Import all data related to SupplierItems.
+            import_paths = self.config["paths"]["import"]
+            import_data(self.db_session, import_paths, [
+                InventoryItem,
+                SupplierItem,
+            ], force_imports=options.get("force_imports", False))
+
+            # Import image filenames.
+            images = import_website_images_report(
+                import_paths["website_images_report"], self.db_session)
+
+            # Select InventoryItems without an image.
+            inv_items_no_image = []
+            for inv_item, filename in images:
+                if filename is None:
+                    inv_items_no_image.append(inv_item)
+
+            # Fetch images for InventoryItems.
+            export_paths = self.config["paths"]["export"]
+            fetched_images = fetch_images(
+                export_paths["images_dir"], inv_items_no_image)
+
+            # Export report on fetched images.
+            export_downloaded_images_report(
+                export_paths["website_images_report"],
+                fetched_images)
 
     class download_spl(CommandBase):
         """
@@ -215,6 +389,7 @@ class Commands:
         aliases = ["dspl"]
 
         def execute(self, options):
+
             # Download the file using SCP.
             config = self.config["ssh"]
             src = self.config["paths"]["remote"]["supplier_pricelist"]
@@ -235,6 +410,7 @@ class Commands:
         aliases = ["uspl"]
 
         def execute(self, options):
+
             # Upload the file using SCP.
             config = self.config["ssh"]
             src = self.config["paths"]["export"]["supplier_pricelist"]
@@ -255,6 +431,7 @@ class Commands:
         aliases = ["upl"]
 
         def execute(self, options):
+
             # Upload the file using SCP.
             config = self.config["ssh"]
             src = self.config["paths"]["export"]["pricelist"]

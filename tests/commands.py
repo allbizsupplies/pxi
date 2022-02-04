@@ -6,14 +6,19 @@ from pxi.commands import Commands, commands, get_command
 from pxi.enum import ItemCondition, ItemType
 from pxi.models import (
     ContractItem,
-    nventoryItem,
+    GTINItem,
+    InventoryItem,
+    InventoryWebDataItem,
     PriceRegionItem,
     PriceRule,
     SupplierItem,
-    WarehouseStockItem)
+    WarehouseStockItem,
+    WebSortcode)
 from tests import DatabaseTestCase
 from tests.fakes import (
     fake_contract_item,
+    fake_gtin_item,
+    fake_inv_web_data_item,
     fake_inventory_item,
     fake_buy_price_change,
     fake_price_region_item,
@@ -21,7 +26,8 @@ from tests.fakes import (
     fake_sell_price_change,
     fake_supplier_item,
     fake_supplier_pricelist_item,
-    fake_warehouse_stock_item)
+    fake_warehouse_stock_item,
+    fake_web_sortcode)
 
 
 def get_mock_config():
@@ -29,17 +35,24 @@ def get_mock_config():
         "paths": {
             "database": ":memory:",
             "import": {
-                "supplier_pricelist": "path/import/supplier_pricelist",
+                "inventory_metadata": "path/import/inventory_metadata",
                 "pricelist": "path/import/pricelist",
+                "supplier_pricelist": "path/import/supplier_pricelist",
+                "website_images_report": "path/import/website_images_report",
             },
             "export": {
+                "contract_item_task": "path/export/contract_item_task",
+                "gtin_report": "path/export/gtin_report",
+                "images_dir": "path/export/images_dir",
                 "pricelist": "path/export/pricelist",
                 "price_changes_report": "path/export/price_changes_report",
                 "product_price_task": "path/export/product_price_task",
-                "contract_item_task": "path/export/contract_item_task",
                 "supplier_pricelist": "path/export/supplier_pricelist",
                 "supplier_price_changes_report": "path/export/supplier_price_changes_report",
                 "tickets_list": "path/export/tickets_list",
+                "web_product_menu_data": "path/export/web_product_menu_data",
+                "web_data_updates_report": "path/export/web_data_updates_report",
+                "website_images_report": "path/export/website_images_report",
             },
             "remote": {
                 "pricelist": "path/remote/pricelist",
@@ -61,6 +74,11 @@ def get_mock_config():
             "ignore": [
                 "IGNORED",
             ]
+        },
+        "gtin": {
+            "ignore_brands": [
+                "IGN",
+            ]
         }
     }
 
@@ -73,11 +91,14 @@ class CommandTests(DatabaseTestCase):
         """
         expected_commands = [
             Commands.download_spl,
+            Commands.fetch_images,
             Commands.generate_spl,
             Commands.help,
+            Commands.missing_gtin,
             Commands.price_calc,
             Commands.upload_pricelist,
             Commands.upload_spl,
+            Commands.web_update,
         ]
 
         self.assertEqual(
@@ -94,6 +115,10 @@ class CommandTests(DatabaseTestCase):
             ("dspl", Commands.download_spl),
             ("help", Commands.help),
             ("h", Commands.help),
+            ("missing_gtin", Commands.missing_gtin),
+            ("missing-gtin", Commands.missing_gtin),
+            ("mg", Commands.missing_gtin),
+            ("mgtin", Commands.missing_gtin),
             ("price_calc", Commands.price_calc),
             ("price-calc", Commands.price_calc),
             ("pc", Commands.price_calc),
@@ -106,6 +131,14 @@ class CommandTests(DatabaseTestCase):
             ("generate_spl", Commands.generate_spl),
             ("generate-spl", Commands.generate_spl),
             ("gspl", Commands.generate_spl),
+            ("web_update", Commands.web_update),
+            ("web-update", Commands.web_update),
+            ("wu", Commands.web_update),
+            ("wupd", Commands.web_update),
+            ("fetch_images", Commands.fetch_images),
+            ("fetch-images", Commands.fetch_images),
+            ("fi", Commands.fetch_images),
+            ("fimg", Commands.fetch_images),
         ]
 
         for command_name, expected_command in fixtures:
@@ -296,3 +329,147 @@ class CommandTests(DatabaseTestCase):
         mock_export_supplier_pricelist.assert_called_with(
             export_paths["supplier_pricelist"],
             [supp_item])
+
+    @patch("pxi.commands.export_web_data_updates_report")
+    @patch("pxi.commands.export_web_product_menu_data")
+    @patch("pxi.commands.update_product_menu")
+    @patch("pxi.commands.import_web_sortcode_mappings")
+    @patch("pxi.commands.import_data")
+    def test_web_update(
+            self,
+            mock_import_data,
+            mock_import_web_sortcode_mappings,
+            mock_update_product_menu,
+            mock_export_web_product_menu_data,
+            mock_export_web_data_updates_report):
+        """
+        web_update command imports data, sorts items into web categories, 
+        exports reports and data.
+        """
+        mock_config = get_mock_config()
+        import_paths = mock_config["paths"]["import"]
+        export_paths = mock_config["paths"]["export"]
+
+        inv_item = fake_inventory_item()
+        price_rule = fake_price_rule()
+        pr_item = fake_price_region_item(inv_item, price_rule, {
+            "code": PriceRegionItem.DEFAULT_REGION_CODE
+        })
+        web_sortcode = fake_web_sortcode()
+        iwd_item = fake_inv_web_data_item(inv_item, None)
+        self.seed([
+            inv_item,
+            price_rule,
+            pr_item,
+            web_sortcode,
+            iwd_item,
+        ])
+        wsc_mappings = {
+            price_rule.code: web_sortcode,
+        }
+        mock_import_web_sortcode_mappings.return_value = wsc_mappings
+        mock_update_product_menu.return_value = [iwd_item]
+
+        command = Commands.web_update(mock_config)
+        command.db_session = self.db_session
+        command()
+
+        mock_import_data.assert_called_with(command.db_session, import_paths, [
+            InventoryItem,
+            WebSortcode,
+            PriceRule,
+            PriceRegionItem,
+            InventoryWebDataItem,
+        ], force_imports=False)
+        mock_import_web_sortcode_mappings.assert_called_with(
+            import_paths["inventory_metadata"],
+            command.db_session,
+            worksheet_name="rules")
+        mock_update_product_menu.assert_called_with(
+            [iwd_item],
+            wsc_mappings,
+            command.db_session)
+        mock_export_web_product_menu_data.assert_called_with(
+            export_paths["web_product_menu_data"],
+            [iwd_item])
+        mock_export_web_data_updates_report.assert_called_with(
+            export_paths["web_data_updates_report"],
+            [iwd_item])
+
+    @patch("pxi.commands.export_gtin_report")
+    @patch("pxi.commands.import_data")
+    def test_missing_gtin(
+            self,
+            mock_import_data,
+            mock_export_gtin_report):
+        """
+        missing_gtin command imports data, reports items missing GTIN.
+        """
+        mock_config = get_mock_config()
+        import_paths = mock_config["paths"]["import"]
+        export_paths = mock_config["paths"]["export"]
+
+        inv_item = fake_inventory_item()
+        gtin_item = fake_gtin_item(inv_item, {
+            "gtin": "NOT A BARCODE",
+        })
+        self.seed([
+            inv_item,
+            gtin_item,
+        ])
+
+        command = Commands.missing_gtin(mock_config)
+        command.db_session = self.db_session
+        command()
+
+        mock_import_data.assert_called_with(command.db_session, import_paths, [
+            InventoryItem,
+            GTINItem,
+        ], force_imports=False)
+        mock_export_gtin_report.assert_called_with(
+            export_paths["gtin_report"], [inv_item], [])
+
+    @patch("pxi.commands.export_downloaded_images_report")
+    @patch("pxi.commands.fetch_images")
+    @patch("pxi.commands.import_website_images_report")
+    @patch("pxi.commands.import_data")
+    def test_fetch_images(
+            self,
+            mock_import_data,
+            mock_import_website_images_report,
+            mock_fetch_images,
+            mock_export_downloaded_images_report):
+        """
+        fetch_images command downloads images, reports on images.
+        """
+
+        mock_config = get_mock_config()
+        import_paths = mock_config["paths"]["import"]
+        export_paths = mock_config["paths"]["export"]
+
+        inv_item = fake_inventory_item()
+        supp_item = fake_supplier_item(inv_item)
+        self.seed([
+            inv_item,
+            supp_item,
+        ])
+        mock_import_website_images_report.return_value = [
+            (inv_item, None)]
+
+        command = Commands.fetch_images(mock_config)
+        command.db_session = self.db_session
+        command()
+
+        mock_import_data.assert_called_with(command.db_session, import_paths, [
+            InventoryItem,
+            SupplierItem,
+        ], force_imports=False)
+        mock_import_website_images_report.assert_called_with(
+            import_paths["website_images_report"],
+            command.db_session)
+        mock_fetch_images.assert_called_with(
+            export_paths["images_dir"],
+            [inv_item])
+        mock_export_downloaded_images_report.assert_called_with(
+            export_paths["website_images_report"],
+            mock_fetch_images.return_value)
