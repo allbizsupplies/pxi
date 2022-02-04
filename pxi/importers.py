@@ -632,15 +632,13 @@ def import_website_images_report(filepath, db_session):
         ).scalar()
         if not inventory_item:
             continue
-        images_data.append({
-            "inventory_item": inventory_item,
-            "filename": get_image(row)
-        })
+        images_data.append(
+            (inventory_item, get_image(row)))
 
     # Log the results and return the list of images.
     logging.info(
         f"Import website image data: "
-        f"{len(images_data)} inserted.")
+        f"{len(images_data)} loaded.")
     return images_data
 
 

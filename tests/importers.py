@@ -196,7 +196,7 @@ def fake_supplier_pricelist_row(values={}):
 def fake_website_images_report_row(values={}):
     return {
         "productcode": values.get("productcode", random_item_code()),
-        "picture1": values.get("picture1", random_price_string()),
+        "picture1": values.get("picture1", random_string(20)),
         "picture2": values.get("picture2"),
         "picture3": values.get("picture3"),
         "picture4": values.get("picture4"),
@@ -667,15 +667,14 @@ class ImporterTests(DatabaseTestCase):
         # image data record, where the second row doesn't have a matching
         # InventoryItem.
         filepath = random_string(20)
-        seeded_inv_items = [
-            fake_inventory_item()
-        ]
-        self.seed(seeded_inv_items)
+        image_filename = random_string(20)
+        inv_item = fake_inventory_item()
+        self.seed([inv_item])
         rows = [
             fake_website_images_report_row({
-                "productcode": seeded_inv_items[0].code,
+                "productcode": inv_item.code,
+                "picture1": image_filename,
             }),
-            fake_website_images_report_row(),
         ]
         mock_load_rows.return_value = rows
 
@@ -687,3 +686,4 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.assert_called_with(filepath)
         # pylint:disable=no-member
         self.assertEqual(len(images_data), 1)
+        self.assertEqual(images_data[0], (inv_item, image_filename))
