@@ -8,7 +8,7 @@ MANUALLY_SORTED = 'man'
 
 
 def update_product_menu(
-        inv_web_data_items: List[InventoryWebDataItem],
+        iwd_items: List[InventoryWebDataItem],
         web_sortcode_mappings: Dict[str, WebSortcode],
         session: Session):
     """
@@ -23,10 +23,10 @@ def update_product_menu(
         List of updated InventoryWebDataItems.
     """
     updated_iwd_items: List[InventoryWebDataItem] = []
-    for iwd_item in inv_web_data_items:
+    for iwd_item in iwd_items:
         inv_item = iwd_item.inventory_item
-        price_region_item = inv_item.default_price_region_item
-        rule_code = price_region_item.price_rule.code
+        pr_item = inv_item.default_price_region_item
+        rule_code = pr_item.price_rule.code
         web_sortcode = web_sortcode_mappings.get(rule_code)
         if web_sortcode and web_sortcode != MANUALLY_SORTED:
             iwd_item.web_sortcode = web_sortcode
