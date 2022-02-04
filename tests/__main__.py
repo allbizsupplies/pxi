@@ -4,7 +4,7 @@ import unittest
 from tests.analysis import AnalysisTests
 from tests.commands import CommandTests
 from tests.exporters import ExporterTests
-from tests.fetchers import FetcherTests
+from tests.image import ImageTests
 from tests.importers import ImporterTests
 from tests.price_calc import PriceCalcTests
 from tests.spl_update import SPLUpdateTests
@@ -15,8 +15,8 @@ testloader = unittest.TestLoader()
 testcases = [
     AnalysisTests,
     CommandTests,
-    # ExporterTests, # Excluded until tests.
-    FetcherTests,
+    ExporterTests,
+    ImageTests,
     ImporterTests,
     PriceCalcTests,
     SPLUpdateTests,
