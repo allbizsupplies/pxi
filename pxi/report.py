@@ -1,4 +1,7 @@
 
+from dataclasses import dataclass
+from os import PathLike
+from typing import Dict, List, Optional
 from openpyxl.cell import Cell
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, NamedStyle
@@ -6,42 +9,89 @@ from openpyxl.utils import get_column_letter
 import re
 
 
-class ReportWriter:
-    """write XLSX report."""
+@dataclass
+class ReportField:
+    name: str
+    title: str
+    width: int
+    align: str
+    number_format: Optional[str] = None
 
+
+class StringField(ReportField):
+    ALIGNMENT = "left"
+
+    def __init__(self, name, title, width):
+        super().__init__(
+            name,
+            title,
+            width,
+            self.ALIGNMENT)
+
+
+class NumberField(ReportField):
+    ALIGNMENT = "right"
+    WIDTH = 16
+
+    def __init__(self, name, title, number_format="0.0000"):
+        super().__init__(
+            name,
+            title,
+            self.WIDTH,
+            self.ALIGNMENT,
+            number_format=number_format)
+
+
+class ReportWriter:
+    """
+    XLSX report writer. 
+    """
     TYPEFACE = "Calibri"
     FONT_SIZE = 11
     DEFAULT_ALIGNMENT = "left"
+    HEADER_ALIGNMENT = "center"
 
-    def __init__(self, filepath):
+    def __init__(self, filepath: PathLike):
+        self.filepath = filepath
+
         # Create the workbook and remove the default sheet.
         self.workbook = Workbook()
         del self.workbook["Sheet"]
 
-        self.filepath = filepath
-        self.currentRow = dict()
-        self.columnStyles = dict()
+    def write_sheet(
+            self,
+            name: str,
+            fields: List[ReportField],
+            rows: List[Dict[str, any]]):
+        """
+        Adds a sheet to the report.
 
-    def write_sheet(self, name, fields, rows):
-        # add the sheet to the workbook
-        ws = self.workbook.create_sheet(title=name)
-        # add the header row
+        Params:
+            name: The name of the sheet.
+            fields: List of field definitions.
+            rows: List of rows to include in sheet.
+        """
+        # Add the sheet to the workbook.
+        worksheet = self.workbook.create_sheet(title=name)
+
+        # Add the header row.
         row = list()
         for field in fields:
-            cell = Cell(ws, value=field["title"])
+            cell = Cell(worksheet, value=field.title)
             # pylint: disable=assigning-non-slot
-            cell.alignment = Alignment(horizontal="center")
+            cell.alignment = Alignment(horizontal=self.HEADER_ALIGNMENT)
             cell.font = Font(
                 name=ReportWriter.TYPEFACE,
                 size=ReportWriter.FONT_SIZE,
                 bold=True)
             row.append(cell)
-        ws.append(row)
-        # add the data rows
-        for data in rows:
+        worksheet.append(row)
+
+        # Add the data rows.
+        for row in rows:
             row = list()
             for field in fields:
-                cell = Cell(ws, value=data[field["name"]])
+                cell = Cell(worksheet, value=row[field["name"]])
                 # pylint: disable=assigning-non-slot
                 cell.alignment = Alignment(
                     horizontal=ReportWriter.DEFAULT_ALIGNMENT)
@@ -53,77 +103,71 @@ class ReportWriter:
                 if "number_format" in field.keys():
                     cell.number_format = field["number_format"]
                 row.append(cell)
-            ws.append(row)
+            worksheet.append(row)
 
-        # apply column widths
+        # Apply column widths.
         for i, field in enumerate(fields):
-            # get the alphabetical column index
-            alpha_index = get_column_letter(i + 1)
-            # set the column width
-            ws.column_dimensions[alpha_index].width = field["width"]
+            column_index = get_column_letter(i + 1)
+            worksheet.column_dimensions[column_index].width = field["width"]
 
     def save(self):
-        # save the file
+        """
+        Write the report to an XLSX file.
+        """
         self.workbook.save(self.filepath)
 
 
 class ReportReader:
-    """XLSX report reader"""
+    """
+    XLSX report reader.
+    """
 
     def __init__(self, filepath):
         workbook = load_workbook(filename=filepath, read_only=True)
         self.worksheet = workbook[workbook.sheetnames[0]]
-        self.fieldnames = self.get_fieldnames()
 
     def load(self):
-        data = list()
+        """
+        Read rows from the first worksheet.
+
+        Returns:
+            List of rows from the worksheet.
+        """
+        fieldnames = self.get_fieldnames()
+        rows: List[Dict[str, any]] = []  # The rows from the worksheet.
+
         # Iterate over rows until we hit an empty row.
         for cells in self.worksheet.iter_rows(min_row=2):
             # generate dict from the cells
             row = dict()
-            for i, f in enumerate(self.fieldnames):
+            for i, f in enumerate(fieldnames):
                 row[f] = cells[i].value
 
             # discard the row and stop iterating if first column is empty.
-            if row[self.fieldnames[0]] is not None:
-                data.append(row)
+            if row[fieldnames[0]] is not None:
+                rows.append(row)
             else:
-                break
-        return data
+                return rows
 
     def get_fieldnames(self):
-        "Read fieldnames from the first row until we hit an empty cell."
+        """
+        Read fieldnames from the first row.
+        """
+        fieldnames: List[str] = []
+        col_index = 1
+        at_end_of_fields = False
+        while not at_end_of_fields:
+            fieldname = self.worksheet.cell(1, col_index).value
+            if fieldname:
+                # Replace spaces and hyphens with underscores.
+                fieldname = re.sub(r"[/ -]", "_", fieldname)
 
-        fieldnames = list()
-        col_index = 0
-        while True:
-            value = self.worksheet.cell(1, col_index + 1).value
-            if value:
-                value = value.lower()
-                value = re.sub(r"[/ -]", "_", value)
-                value = re.sub(r"[\(\)\.]", "", value)
-                fieldnames.append(value)
+                # Remove backslashes and periods.
+                fieldname = re.sub(r"[\(\)\.]", "", fieldname)
+
+                fieldname = fieldname.lower()
+                fieldnames.append(fieldname)
             else:
-                # stop as soon as we hit an empty cell
-                break
+                at_end_of_fields = True
             col_index += 1
         return fieldnames
-
-
-def string_field(name, title, width):
-    return {
-        "name": name,
-        "title": title,
-        "width": width,
-        "align": "left",
-    }
-
-
-def number_field(name, title, number_format="0.0000"):
-    return {
-        "name": name,
-        "title": title,
-        "width": 16,
-        "align": "right",
-        "number_format": number_format,
-    }

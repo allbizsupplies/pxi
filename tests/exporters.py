@@ -18,10 +18,8 @@ from pxi.exporters import (
     export_supplier_price_changes_report,
     export_tickets_list,
     export_web_data_updates_report,
-    export_web_product_menu_data,
-    string_field)
+    export_web_product_menu_data)
 from pxi.price_calc import recalculate_sell_prices
-from pxi.report import ReportReader
 from pxi.spl_update import SPL_FIELDNAMES
 from tests import PXITestCase
 from tests.fakes import fake_buy_price_change, fake_contract_item, fake_inv_item_image_file, fake_inv_web_data_item, fake_inventory_item, fake_price_region_item, fake_price_rule, fake_sell_price_change, fake_supplier_item, fake_supplier_pricelist_item, fake_warehouse_stock_item, fake_web_sortcode, random_string

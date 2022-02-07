@@ -13,7 +13,7 @@ from pxi.models import (
     PriceRegionItem,
     SupplierItem,
     WarehouseStockItem)
-from pxi.report import ReportWriter, number_field, string_field
+from pxi.report import NumberField, ReportWriter, StringField
 from pxi.spl_update import SPL_FIELDNAMES
 
 
@@ -175,39 +175,39 @@ def export_price_changes_report(
 
     # Define fields for price changes report sheet.
     sp_change_fields = [
-        string_field("item_code", "Item Code", 20),
-        string_field("region", "Region", 4),
-        string_field("brand", "Brand", 7),
-        string_field("apn", "APN", 20),
-        string_field("description", "Description", 80),
-        string_field("price_rule", "Price Rule", 7),
+        StringField("item_code", "Item Code", 20),
+        StringField("region", "Region", 4),
+        StringField("brand", "Brand", 7),
+        StringField("apn", "APN", 20),
+        StringField("description", "Description", 80),
+        StringField("price_rule", "Price Rule", 7),
     ]
     for level in range(PriceRegionItem.PRICE_LEVELS):
         if level > 0:
-            sp_change_fields.append(number_field(
+            sp_change_fields.append(NumberField(
                 f"quantity_{level}", f"Quantity {level}", number_format="0"))
-        sp_change_fields.append(number_field(
+        sp_change_fields.append(NumberField(
             f"price_{level}_was", f"Price {level} Was"))
-        sp_change_fields.append(number_field(
+        sp_change_fields.append(NumberField(
             f"price_{level}_now", f"Price {level} Now"))
-        sp_change_fields.append(number_field(
+        sp_change_fields.append(NumberField(
             f"price_{level}_diff", f"Price {level} Diff"))
-        sp_change_fields.append(number_field(
+        sp_change_fields.append(NumberField(
             f"price_{level}_diff_percentage", f"Price {level} Diff %",
             number_format="0%"))
 
     # Define fields for contract item changes report sheet.
     con_item_fields = [
-        string_field("contract", "Contract", 20),
-        string_field("item_code", "Item Code", 20),
-        string_field("description", "Description", 80),
-        number_field("retail_price", "Retail Price"),
-        number_field("retail_price_diff", "Price Diff"),
-        number_field("retail_price_diff_percentage", "Price Diff %",
-                     number_format="0%"),
+        StringField("contract", "Contract", 20),
+        StringField("item_code", "Item Code", 20),
+        StringField("description", "Description", 80),
+        NumberField("retail_price", "Retail Price"),
+        NumberField("retail_price_diff", "Price Diff"),
+        NumberField("retail_price_diff_percentage", "Price Diff %",
+                    number_format="0%"),
     ]
     for level in range(1, 7):
-        con_item_fields.append(number_field(
+        con_item_fields.append(NumberField(
             f"price_{level}", f"Price {level}"))
 
     # Create the report sheets and write the report to file.
@@ -236,16 +236,16 @@ def export_supplier_price_changes_report(
 
     # Define fields for price changes report sheet.
     bp_change_fields = [
-        string_field("item_code", "Item Code", 20),
-        string_field("supplier", "Supplier", 8),
-        string_field("brand", "Brand", 7),
-        string_field("apn", "APN", 20),
-        string_field("description", "Description", 80),
-        number_field("price_was", "Price Was", number_format="0.00"),
-        number_field("price_now", "Price Now", number_format="0.00"),
-        number_field("price_diff", "Price Diff", number_format="0.00"),
-        number_field("price_diff_percentage",
-                     "Price Diff %", number_format="0%"),
+        StringField("item_code", "Item Code", 20),
+        StringField("supplier", "Supplier", 8),
+        StringField("brand", "Brand", 7),
+        StringField("apn", "APN", 20),
+        StringField("description", "Description", 80),
+        NumberField("price_was", "Price Was", number_format="0.00"),
+        NumberField("price_now", "Price Now", number_format="0.00"),
+        NumberField("price_diff", "Price Diff", number_format="0.00"),
+        NumberField("price_diff_percentage",
+                    "Price Diff %", number_format="0%"),
     ]
 
     def bp_change_row(bp_change: BuyPriceChange):
@@ -310,8 +310,8 @@ def export_downloaded_images_report(
 
     # Define fields for the downloaded images report.
     downloaded_images_fields = [
-        string_field("item_code", "Item Code", 20),
-        string_field("filename", "Filename", 40),
+        StringField("item_code", "Item Code", 20),
+        StringField("filename", "Filename", 40),
     ]
 
     # Create report sheet and write report to file.
@@ -356,10 +356,10 @@ def export_gtin_report(
 
     # Define fields for the missing GTINs report.
     missing_gtin_fields = [
-        string_field("item_code", "Item Code", 20),
-        string_field("brand", "Brand", 8),
-        string_field("apn", "APN", 20),
-        string_field("description", "Description", 80),
+        StringField("item_code", "Item Code", 20),
+        StringField("brand", "Brand", 8),
+        StringField("apn", "APN", 20),
+        StringField("description", "Description", 80),
     ]
 
     # Create report sheets and write report to file.
@@ -409,12 +409,12 @@ def export_web_data_updates_report(
 
     # Define fields for the web data updates report.
     updated_item_fields = [
-        string_field("item_code", "Item Code", 20),
-        string_field("brand", "Brand", 7),
-        string_field("apn", "APN", 20),
-        string_field("description", "Description", 80),
-        string_field("menu_parent_name", "Menu Parent", 40),
-        string_field("menu_child_name", "Menu Child", 40),
+        StringField("item_code", "Item Code", 20),
+        StringField("brand", "Brand", 7),
+        StringField("apn", "APN", 20),
+        StringField("description", "Description", 80),
+        StringField("menu_parent_name", "Menu Parent", 40),
+        StringField("menu_child_name", "Menu Child", 40),
     ]
 
     # Create report sheet and write report to file.
