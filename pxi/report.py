@@ -108,3 +108,22 @@ class ReportReader:
                 break
             col_index += 1
         return fieldnames
+
+
+def string_field(name, title, width):
+    return {
+        "name": name,
+        "title": title,
+        "width": width,
+        "align": "left",
+    }
+
+
+def number_field(name, title, number_format="0.0000"):
+    return {
+        "name": name,
+        "title": title,
+        "width": 16,
+        "align": "right",
+        "number_format": number_format,
+    }

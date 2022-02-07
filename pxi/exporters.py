@@ -1,50 +1,180 @@
 import csv
 from datetime import date
+from decimal import Decimal
+import logging
+from os import PathLike
+from typing import Dict, List
 
-from pxi.report import ReportWriter
+from pxi.data import BuyPriceChange, InventoryItemImageFile, SellPriceChange
+from pxi.models import (
+    ContractItem,
+    InventoryItem,
+    InventoryWebDataItem,
+    PriceRegionItem,
+    SupplierItem,
+    WarehouseStockItem)
+from pxi.report import ReportWriter, number_field, string_field
 from pxi.spl_update import SPL_FIELDNAMES
 
 
-def export_pricelist(filepath, price_region_items):
-    """Export pricelist to file."""
-    effective_date = date.today().strftime("%d-%b-%Y")
-    price_list_field = "0"
-    last_change_date = ""
-    reason_code = ""
-    price_type_code = ""
+def export_pricelist(
+        filepath: PathLike,
+        pr_items: List[PriceRegionItem]):
+    """
+    Export pricelist to file.
 
-    def price_region_item_to_row(price_region_item):
-        inventory_item = price_region_item.inventory_item
+    Params: 
+        filepath: The path to the file.
+        pr_items: List of PriceRegionItems to be exported.
+    """
+    # Assume the effective date of the pricelist is the current date.
+    effective_date = date.today().strftime("%d-%b-%Y")
+    price_list_field = "0"  # I have no idea what this does.
+    last_change_date = ""   # Last change date is left empty.
+    reason_code = ""        # Reason code is left empty.
+    price_type_code = ""    # Price type is left empty.
+
+    def price_region_item_to_row(pr_item: PriceRegionItem):
+        """
+        Makes a pricelist row from a PriceRegionItem.
+
+        Params:
+            price_region_item: The PriceRegionItem to convert.
+
+        Returns:
+            The pricelist row.
+        """
         return [
-            inventory_item.code,
-            price_region_item.code,
-            str(price_region_item.price_0),
-            str(price_region_item.quantity_1),
-            str(price_region_item.quantity_2),
-            str(price_region_item.quantity_3),
-            str(price_region_item.quantity_4),
-            str(price_region_item.price_1),
-            str(price_region_item.price_2),
-            str(price_region_item.price_3),
-            str(price_region_item.price_4),
-            str(price_region_item.rrp_excl_tax),
-            str(price_region_item.rrp_incl_tax),
+            pr_item.inventory_item.code,
+            pr_item.code,
+            str(pr_item.price_0),
+            str(pr_item.quantity_1),
+            str(pr_item.quantity_2),
+            str(pr_item.quantity_3),
+            str(pr_item.quantity_4),
+            str(pr_item.price_1),
+            str(pr_item.price_2),
+            str(pr_item.price_3),
+            str(pr_item.price_4),
+            str(pr_item.rrp_excl_tax),
+            str(pr_item.rrp_incl_tax),
             price_list_field,
             last_change_date,
             effective_date,
             price_type_code,
             reason_code,
         ]
-    rows = [price_region_item_to_row(item) for item in price_region_items]
+
+    # Write pricelist CSV to file.
     with open(filepath, "w", newline="") as file:
-        csv.writer(file).writerows(rows)
+        csv.writer(file).writerows(
+            [price_region_item_to_row(pr_item) for pr_item in pr_items])
 
 
-def export_price_changes_report(filepath, price_changes):
-    """Export report to file."""
-    report_writer = ReportWriter(filepath)
+def export_price_changes_report(
+        filepath: PathLike,
+        sp_changes: List[SellPriceChange]):
+    """
+    Export report to file.
 
-    price_change_fields = [
+    Params:
+        filepath: The path to the report.
+        sp_changes: List of SellPriceCHanges to export.
+    """
+
+    def sp_change_row(sp_change: SellPriceChange):
+        """
+        Makes a price change report row from a SellPriceChange.
+
+        Params:
+            sp_change: The SellPriceChange to convert.
+
+        Returns:
+            The report row.
+        """
+        price_region_item = sp_change.price_region_item
+        price_diffs = sp_change.price_diffs
+        inventory_item = price_region_item.inventory_item
+        price_rule = price_region_item.price_rule
+        row = {
+            "item_code": inventory_item.code,
+            "region": price_region_item.code,
+            "brand": inventory_item.brand,
+            "apn": inventory_item.apn,
+            "description": inventory_item.full_description,
+            "price_rule": price_rule.code
+        }
+        for level in range(PriceRegionItem.PRICE_LEVELS):
+            if level > 0:
+                row[f"quantity_{level}"] = price_region_item.quantity(level)
+            price_now = price_region_item.price(level)
+            price_diff = price_diffs[level]
+            price_was = price_now - price_diff
+            price_diff_percentage = None
+            if price_was > 0:
+                price_diff_percentage = (
+                    price_diff / price_was).quantize(price_now)
+            row[f"price_{level}_was"] = price_now - price_diff
+            row[f"price_{level}_now"] = price_now
+            row[f"price_{level}_diff"] = price_diff
+            row[f"price_{level}_diff_percentage"] = price_diff_percentage
+        return row
+
+    def contract_item_row(con_item: ContractItem, price_diff: Decimal):
+        """
+        Makes a row for a ContractItem.
+
+        Params:
+            con_item: The ContractItem to convert.
+            price_diff: The price difference amount to include in the row.
+
+        Returns:
+            The report row.
+        """
+        inv_item = con_item.inventory_item
+        pr_item = inv_item.default_price_region_item
+        price_now = pr_item.price(0)
+        price_was = price_now - price_diff
+        price_diff_percentage = None
+        if price_was > 0:
+            price_diff_percentage = (
+                price_diff / price_was).quantize(price_now)
+        row = {
+            "contract": con_item.code,
+            "item_code": inv_item.code,
+            "description": inv_item.full_description,
+            "retail_price": pr_item.price(0),
+            "retail_price_diff": price_diff,
+            "retail_price_diff_percentage": price_diff_percentage,
+        }
+        for level in range(1, ContractItem.PRICE_LEVELS + 1):
+            row[f"price_{level}"] = con_item.price(level)
+        return row
+
+    def contract_item_rows(sp_changes: List[SellPriceChange]):
+        """
+        Makes rows for ContractItems that are related to a SellPriceChange.
+
+        Params:
+            sp_changes: List of SellPriceChanges, possibly related to one or 
+                more ContractItems.
+
+        Returns:
+            List of report rows.
+        """
+        rows = []
+        for sp_change in sp_changes:
+            pr_item = sp_change.price_region_item
+            con_items = pr_item.inventory_item.contract_items
+            if con_items:
+                # Make row for each ContractItem.
+                for con_item in con_items:
+                    price_diff = sp_change.price_diffs[0]
+                    rows.append(contract_item_row(con_item, price_diff))
+        return rows
+
+    # Define fields for price changes report sheet.
+    sp_change_fields = [
         string_field("item_code", "Item Code", 20),
         string_field("region", "Region", 4),
         string_field("brand", "Brand", 7),
@@ -52,55 +182,22 @@ def export_price_changes_report(filepath, price_changes):
         string_field("description", "Description", 80),
         string_field("price_rule", "Price Rule", 7),
     ]
-    for i in range(5):
-        if i > 0:
-            price_change_fields.append(number_field(
-                f"quantity_{i}", f"Quantity {i}", number_format="0"))
-        price_change_fields.append(number_field(
-            f"price_{i}_was", f"Price {i} Was"))
-        price_change_fields.append(number_field(
-            f"price_{i}_now", f"Price {i} Now"))
-        price_change_fields.append(number_field(
-            f"price_{i}_diff", f"Price {i} Diff"))
-        price_change_fields.append(number_field(
-            f"price_{i}_diff_percentage", f"Price {i} Diff %",
+    for level in range(PriceRegionItem.PRICE_LEVELS):
+        if level > 0:
+            sp_change_fields.append(number_field(
+                f"quantity_{level}", f"Quantity {level}", number_format="0"))
+        sp_change_fields.append(number_field(
+            f"price_{level}_was", f"Price {level} Was"))
+        sp_change_fields.append(number_field(
+            f"price_{level}_now", f"Price {level} Now"))
+        sp_change_fields.append(number_field(
+            f"price_{level}_diff", f"Price {level} Diff"))
+        sp_change_fields.append(number_field(
+            f"price_{level}_diff_percentage", f"Price {level} Diff %",
             number_format="0%"))
 
-    def price_change_rows(price_changes):
-        for price_change in price_changes:
-            price_region_item = price_change.price_region_item
-            price_diffs = price_change.price_diffs
-            inventory_item = price_region_item.inventory_item
-            price_rule = price_region_item.price_rule
-            row = {
-                "item_code": inventory_item.code,
-                "region": price_region_item.code,
-                "brand": inventory_item.brand,
-                "apn": inventory_item.apn,
-                "description": inventory_item.full_description,
-                "price_rule": price_rule.code
-            }
-            for i in range(5):
-                if i > 0:
-                    row[f"quantity_{i}"] = getattr(
-                        price_region_item, f"quantity_{i}")
-                price_now = getattr(price_region_item, f"price_{i}")
-                price_diff = price_diffs[i]
-                price_was = price_now - price_diff
-                price_diff_percentage = None
-                if price_was > 0:
-                    price_diff_percentage = (
-                        price_diff / price_was).quantize(price_now)
-                row[f"price_{i}_was"] = price_now - price_diff
-                row[f"price_{i}_now"] = price_now
-                row[f"price_{i}_diff"] = price_diff
-                row[f"price_{i}_diff_percentage"] = price_diff_percentage
-            yield row
-
-    report_writer.write_sheet("Price Changes", price_change_fields,
-                              price_change_rows(price_changes))
-
-    contract_item_fields = [
+    # Define fields for contract item changes report sheet.
+    con_item_fields = [
         string_field("contract", "Contract", 20),
         string_field("item_code", "Item Code", 20),
         string_field("description", "Description", 80),
@@ -109,19 +206,36 @@ def export_price_changes_report(filepath, price_changes):
         number_field("retail_price_diff_percentage", "Price Diff %",
                      number_format="0%"),
     ]
-    for i in range(1, 7):
-        contract_item_fields.append(number_field(
-            f"price_{i}", f"Price {i}"))
-    report_writer.write_sheet("Contract Changes", contract_item_fields,
-                              contract_item_rows(price_changes))
+    for level in range(1, 7):
+        con_item_fields.append(number_field(
+            f"price_{level}", f"Price {level}"))
+
+    # Create the report sheets and write the report to file.
+    report_writer = ReportWriter(filepath)
+    report_writer.write_sheet(
+        "Price Changes",
+        sp_change_fields,
+        [sp_change_row(sp_change) for sp_change in sp_changes])
+    report_writer.write_sheet(
+        "Contract Changes",
+        con_item_fields,
+        contract_item_rows(sp_changes))
     report_writer.save()
 
 
-def export_supplier_price_changes_report(filepath, price_changes, uom_errors):
-    """Export supplier price report to file."""
-    report_writer = ReportWriter(filepath)
+def export_supplier_price_changes_report(
+        filepath: PathLike,
+        bp_changes: List[BuyPriceChange]):
+    """
+    Export supplier price report to file.
 
-    price_change_fields = [
+    Params:
+        filepath: The path to the report.
+        bp_changes: List of BuyPriceChanges to export.
+    """
+
+    # Define fields for price changes report sheet.
+    bp_change_fields = [
         string_field("item_code", "Item Code", 20),
         string_field("supplier", "Supplier", 8),
         string_field("brand", "Brand", 7),
@@ -134,115 +248,113 @@ def export_supplier_price_changes_report(filepath, price_changes, uom_errors):
                      "Price Diff %", number_format="0%"),
     ]
 
-    def price_change_rows(price_changes):
-        for price_change in price_changes:
-            supplier_item = price_change["supplier_item"]
-            price_was = price_change["price_was"]
-            price_now = price_change["price_now"]
-            price_diff = price_change["price_diff"]
-            price_diff_percentage = price_change["price_diff_percentage"]
-            inventory_item = supplier_item.inventory_item
-            row = {
-                "item_code": inventory_item.code,
-                "supplier": supplier_item.code,
-                "brand": inventory_item.brand,
-                "apn": inventory_item.apn,
-                "description": inventory_item.full_description,
-                "price_was": price_was,
-                "price_now": price_now,
-                "price_diff": price_diff,
-                "price_diff_percentage": price_diff_percentage,
-            }
-            yield row
+    def bp_change_row(bp_change: BuyPriceChange):
+        """
+        Makes a price change report row from a BuyPriceChange.
 
-    report_writer.write_sheet("Price Changes", price_change_fields,
-                              price_change_rows(price_changes))
+        Params:
+            bp_change: The BuyPriceChange to convert.
 
-    uom_error_fields = [
-        string_field("item_code", "Item Code", 20),
-        string_field("supplier", "Supplier", 8),
-        string_field("brand", "Brand", 7),
-        string_field("apn", "APN", 20),
-        string_field("description", "Description", 80),
-        string_field("message", "Error", 48),
-        string_field("expected", "Expected", 20),
-        string_field("actual", "Actual", 20),
-    ]
+        Returns:
+            The report row.
+        """
+        supp_item = bp_change.supplier_item
+        inv_item = supp_item.inventory_item
+        row = {
+            "item_code": inv_item.code,
+            "supplier": supp_item.code,
+            "brand": inv_item.brand,
+            "apn": inv_item.apn,
+            "description": inv_item.full_description,
+            "price_was": bp_change.price_was,
+            "price_now": bp_change.price_now,
+            "price_diff": bp_change.price_diff,
+            "price_diff_percentage": bp_change.price_diff_percentage,
+        }
+        return row
 
-    def uom_error_rows(uom_errors):
-        for uom_error in uom_errors:
-            supplier_item = uom_error["supplier_item"]
-            inventory_item = supplier_item.inventory_item
-            row = {
-                "item_code": inventory_item.code,
-                "supplier": supplier_item.code,
-                "brand": inventory_item.brand,
-                "apn": inventory_item.apn,
-                "description": inventory_item.full_description,
-                "message": uom_error["message"],
-                "expected": uom_error["expected"],
-                "actual": uom_error["actual"],
-            }
-            yield row
-
-    report_writer.write_sheet("UOM Errors", uom_error_fields,
-                              uom_error_rows(uom_errors))
-
+    # Create the report sheet and write the report to file.
+    report_writer = ReportWriter(filepath)
+    report_writer.write_sheet(
+        "Price Changes",
+        bp_change_fields,
+        [bp_change_row(bp_change) for bp_change in bp_changes])
     report_writer.save()
 
 
-def export_downloaded_images_report(filepath, downloaded_images, missing_images):
-    """Export supplier price report to file."""
-    report_writer = ReportWriter(filepath)
+def export_downloaded_images_report(
+        filepath: PathLike,
+        image_files: List[InventoryItemImageFile]):
+    """
+    Export supplier price report to file.
 
+    Params:
+        filepath: The path to the report.
+        downloaded_images: The data for downloaded images.
+    """
+
+    def downloaded_images_row(image_file: InventoryItemImageFile):
+        """
+        Makes a downloaded images report row from image information.
+
+        Params:
+            image_data: The image data to convert.
+
+        Returns:
+            The report row.
+        """
+        return {
+            "item_code": image_file.inventory_item.code,
+            "filename": image_file.filename,
+        }
+
+    # Define fields for the downloaded images report.
     downloaded_images_fields = [
         string_field("item_code", "Item Code", 20),
-        string_field("source", "Source", 8),
         string_field("filename", "Filename", 40),
     ]
 
-    def downloaded_images_rows():
-        for image in downloaded_images:
-            inventory_item = image["inventory_item"]
-            yield {
-                "item_code": inventory_item.code,
-                "source": image["source"],
-                "filename": image["filename"],
-            }
-
+    # Create report sheet and write report to file.
+    report_writer = ReportWriter(filepath)
     report_writer.write_sheet(
-        "Downloaded Images", downloaded_images_fields, downloaded_images_rows())
-
-    missing_images_fields = [
-        string_field("item_code", "Item Code", 20),
-        string_field("brand", "Brand", 8),
-        string_field("apn", "APN", 20),
-        string_field("description", "Description", 80),
-        string_field("suppliers", "Suppliers", 40),
-    ]
-
-    def missing_images_rows():
-        for inventory_item in missing_images:
-            supplier_codes = [
-                supplier_items.code for supplier_items in inventory_item.supplier_items]
-            yield {
-                "item_code": inventory_item.code,
-                "brand": inventory_item.brand,
-                "apn": inventory_item.apn,
-                "description": inventory_item.full_description,
-                "suppliers": (", ").join(supplier_codes)
-            }
-
-    report_writer.write_sheet(
-        "Missing Images", missing_images_fields, missing_images_rows())
-
+        "Downloaded Images",
+        downloaded_images_fields,
+        [downloaded_images_row(image_file) for image_file in image_files])
     report_writer.save()
 
 
-def export_gtin_report(filepath, inventory_items_missing_gtin, inventory_items_on_hand):
-    """Export list of inventory items to file."""
-    report_writer = ReportWriter(filepath)
+def export_gtin_report(
+        filepath: PathLike,
+        inv_items_no_gtin: List[InventoryItem],
+        inv_items_no_gtin_on_hand: List[InventoryItem]):
+    """
+    Export list of missing GTINItems to file, including second report sheet
+    showing which items are in stock.
 
+    Params:
+        filepath: The path to the report.
+        inv_items_missing_gtin: List of InventoryItems with no GTINItems.
+        inv_items_on_hand: List of InventoryItems with stock on hand.
+    """
+
+    def missing_gtin_row(inv_item: InventoryItem):
+        """
+        Makes a missing GTINs report row from an InventoryItem.
+
+        Params:
+            inv_item: The InventoryItem to convert.
+
+        Returns:
+            The report row.
+        """
+        return {
+            "item_code": inv_item.code,
+            "brand": inv_item.brand,
+            "apn": inv_item.apn,
+            "description": inv_item.full_description,
+        }
+
+    # Define fields for the missing GTINs report.
     missing_gtin_fields = [
         string_field("item_code", "Item Code", 20),
         string_field("brand", "Brand", 8),
@@ -250,27 +362,52 @@ def export_gtin_report(filepath, inventory_items_missing_gtin, inventory_items_o
         string_field("description", "Description", 80),
     ]
 
-    def missing_gtin_rows(inventory_items):
-        for inventory_item in inventory_items:
-            yield {
-                "item_code": inventory_item.code,
-                "brand": inventory_item.brand,
-                "apn": inventory_item.apn,
-                "description": inventory_item.full_description,
-            }
-
+    # Create report sheets and write report to file.
+    report_writer = ReportWriter(filepath)
     report_writer.write_sheet(
-        "Missing GTIN", missing_gtin_fields, missing_gtin_rows(inventory_items_missing_gtin))
+        "Missing GTIN",
+        missing_gtin_fields,
+        [missing_gtin_row(inv_item) for inv_item in inv_items_no_gtin])
     report_writer.write_sheet(
-        "Missing GTIN and on hand", missing_gtin_fields, missing_gtin_rows(inventory_items_on_hand))
-
+        "Missing GTIN and on hand",
+        missing_gtin_fields,
+        [missing_gtin_row(inv_item) for inv_item in inv_items_no_gtin_on_hand])
     report_writer.save()
 
 
-def export_web_data_updates_report(filepath, web_product_menu_data_updates):
-    """Export web data updates report to file."""
-    report_writer = ReportWriter(filepath)
+def export_web_data_updates_report(
+        filepath: PathLike,
+        iwd_items: List[InventoryWebDataItem]):
+    """
+    Export web data updates report to file.
 
+    Params:
+        filepath: The path to the report.
+        web_product_menu_data_updates: List of InventoryItems with updated
+            InventoryWebDataItems.
+    """
+
+    def updated_item_row(iwd_item: InventoryWebDataItem):
+        """
+        Makes a web data updates report row from an InventoryItem.
+
+        Params:
+            inv_item: The InventoryItem to convert.
+
+        Returns:
+            The report row.
+        """
+        inv_item = iwd_item.inventory_item
+        return {
+            "item_code": inv_item.code,
+            "brand": inv_item.brand,
+            "apn": inv_item.apn,
+            "description": inv_item.full_description,
+            "menu_parent_name": iwd_item.web_sortcode.parent_name,
+            "menu_child_name": iwd_item.web_sortcode.child_name,
+        }
+
+    # Define fields for the web data updates report.
     updated_item_fields = [
         string_field("item_code", "Item Code", 20),
         string_field("brand", "Brand", 7),
@@ -280,194 +417,214 @@ def export_web_data_updates_report(filepath, web_product_menu_data_updates):
         string_field("menu_child_name", "Menu Child", 40),
     ]
 
-    def updated_item_rows():
-        for inventory_item in web_product_menu_data_updates:
-            inventory_web_data_item = inventory_item.inventory_web_data_item
-            yield {
-                "item_code": inventory_item.code,
-                "brand": inventory_item.brand,
-                "apn": inventory_item.apn,
-                "description": inventory_item.full_description,
-                "menu_parent_name": inventory_web_data_item.web_sortcode.parent_name,
-                "menu_child_name": inventory_web_data_item.web_sortcode.child_name,
-            }
-
+    # Create report sheet and write report to file.
+    report_writer = ReportWriter(filepath)
     report_writer.write_sheet(
-        "Product Menu Updates", updated_item_fields, updated_item_rows())
-
+        "Product Menu Updates",
+        updated_item_fields,
+        [updated_item_row(iwd_item) for iwd_item in iwd_items])
     report_writer.save()
 
 
-def contract_item_rows(price_changes):
-    for price_change in price_changes:
-        price_region_item = price_change.price_region_item
-        price_diffs = price_change.price_diffs
-        inventory_item = price_region_item.inventory_item
-        contract_items = inventory_item.contract_items
-        if not contract_items:
-            continue
-        for contract_item in contract_items:
-            price_now = price_region_item.price_0
-            price_diff = price_diffs[0]
-            price_was = price_now - price_diff
-            price_diff_percentage = None
-            if price_was > 0:
-                price_diff_percentage = (
-                    price_diff / price_was).quantize(price_now)
-            row = {
-                "contract": contract_item.code,
-                "item_code": inventory_item.code,
-                "description": inventory_item.full_description,
-                "retail_price": price_region_item.price_0,
-                "retail_price_diff": price_diff,
-                "retail_price_diff_percentage": price_diff_percentage,
-            }
-            for i in range(1, 7):
-                price = getattr(contract_item, f"price_{i}")
-                row[f"price_{i}"] = price
-            yield row
+def export_product_price_task(
+        filepath: PathLike,
+        pr_items: List[PriceRegionItem]):
+    """
+    Exports product price update task to file.
 
+    Params:
+        filepath: The path to the task file.
+        pr_items: List of PriceRegionItems to export.
+    """
 
-def export_product_price_task(filepath, price_region_items):
-    """Export product price update task to file."""
-    def price_region_item_to_row(price_region_item):
-        inventory_item = price_region_item.inventory_item
+    def price_region_item_to_row(pr_item: PriceRegionItem):
+        """
+        Makes a task row from a PriceRegionItem.
+
+        Params:
+            inv_item: The PriceRegionItem to convert.
+
+        Returns:
+            The task row.
+        """
+        inv_item = pr_item.inventory_item
         row = {
-            "item_code": inventory_item.code,
-            "region": price_region_item.code,
+            "item_code": inv_item.code,
+            "region": pr_item.code,
         }
-        for i in range(5):
-            fieldname = f"price_{i}"
-            row[fieldname] = getattr(price_region_item, fieldname)
+        for level in range(PriceRegionItem.PRICE_LEVELS):
+            fieldname = f"price_{level}"
+            row[fieldname] = pr_item.price(level)
         return row
-    rows = [price_region_item_to_row(item) for item in price_region_items]
 
+    # Define fieldnames for the price update task.
+    fieldnames = [
+        "item_code",
+        "region"
+    ] + [
+        f"price_{level}" for level in range(PriceRegionItem.PRICE_LEVELS)
+    ]
+
+    # Write task data to CSV file.
     with open(filepath, "w") as file:
-        fieldnames = ["item_code", "region"] + [
-            f"price_{i}" for i in range(5)]
         writer = csv.DictWriter(file, fieldnames, dialect="excel-tab")
         writer.writeheader()
-        writer.writerows(rows)
+        writer.writerows(
+            [price_region_item_to_row(pr_item) for pr_item in pr_items])
 
 
-def export_contract_item_task(filepath, contract_items):
-    """Export product price update task to file."""
-    def contract_item_to_row(contract_item):
-        inventory_item = contract_item.inventory_item
+def export_contract_item_task(
+        filepath: PathLike,
+        con_items: List[ContractItem]):
+    """
+    Exports product price update task to file.
+
+    Params:
+        filepath: The path to the task file.
+        con_items: List of ContractItems to export.
+    """
+
+    def contract_item_to_row(con_item: ContractItem):
+        """
+        Makes a task row from a ContractItem.
+
+        Params:
+            inv_item: The ContractItem to convert.
+
+        Returns:
+            The task row.
+        """
+        inventory_item = con_item.inventory_item
         row = {
-            "contract": contract_item.code,
+            "contract": con_item.code,
             "item_code": inventory_item.code,
         }
-        for i in range(1, 7):
-            fieldname = f"price_{i}"
-            row[fieldname] = getattr(contract_item, fieldname)
+        for level in range(1, ContractItem.PRICE_LEVELS + 1):
+            fieldname = f"price_{level}"
+            row[fieldname] = con_item.price(level)
         return row
-    rows = [contract_item_to_row(item) for item in contract_items]
 
+    # Define fieldnames for the price update task.
+    fieldnames = ["contract", "item_code"]
+
+    # Write task data to CSV file.
     with open(filepath, "w") as file:
-        fieldnames = ["contract", "item_code"]
-        for i in range(1, 7):
-            fieldnames.append(f"price_{i}")
+        for level in range(1, ContractItem.PRICE_LEVELS + 1):
+            fieldnames.append(f"price_{level}")
         writer = csv.DictWriter(file, fieldnames, dialect="excel-tab")
         writer.writeheader()
-        writer.writerows(rows)
+        writer.writerows(
+            [contract_item_to_row(con_item) for con_item in con_items])
 
 
-def export_supplier_pricelist(filepath, supplier_items):
-    """Export supplier items to Pronto SPL file."""
+def export_supplier_pricelist(
+        filepath: PathLike,
+        supp_items: List[SupplierItem]):
+    """
+    Export supplier items to Pronto SPL file.
 
-    exported_item_codes = []
-    duplicate_supplier_pricelist_items = []
+    Params:
+        filepath: The path to the pricelist file.
+        supp_items: List of SupplierItems to export.
+    """
 
-    def supplier_item_to_row(supplier_item):
-        item_code = supplier_item.item_code
-        if item_code not in exported_item_codes:
-            exported_item_codes.append(item_code)
+    seen_item_codes = {}  # Item codes already added to rows.
+    duplicates = {}       # Rows with a duplicate item code.
+
+    def supplier_item_to_row(supp_item: SupplierItem):
+        """
+        Makes a pricelist row from a SupplierItem.
+
+        Params:
+            inv_item: The SupplierItem to convert.
+
+        Returns:
+            The pricelist row.
+        """
+        item_code = supp_item.item_code
+        if item_code not in seen_item_codes:
+            seen_item_codes.add(item_code)
         else:
-            duplicate_supplier_pricelist_items.append(supplier_item)
-        inventory_item = supplier_item.inventory_item
+            duplicates.add(item_code)
+        inventory_item = supp_item.inventory_item
         row = {
-            "supplier_code": supplier_item.code,
-            "supp_item_code": supplier_item.item_code,
+            "supplier_code": supp_item.code,
+            "supp_item_code": supp_item.item_code,
             "desc_line_1": inventory_item.description_line_1,
             "desc_line_2": inventory_item.description_line_2,
-            "supp_uom": supplier_item.uom,
-            "supp_eoq": supplier_item.moq,
-            "supp_conv_factor": supplier_item.conv_factor,
-            "supp_price_1": supplier_item.buy_price,
+            "supp_uom": supp_item.uom,
+            "supp_eoq": supp_item.moq,
+            "supp_conv_factor": supp_item.conv_factor,
+            "supp_price_1": supp_item.buy_price,
             "item_code": inventory_item.code,
         }
         return row
-    rows = [supplier_item_to_row(item) for item in supplier_items]
 
-    if len(duplicate_supplier_pricelist_items) > 0:
-        print(f"  Warning: {len(duplicate_supplier_pricelist_items)}"
-              f" exported records will be overridden on import.")
+    # Log duplicates that will be overridden during import.
+    if len(duplicates) > 0:
+        logging.warn(
+            f"Export SPL: {len(duplicates)} will be overridden on import.")
 
+    # Write pricelist to CSV file.
     with open(filepath, "w") as file:
         fieldnames = SPL_FIELDNAMES
         writer = csv.DictWriter(file, fieldnames, dialect="excel")
-        writer.writerows(rows)
+        writer.writerows(
+            [supplier_item_to_row(item) for item in supp_items])
 
 
-def export_tickets_list(filepath, warehouse_stock_items):
-    """Export tickets list to file."""
-    def stocked_item_codes(warehouse_stock_items):
-        for item in warehouse_stock_items:
-            item_code = item.inventory_item.code
-            if item.bin_location:
-                yield item_code
-            elif item.on_hand:
-                yield item_code
-            elif item.minimum:
-                yield item_code
+def export_tickets_list(
+        filepath: PathLike,
+        ws_items: List[WarehouseStockItem]):
+    """
+    Export tickets list to file.
 
-    item_codes = stocked_item_codes(warehouse_stock_items)
-    lines = [f"{item_code}\n" for item_code in item_codes]
+    Params:
+        filepath: The path to the tickets file.
+        ws_items: List of WarehouseStockItems to export.
+    """
+
+    # Write a list of item codes to a plain text file.
+    lines = [f"{ws_item.inventory_item.code}\n" for ws_item in ws_items]
     with open(filepath, "w") as file:
         file.writelines(lines)
 
 
-def export_web_product_menu_data(filepath, inventory_items):
-    """Export Pronto web menu data file."""
-    def inventory_item_to_row(inventory_item):
+def export_web_product_menu_data(
+        filepath: PathLike,
+        iwd_items: List[InventoryWebDataItem]):
+    """
+    Export Pronto web menu data file.
+
+    Params:
+        filepath: The path to the tickets file.
+        ws_items: List of InventoryItems to export.
+    """
+
+    def inventory_item_to_row(iwd_item: InventoryWebDataItem):
+        """
+        Make data row from InventoryWebDataItem.
+
+        Params:
+            iwd_item: The InventoryWebDataItem to convert.
+
+        Returns:
+            The data row.
+        """
         return {
-            "item_code": inventory_item.code,
-            "menu_name": inventory_item.inventory_web_data_item.web_sortcode.name
+            "item_code": iwd_item.inventory_item.code,
+            "menu_name": iwd_item.web_sortcode.name,
         }
 
+    # Define fieldnames for the CSV file.
+    fieldnames = [
+        "item_code",
+        "menu_name",
+    ]
+
+    # Write data to CSV file.
     with open(filepath, "w", newline="") as file:
-        writer = csv.DictWriter(file, [
-            "item_code",
-            "menu_name",
-        ], delimiter="|", quoting=csv.QUOTE_NONE)
-        for inventory_item in inventory_items:
-            row = inventory_item_to_row(inventory_item)
-            writer.writerow(row)
-
-
-def sell_price_change(product):
-    """Calculates ratio between old and new level 0 sell prices."""
-    was_sell_price = product.was_sell_prices[0]
-    now_sell_price = product.sell_prices[0]
-    diff = now_sell_price - was_sell_price
-    return diff / was_sell_price
-
-
-def string_field(name, title, width):
-    return {
-        "name": name,
-        "title": title,
-        "width": width,
-        "align": "left",
-    }
-
-
-def number_field(name, title, number_format="0.0000"):
-    return {
-        "name": name,
-        "title": title,
-        "width": 16,
-        "align": "right",
-        "number_format": number_format,
-    }
+        writer = csv.DictWriter(
+            file, fieldnames, delimiter="|", quoting=csv.QUOTE_NONE)
+        writer.writerows(
+            [inventory_item_to_row(iwd_item) for iwd_item in iwd_items])

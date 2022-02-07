@@ -5,8 +5,9 @@ from PIL import Image
 import requests
 from requests.exceptions import ConnectionError
 import sys
-from typing import Dict, List
+from typing import Dict, List, TypedDict
 from urllib.parse import urlparse
+from pxi.data import InventoryItemImageFile
 
 from pxi.models import InventoryItem
 
@@ -31,7 +32,7 @@ URL_TEMPLATES = {
 
 
 def fetch_images(dirpath: PathLike, inv_items: List[InventoryItem]):
-    fetched_images = []
+    fetched_images: List[InventoryItemImageFile] = []
 
     # Make sure the images dir exists.
     if not os.path.exists(dirpath):
@@ -47,7 +48,7 @@ def fetch_images(dirpath: PathLike, inv_items: List[InventoryItem]):
                 file.write(image)
             resize_image(filepath, MAX_IMAGE_WIDTH, MAX_IMAGE_HEIGHT)
             fetched_images.append(
-                (inv_item, filename))
+                InventoryItemImageFile(inv_item, filename))
 
     return fetched_images
 

@@ -3,6 +3,7 @@ from datetime import date
 from decimal import Decimal
 import os
 import pathlib
+from unittest.mock import mock_open, patch
 from pxi.models import InventoryItem
 import random
 
@@ -17,20 +18,13 @@ from pxi.exporters import (
     export_supplier_price_changes_report,
     export_tickets_list,
     export_web_data_updates_report,
-    export_web_product_menu_data)
+    export_web_product_menu_data,
+    string_field)
 from pxi.price_calc import recalculate_sell_prices
 from pxi.report import ReportReader
 from pxi.spl_update import SPL_FIELDNAMES
-from tests import DatabaseTestCase
-from tests.fixtures.models import (
-    random_contract,
-    random_inventory_item,
-    random_inventory_web_data_item,
-    random_pricelist,
-    random_string,
-    random_supplier_item,
-    random_warehouse_stock_item,
-    random_web_sortcode)
+from tests import PXITestCase
+from tests.fakes import fake_buy_price_change, fake_contract_item, fake_inv_item_image_file, fake_inv_web_data_item, fake_inventory_item, fake_price_region_item, fake_price_rule, fake_sell_price_change, fake_supplier_item, fake_supplier_pricelist_item, fake_warehouse_stock_item, fake_web_sortcode, random_string
 
 
 def delete_temporary_file(filepath):
@@ -40,248 +34,159 @@ def delete_temporary_file(filepath):
         return
 
 
-class ExporterTests(DatabaseTestCase):
+class ExporterTests(PXITestCase):
 
-    def setUp(self):
-        super().setUp()
-        pathlib.Path("tmp").mkdir(parents=True, exist_ok=True)
+    @patch("csv.writer")
+    def test_export_pricelist(self, mock_csvwrtr_class):
+        """
+        Export Pronto pricelist.
+        """
+        filepath = random_string(20)
+        pr_item = fake_price_region_item(
+            fake_inventory_item(), fake_price_rule())
+        mock_csvwrtr = mock_csvwrtr_class.return_value
 
-    def test_export_price_changes_report(self):
-        """Export price updates to XLSX report."""
-        report_filepath = "tmp/test_price_changes_report.xlsx"
-        item_count = 5
-        price_region_items = random_pricelist(items=item_count)
-        price_changes = recalculate_sell_prices(
-            price_region_items, self.db_session)
-        export_price_changes_report(report_filepath, price_changes)
-        report_reader = ReportReader(report_filepath)
-        fieldnames = [
-            "item_code", "region", "brand", "apn", "description", "price_rule",
-        ] + [
-            f"price_{i}_was" for i in range(5)
-        ] + [
-            f"price_{i}_now" for i in range(5)
-        ] + [
-            f"price_{i}_diff" for i in range(5)
-        ] + [
-            f"price_{i}_diff_%" for i in range(5)
-        ] + [
-            f"quantity_{i}" for i in range(1, 5)
-        ]
-        for fieldname in fieldnames:
-            self.assertIn(fieldname, report_reader.fieldnames)
-        data = report_reader.load()
-        self.assertEqual(item_count, len(data))
-        delete_temporary_file(report_filepath)
+        with patch("builtins.open", mock_open()):
+            export_pricelist(filepath, [pr_item])
+        mock_csvwrtr = mock_csvwrtr_class.return_value
+        mock_csvwrtr.writerows.assert_called_once()
 
-    def test_export_pricelist(self):
-        """Export price region items to Pronto pricelist import file."""
-        pricelist_filepath = "tmp/test_pricelist.csv"
-        item_count = 5
-        price_region_items = random_pricelist(items=item_count)
-        export_pricelist(pricelist_filepath, price_region_items)
-        file = open(pricelist_filepath)
-        rows = list(csv.reader(file))
-        file.close()
-        expected_date = date.today().strftime("%d-%b-%Y")
-        for i, data in enumerate(rows):
-            price_region_item = price_region_items[i]
-            inventory_item = price_region_item.inventory_item
-            expected_data = [
-                inventory_item.code,
-                price_region_item.code,
-                str(price_region_item.price_0),
-                str(price_region_item.quantity_1),
-                str(price_region_item.quantity_2),
-                str(price_region_item.quantity_3),
-                str(price_region_item.quantity_4),
-                str(price_region_item.price_1),
-                str(price_region_item.price_2),
-                str(price_region_item.price_3),
-                str(price_region_item.price_4),
-                str(price_region_item.rrp_excl_tax),
-                str(price_region_item.rrp_incl_tax),
-                "0",
-                "",
-                expected_date,
-                "",
-                "",
-            ]
-            self.assertListEqual(data, expected_data)
-        delete_temporary_file(pricelist_filepath)
+    @patch("pxi.exporters.ReportWriter")
+    def test_export_price_changes_report(self, mock_rprtwrtr_class):
+        """
+        Export price updates to XLSX report.
+        """
+        filepath = random_string(20)
+        sp_change = fake_sell_price_change(
+            fake_price_region_item(fake_inventory_item(), fake_price_rule()))
+        mock_rprtwrtr = mock_rprtwrtr_class.return_value
 
-    def test_export_product_price_task(self):
-        """Export product price update task to file."""
-        task_filepath = "tmp/test_product_price_task.txt"
-        item_count = 5
-        price_region_items = random_pricelist(items=item_count)
-        export_product_price_task(task_filepath, price_region_items)
-        file = open(task_filepath)
-        csv_reader = csv.DictReader(file, dialect="excel-tab")
-        expected_fieldnames = ["item_code", "region"] + [
-            f"price_{i}" for i in range(5)]
-        self.assertListEqual(csv_reader.fieldnames, expected_fieldnames)
-        file.close()
-        # TODO validate values in rows.
-        delete_temporary_file(task_filepath)
+        export_price_changes_report(filepath, [sp_change])
 
-    def test_export_contract_item_task(self):
-        """Export contract item task to file."""
-        task_filepath = "tmp/test_contract_item_task.txt"
-        item_count = 5
-        contract_items = random_contract(items=item_count)
-        export_contract_item_task(task_filepath, contract_items)
-        file = open(task_filepath)
-        csv_reader = csv.DictReader(file, dialect="excel-tab")
-        expected_fieldnames = ["contract", "item_code"]
-        for i in range(1, 7):
-            expected_fieldnames.append(f"price_{i}")
-        self.assertListEqual(csv_reader.fieldnames, expected_fieldnames)
-        file.close()
-        # TODO validate values in rows.
-        delete_temporary_file(task_filepath)
+        mock_rprtwrtr_class.assert_called_with(filepath)
+        self.assertEqual(mock_rprtwrtr.write_sheet.call_count, 2)
+        write_sheet_args_list = mock_rprtwrtr.write_sheet.call_args_list
+        self.assertEqual(write_sheet_args_list[0][0][0], "Price Changes")
+        self.assertEqual(write_sheet_args_list[1][0][0], "Contract Changes")
+
+    @patch("pxi.exporters.ReportWriter")
+    def test_export_supplier_price_changes_report(self, mock_rprtwrtr_class):
+        """
+        Export supplier price updates to XLSX report.
+        """
+        filepath = random_string(20)
+        bp_change = fake_buy_price_change(
+            fake_price_region_item(fake_inventory_item(), fake_price_rule()))
+        mock_rprtwrtr = mock_rprtwrtr_class.return_value
+
+        export_supplier_price_changes_report(filepath, [bp_change])
+
+        mock_rprtwrtr_class.assert_called_with(filepath)
+        mock_rprtwrtr.write_sheet.assert_called_once()
+        write_sheet_args_list = mock_rprtwrtr.write_sheet.call_args_list
+        self.assertEqual(write_sheet_args_list[0][0][0], "Price Changes")
+
+    @patch("pxi.exporters.ReportWriter")
+    def test_export_downloaded_images_report(self, mock_rprtwrtr_class):
+        """
+        Export downloaded images report to file.
+        """
+        filepath = random_string(20)
+        iii_file = fake_inv_item_image_file(fake_inventory_item())
+        mock_rprtwrtr = mock_rprtwrtr_class.return_value
+
+        export_downloaded_images_report(filepath, [iii_file])
+
+        mock_rprtwrtr_class.assert_called_with(filepath)
+        mock_rprtwrtr.write_sheet.assert_called_once()
+
+    @patch("pxi.exporters.ReportWriter")
+    def test_export_web_data_updates_report(self, mock_rprtwrtr_class):
+        """
+        Export web data updates to file.
+        """
+        filepath = random_string(20)
+        iwd_item = fake_inv_web_data_item(
+            fake_inventory_item(), fake_web_sortcode())
+        mock_rprtwrtr = mock_rprtwrtr_class.return_value
+
+        export_web_data_updates_report(filepath, [iwd_item])
+
+        mock_rprtwrtr_class.assert_called_with(filepath)
+        mock_rprtwrtr.write_sheet.assert_called_once()
+
+    @patch("csv.DictWriter")
+    def test_export_product_price_task(self, mock_csvwrtr_class):
+        """
+        Export product price update task to file.
+        """
+        filepath = random_string(20)
+        pr_item = fake_price_region_item(
+            fake_inventory_item(), fake_price_rule())
+        mock_csvwrtr = mock_csvwrtr_class.return_value
+
+        with patch("builtins.open", mock_open()):
+            export_product_price_task(filepath, [pr_item])
+
+        mock_csvwrtr.writeheader.assert_called()
+        mock_csvwrtr.writerows.assert_called()
+
+    @patch("csv.DictWriter")
+    def test_export_contract_item_task(self, mock_csvwrtr_class):
+        """
+        Export contract item task to file.
+        """
+        filepath = random_string(20)
+        con_item = fake_contract_item(fake_inventory_item())
+        mock_csvwrtr = mock_csvwrtr_class.return_value
+
+        with patch("builtins.open", mock_open()):
+            export_contract_item_task(filepath, [con_item])
+
+        mock_csvwrtr.writeheader.assert_called()
+        mock_csvwrtr.writerows.assert_called()
 
     def test_export_tickets_list(self):
-        """Export tickets list to file."""
-        tickets_list_filepath = "tmp/test_tickets_list.txt"
-        item_count = 5
-        warehouse_stock_items = []
-        for i in range(item_count):
-            inventory_item = random_inventory_item()
-            warehouse_stock_item = random_warehouse_stock_item(inventory_item)
-            warehouse_stock_items.append(warehouse_stock_item)
-        export_tickets_list(tickets_list_filepath, warehouse_stock_items)
-        file = open(tickets_list_filepath)
-        item_codes = [row[0] for row in list(csv.reader(file))]
-        file.close()
-        for i, item_code in enumerate(item_codes):
-            expected_item_code = warehouse_stock_items[i].inventory_item.code
-            self.assertEqual(item_code, expected_item_code)
-        delete_temporary_file(tickets_list_filepath)
+        """
+        Export tickets list to file.
+        """
+        filepath = random_string(20)
+        ws_item = fake_warehouse_stock_item(fake_inventory_item())
 
-    def test_export_supplier_pricelist(self):
-        """Export supplier pricelist to file."""
-        supplier_pricelist_filepath = "tmp/test_supplier_pricelist.csv"
-        item_count = 5
-        supplier_items = []
-        for i in range(item_count):
-            inventory_item = random_inventory_item()
-            # pylint:disable=no-member
-            self.db_session.add(inventory_item)
-            supplier_item = random_supplier_item(inventory_item)
-            # pylint:disable=no-member
-            self.db_session.add(supplier_item)
-            supplier_items.append(supplier_item)
-        export_supplier_pricelist(supplier_pricelist_filepath, supplier_items)
-        file = open(supplier_pricelist_filepath)
-        supplier_pricelist_reader = csv.DictReader(file, SPL_FIELDNAMES)
-        supplier_pricelist_items = list(supplier_pricelist_reader)
-        for i, supplier_pricelist_item in enumerate(supplier_pricelist_items):
-            supplier_item = supplier_items[i]
-            expected_item_values = {
-                "supplier_code": supplier_item.code,
-                "supp_item_code": supplier_item.item_code,
-                "item_code": supplier_item.inventory_item.code,
-                "supp_price_1": str(supplier_item.buy_price),
-            }
-            for key, expected_value in expected_item_values.items():
-                value = supplier_pricelist_item[key]
-                self.assertEqual(
-                    expected_value, value, f"'{expected_value}' != '{value}' for key: {key}")
-        file.close()
-        delete_temporary_file(supplier_pricelist_filepath)
+        with patch("builtins.open", mock_open()) as get_mock_file:
+            export_tickets_list(filepath, [ws_item])
+            mock_file = get_mock_file()
 
-    def test_export_supplier_price_changes_report(self):
-        """Export supplier price updates to XLSX report."""
-        report_filepath = "tmp/test_supplier_price_changes_report.xlsx"
-        item_count = 5
-        price_changes = []
-        # pylint:disable=unused-variable
-        for i in range(item_count):
-            inventory_item = random_inventory_item()
-            # pylint:disable=no-member
-            self.db_session.add(inventory_item)
-            supplier_item = random_supplier_item(inventory_item)
-            # pylint:disable=no-member
-            self.db_session.add(supplier_item)
-            price_was = supplier_item.buy_price
-            price_diff = price_was * Decimal(random.randint(-10, 10)) / 100
-            price_diff_percentage = Decimal(1)
-            if price_was != Decimal(0):
-                price_diff_percentage = price_diff / price_was
-            price_now = price_was + price_diff
-            price_changes.append({
-                "supplier_item": supplier_item,
-                # Create price difference between +/- 10%.
-                "price_was": price_was,
-                "price_now": price_now,
-                "price_diff": price_diff,
-                "price_diff_percentage": price_diff_percentage,
-            })
-        uom_errors = []
-        export_supplier_price_changes_report(
-            report_filepath, price_changes, uom_errors)
-        report_reader = ReportReader(report_filepath)
-        fieldnames = [
-            "item_code", "supplier", "brand", "apn", "description",
-            "price_was", "price_now", "price_diff", "price_diff_%",
-        ]
-        for fieldname in fieldnames:
-            self.assertIn(fieldname, report_reader.fieldnames)
-        data = report_reader.load()
-        self.assertEqual(item_count, len(data))
-        delete_temporary_file(report_filepath)
+        mock_file.writelines.assert_called_with([
+            f"{ws_item.inventory_item.code}\n",
+        ])
 
-    def test_export_downloaded_images_report(self):
-        """Export downloaded images report to file."""
-        report_filepath = "tmp/test_export_downloaded_images_report.xlsx"
-        images = []
-        missing_images = []
-        item_count = 5
-        for i in range(item_count):
-            inventory_item = random_inventory_item()
-            filename = f"{inventory_item.code}.jpg" if i > 0 else None
-            images.append({
-                "inventory_item": inventory_item,
-                "source": random_string(3),
-                "filename": filename
-            })
-        for i in range(item_count):
-            inventory_item = random_inventory_item()
-            missing_images.append(inventory_item)
-        export_downloaded_images_report(
-            report_filepath, images, missing_images)
-        # TODO validate values in rows.
-        delete_temporary_file(report_filepath)
+    @patch("csv.DictWriter")
+    def test_export_supplier_pricelist(self, mock_csvwrtr_class):
+        """
+        Export supplier pricelist to CSV file.
+        """
+        filepath = random_string(20)
+        supp_item = fake_supplier_item(fake_inventory_item())
+        mock_csvwrtr = mock_csvwrtr_class.return_value
 
-    def test_export_web_product_menu_data(self):
-        """Export inventory web data to file."""
-        filepath = "tmp/test_export_web_product_menu_data.csv"
-        item_count = 5
-        inventory_items = []
-        for i in range(item_count):
-            inventory_item = random_inventory_item()
-            web_sortcode = random_web_sortcode()
-            inventory_web_data_item = random_inventory_web_data_item(
-                inventory_item,
-                web_sortcode)
-            inventory_items.append(inventory_item)
-        export_web_product_menu_data(filepath, inventory_items)
-        delete_temporary_file(filepath)
+        with patch("builtins.open", mock_open()) as get_mock_file:
+            export_supplier_pricelist(filepath, [])
 
-    def test_export_web_data_updates_report(self):
-        """Export web data updates to file."""
-        filepath = "tmp/test_export_web_data_updates_report.xlsx"
-        item_count = 5
-        inventory_items = []
-        for i in range(item_count):
-            inventory_item = random_inventory_item()
-            web_sortcode = random_web_sortcode()
-            inventory_web_data_item = random_inventory_web_data_item(
-                inventory_item,
-                web_sortcode)
-            inventory_items.append(inventory_item)
-        export_web_data_updates_report(
-            filepath,
-            inventory_items)
-        # delete_temporary_file(filepath)
+        mock_csvwrtr.writerows.assert_called()
+
+    @patch("csv.DictWriter")
+    def test_export_web_product_menu_data(self, mock_csvwrtr_class):
+        """
+        Export inventory web data to file.
+        """
+        filepath = random_string(20)
+        iwd_item = fake_inv_web_data_item(
+            fake_inventory_item(), fake_web_sortcode())
+        mock_csvwrtr = mock_csvwrtr_class.return_value
+
+        with patch("builtins.open", mock_open()) as get_mock_file:
+            export_web_product_menu_data(filepath, [iwd_item])
+            mock_file = get_mock_file()
+
+        mock_csvwrtr.writerows.assert_called()

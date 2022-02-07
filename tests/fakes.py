@@ -8,6 +8,7 @@ from typing import Dict, Optional
 
 from pxi.data import (
     BuyPriceChange,
+    InventoryItemImageFile,
     SellPriceChange,
     SupplierPricelistItem)
 from pxi.enum import (
@@ -301,3 +302,14 @@ def fake_buy_price_change(
         supp_item,
         values.get("price_was", random_price()),
         values.get("price_now", random_price()))
+
+
+def fake_inv_item_image_file(
+        inv_item: InventoryItem,
+        values: Dict[str, any] = {}):
+    """
+    Makes a fake InventoryItemImageFile.
+    """
+    return InventoryItemImageFile(
+        inv_item,
+        values.get("filename", random_string(20)))

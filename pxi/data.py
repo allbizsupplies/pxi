@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from pxi.models import PriceRegionItem, SupplierItem
+from pxi.models import InventoryItem, PriceRegionItem, SupplierItem
 
 
 @dataclass
@@ -61,3 +61,9 @@ class UOMError:
     spl_item_code: str
     expected: str
     actual: str
+
+
+@dataclass
+class InventoryItemImageFile:
+    inventory_item: InventoryItem
+    filename: str
