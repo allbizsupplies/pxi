@@ -2,7 +2,7 @@ from decimal import Decimal
 from sqlalchemy import or_
 
 from pxi.models import SupplierItem, InventoryItem
-from pxi.data import BuyPriceChange
+from pxi.dataclasses import BuyPriceChange
 
 
 SPL_FIELDNAMES = [

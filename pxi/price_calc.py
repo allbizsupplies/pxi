@@ -3,7 +3,7 @@ from decimal import Decimal
 from sqlalchemy.orm.session import Session
 from typing import List
 
-from pxi.data import SellPriceChange
+from pxi.dataclasses import SellPriceChange
 from pxi.enum import PriceBasis, TaxCode
 from pxi.models import ContractItem, PriceRegionItem
 

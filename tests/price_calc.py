@@ -1,5 +1,5 @@
 from decimal import Decimal
-from pxi.data import SellPriceChange
+from pxi.dataclasses import SellPriceChange
 
 from pxi.enum import TaxCode
 from pxi.models import PriceRegionItem

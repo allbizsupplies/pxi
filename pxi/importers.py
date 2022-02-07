@@ -5,7 +5,7 @@ import logging
 import os
 import time
 
-from pxi.data import SupplierPricelistItem
+from pxi.dataclasses import SupplierPricelistItem
 
 from pxi.datagrid import load_rows
 from pxi.enum import (

@@ -7,7 +7,7 @@ from requests.exceptions import ConnectionError
 import sys
 from typing import Dict, List, TypedDict
 from urllib.parse import urlparse
-from pxi.data import InventoryItemImageFile
+from pxi.dataclasses import InventoryItemImageFile
 
 from pxi.models import InventoryItem
 

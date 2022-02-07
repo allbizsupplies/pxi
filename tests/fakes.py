@@ -6,7 +6,7 @@ import string
 import time
 from typing import Dict, Optional
 
-from pxi.data import (
+from pxi.dataclasses import (
     BuyPriceChange,
     InventoryItemImageFile,
     SellPriceChange,

@@ -5,7 +5,7 @@ import logging
 from os import PathLike
 from typing import Dict, List
 
-from pxi.data import BuyPriceChange, InventoryItemImageFile, SellPriceChange
+from pxi.dataclasses import BuyPriceChange, InventoryItemImageFile, SellPriceChange
 from pxi.models import (
     ContractItem,
     InventoryItem,
