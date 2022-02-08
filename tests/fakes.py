@@ -1,10 +1,11 @@
 
 from datetime import datetime
 from decimal import Decimal
+from PIL import Image
 from random import randint, choice as random_choice
 import string
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 from pxi.dataclasses import (
     BuyPriceChange,
@@ -313,3 +314,10 @@ def fake_inv_item_image_file(
     return InventoryItemImageFile(
         inv_item,
         values.get("filename", random_string(20)))
+
+
+def fake_image(size: Tuple[int] = (1000, 1000)):
+    """
+    Makes a fake PIL Image.
+    """
+    return Image.new("RGB", size)

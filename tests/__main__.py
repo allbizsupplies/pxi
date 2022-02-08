@@ -4,7 +4,7 @@ import unittest
 from tests.analysis import AnalysisTests
 from tests.commands import CommandTests
 from tests.exporters import ExporterTests
-from tests.image import ImageTests
+from tests.image import ImageFetchingTests, ImageFormattingTests
 from tests.importers import ImporterTests
 from tests.price_calc import PriceCalcTests
 from tests.spl_update import SPLUpdateTests
@@ -16,7 +16,8 @@ testcases = [
     AnalysisTests,
     CommandTests,
     ExporterTests,
-    ImageTests,
+    ImageFetchingTests,
+    ImageFormattingTests,
     ImporterTests,
     PriceCalcTests,
     SPLUpdateTests,
