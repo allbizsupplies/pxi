@@ -19,7 +19,11 @@ from pxi.image import (
     shrink_image_to_target,
     shrink_target_to_image)
 from tests import DatabaseTestCase
-from tests.fakes import fake_image, fake_inventory_item, fake_supplier_item, random_string
+from tests.fakes import (
+    fake_image,
+    fake_inventory_item,
+    fake_supplier_item,
+    random_string)
 
 
 class ImageFetchingTests(DatabaseTestCase):

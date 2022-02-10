@@ -16,8 +16,7 @@ from tests.fakes import (
     fake_inventory_item,
     fake_price_region_item,
     fake_price_rule,
-    fake_sell_price_change
-)
+    fake_sell_price_change)
 
 
 class PriceCalcTests(DatabaseTestCase):
