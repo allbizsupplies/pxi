@@ -677,6 +677,16 @@ MODEL_IMPORTS = [
         "contract_items_datagrid"
     ),
     (
+        SupplierItem,
+        import_supplier_items,
+        "supplier_items_datagrid"
+    ),
+    (
+        InventoryWebDataItem,
+        import_inventory_web_data_items,
+        "inventory_web_data_items_datagrid"
+    ),
+    (
         WebMenuItem,
         import_web_menu_items,
         "web_menu"

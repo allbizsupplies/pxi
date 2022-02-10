@@ -3,11 +3,12 @@ from datetime import datetime
 from random import randint, choice as random_choice, seed
 import string
 import time
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from pxi.enum import ItemType, ItemCondition, PriceBasis
 from pxi.importers import (
     import_contract_items,
+    import_data,
     import_inventory_items,
     import_inventory_web_data_items,
     import_gtin_items,
@@ -203,13 +204,81 @@ def fake_website_images_report_row(values={}):
     }
 
 
+def mock_model_imports():
+    return [
+        (
+            InventoryItem,
+            MagicMock(),
+            "inventory_items_datagrid"
+        ),
+        (
+            WarehouseStockItem,
+            MagicMock(),
+            "inventory_items_datagrid"
+        ),
+        (
+            PriceRule,
+            MagicMock(),
+            "price_rules_datagrid"
+        ),
+        (
+            PriceRegionItem,
+            MagicMock(),
+            "pricelist_datagrid"
+        ),
+        (
+            ContractItem,
+            MagicMock(),
+            "contract_items_datagrid"
+        ),
+        (
+            SupplierItem,
+            MagicMock(),
+            "supplier_items_datagrid"
+        ),
+        (
+            InventoryWebDataItem,
+            MagicMock(),
+            "inventory_web_data_items_datagrid"
+        ),
+        (
+            WebMenuItem,
+            MagicMock(),
+            "web_menu"
+        ),
+    ]
+
+
 class ImporterTests(DatabaseTestCase):
 
-    # @patch("pxi.importers")
-    def test_import_data(self):
+    @patch("pxi.importers.file_has_changed")
+    def test_import_data_for_all_models(self, mock_file_has_changed):
         """
-        Imports data.
+        Imports data for all models.
         """
+
+        import_paths = {
+            "contract_items_datagrid": "path/import/contract_items.xlsx",
+            "inventory_items_datagrid": "path/import/inventory_items.xlsx",
+            "gtin_items_datagrid": "path/import/gtin_items.xlsx",
+            "price_rules_datagrid": "path/import/price_rules.xlsx",
+            "pricelist_datagrid": "path/import/pricelist.xlsx",
+            "supplier_items_datagrid": "path/import/supplier_items.xlsx",
+            "inventory_web_data_items_datagrid": "path/import/inventory_web_data_items.xlsx",
+            "web_menu": "path/import/web_menu.xlsx",
+        }
+        mock_file_has_changed.return_value = True
+
+        model_imports = mock_model_imports()
+        with patch("pxi.importers.MODEL_IMPORTS", model_imports):
+            # Import all models.
+            import_data(self.db_session, import_paths)
+
+        self.assertEqual(mock_file_has_changed.call_count, len(import_paths))
+        for _, import_function, import_path_key in model_imports:
+            import_path = import_paths[import_path_key]
+            import_function.assert_called_once_with(
+                import_path, self.db_session)
 
     @patch("pxi.importers.load_rows")
     def test_import_inventory_items(self, mock_load_rows):
