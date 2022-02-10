@@ -1,6 +1,7 @@
 
 from dataclasses import dataclass, field
 from decimal import Decimal
+from typing import List
 
 from pxi.models import InventoryItem, PriceRegionItem, SupplierItem
 
@@ -20,7 +21,7 @@ class SupplierPricelistItem:
 @dataclass
 class SellPriceChange:
     price_region_item: PriceRegionItem
-    price_diffs: list = field(default_factory=list)
+    price_diffs: List[Decimal] = field(default_factory=list)
 
     @property
     def price_differs(self):

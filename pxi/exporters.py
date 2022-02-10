@@ -168,13 +168,13 @@ def export_price_changes_report(
             con_items = pr_item.inventory_item.contract_items
             if con_items:
                 # Make row for each ContractItem.
-                for con_item in con_items:
+                for con_item in con_items:  # type: ignore
                     price_diff = sp_change.price_diffs[0]
                     rows.append(contract_item_row(con_item, price_diff))
         return rows
 
     # Define fields for price changes report sheet.
-    sp_change_fields = [
+    sp_change_fields: List[StringField | NumberField] = [
         StringField("item_code", "Item Code", 20),
         StringField("region", "Region", 4),
         StringField("brand", "Brand", 7),
@@ -197,7 +197,7 @@ def export_price_changes_report(
             number_format="0%"))
 
     # Define fields for contract item changes report sheet.
-    con_item_fields = [
+    con_item_fields: List[StringField | NumberField] = [
         StringField("contract", "Contract", 20),
         StringField("item_code", "Item Code", 20),
         StringField("description", "Description", 80),
@@ -235,7 +235,7 @@ def export_supplier_price_changes_report(
     """
 
     # Define fields for price changes report sheet.
-    bp_change_fields = [
+    bp_change_fields: List[StringField | NumberField] = [
         StringField("item_code", "Item Code", 20),
         StringField("supplier", "Supplier", 8),
         StringField("brand", "Brand", 7),
@@ -309,7 +309,7 @@ def export_downloaded_images_report(
         }
 
     # Define fields for the downloaded images report.
-    downloaded_images_fields = [
+    downloaded_images_fields: List[StringField | NumberField] = [
         StringField("item_code", "Item Code", 20),
         StringField("filename", "Filename", 40),
     ]
@@ -355,7 +355,7 @@ def export_gtin_report(
         }
 
     # Define fields for the missing GTINs report.
-    missing_gtin_fields = [
+    missing_gtin_fields: List[StringField | NumberField] = [
         StringField("item_code", "Item Code", 20),
         StringField("brand", "Brand", 8),
         StringField("apn", "APN", 20),
@@ -408,7 +408,7 @@ def export_web_data_updates_report(
         }
 
     # Define fields for the web data updates report.
-    updated_item_fields = [
+    updated_item_fields: List[StringField | NumberField] = [
         StringField("item_code", "Item Code", 20),
         StringField("brand", "Brand", 7),
         StringField("apn", "APN", 20),
@@ -528,8 +528,8 @@ def export_supplier_pricelist(
         supp_items: List of SupplierItems to export.
     """
 
-    seen_item_codes = {}  # Item codes already added to rows.
-    duplicates = {}       # Rows with a duplicate item code.
+    seen_item_codes = set()  # Item codes already added to rows.
+    duplicates = set()       # Rows with a duplicate item code.
 
     def supplier_item_to_row(supp_item: SupplierItem):
         """

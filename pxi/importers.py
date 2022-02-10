@@ -3,10 +3,12 @@ from datetime import datetime
 from decimal import Decimal
 import logging
 import os
+from os import PathLike
+from typing import Any, Dict, Type
+from sqlalchemy.orm.session import Session
 import time
 
 from pxi.dataclasses import SupplierPricelistItem
-
 from pxi.datagrid import load_rows
 from pxi.enum import (
     ItemType,
@@ -15,6 +17,7 @@ from pxi.enum import (
     TaxCode,
     WebStatus)
 from pxi.models import (
+    Base,
     ContractItem,
     File,
     InventoryItem,
@@ -28,7 +31,7 @@ from pxi.models import (
 from pxi.spl_update import SPL_FIELDNAMES
 
 
-def get_inventory_items(db_session):
+def get_inventory_items(db_session: Session):
     """
     Builds a hashmap of all InventoryItems in the database, keyed by code.
     """
@@ -36,7 +39,7 @@ def get_inventory_items(db_session):
             for inv_item in db_session.query(InventoryItem).all()}
 
 
-def get_upserter(db_session, model, records):
+def get_upserter(db_session: Session, model: Type[Base], records: Dict[str, Base]):
     """
     Creates an upsert function for a given model and records.
 
@@ -48,7 +51,7 @@ def get_upserter(db_session, model, records):
     Returns:
         The upsert function.
     """
-    def upsert(key, attributes):
+    def upsert(key: str, attributes: Dict[str, Any]):
         """
         Updates or inserts a record depending on whether or not it exists.
 
@@ -72,7 +75,7 @@ def get_upserter(db_session, model, records):
     return upsert
 
 
-def import_contract_items(filepath, db_session):
+def import_contract_items(filepath: PathLike, db_session: Session):
     """
     Imports ContractItems from a datagrid into the database.
 
@@ -124,7 +127,7 @@ def import_contract_items(filepath, db_session):
         f"{skipped_count} skipped.")
 
 
-def import_inventory_items(filepath, db_session):
+def import_inventory_items(filepath: PathLike, db_session: Session):
     """
     Imports InventoryItems from a datagrid into the database.
 
@@ -169,7 +172,7 @@ def import_inventory_items(filepath, db_session):
         f"{updated_count} updated.")
 
 
-def import_inventory_web_data_items(filepath, db_session):
+def import_inventory_web_data_items(filepath: PathLike, db_session: Session):
     """
     Imports InventoryWebDataItems from a datagrid into the database.
 
@@ -225,7 +228,7 @@ def import_inventory_web_data_items(filepath, db_session):
         f"{skipped_count} skipped.")
 
 
-def import_price_region_items(filepath, db_session):
+def import_price_region_items(filepath: PathLike, db_session: Session):
     """
     Imports PriceRegionItems from a datagrid into the database.
 
@@ -296,7 +299,7 @@ def import_price_region_items(filepath, db_session):
         f"{skipped_count} skipped.")
 
 
-def import_price_rules(filepath, db_session):
+def import_price_rules(filepath: PathLike, db_session: Session):
     """
     Imports PriceRules from a datagrid into the database.
 
@@ -345,7 +348,7 @@ def import_price_rules(filepath, db_session):
         f"{updated_count} updated.")
 
 
-def import_warehouse_stock_items(filepath, db_session):
+def import_warehouse_stock_items(filepath: PathLike, db_session: Session):
     """
     Imports WarehouseStockItems from a datagrid into the database.
 
@@ -396,7 +399,7 @@ def import_warehouse_stock_items(filepath, db_session):
         f"{skipped_count} skipped.")
 
 
-def import_supplier_items(filepath, db_session):
+def import_supplier_items(filepath: PathLike, db_session: Session):
     """
     Imports SupplierItems from a datagrid into the database.
 
@@ -449,7 +452,7 @@ def import_supplier_items(filepath, db_session):
         f"{skipped_count} skipped.")
 
 
-def import_gtin_items(filepath, db_session):
+def import_gtin_items(filepath: PathLike, db_session: Session):
     """
     Imports GTINItems from a datagrid into the database.
 
@@ -504,7 +507,7 @@ def import_gtin_items(filepath, db_session):
         f"{skipped_count} skipped.")
 
 
-def load_spl_rows(filepath):
+def load_spl_rows(filepath: PathLike):
     """
     Loads the rows from a supplier pricelist file.
 
@@ -518,7 +521,7 @@ def load_spl_rows(filepath):
         return csv.DictReader(file, SPL_FIELDNAMES)
 
 
-def import_supplier_pricelist_items(filepath):
+def import_supplier_pricelist_items(filepath: PathLike):
     """
     Imports SupplierPricelistItems from file.
 
@@ -564,7 +567,7 @@ def import_supplier_pricelist_items(filepath):
     return spl_items.values()
 
 
-def import_web_menu_items(filepath, db_session, worksheet_name="menu"):
+def import_web_menu_items(filepath: PathLike, db_session: Session):
     """
     Import WebMenuItems from datagrid.
 
@@ -573,7 +576,7 @@ def import_web_menu_items(filepath, db_session, worksheet_name="menu"):
     """
     import_count = 0
     skipped_count = 0
-    for row in load_rows(filepath, worksheet_name):
+    for row in load_rows(filepath):
         web_menu_item = db_session.query(WebMenuItem).filter(
             WebMenuItem.parent_name == row["parent_name"],
             WebMenuItem.child_name == row["child_name"],
@@ -595,9 +598,9 @@ def import_web_menu_items(filepath, db_session, worksheet_name="menu"):
         f"{skipped_count} skipped.")
 
 
-def import_web_menu_item_mappings(filepath, db_session, worksheet_name="mappings"):
+def import_web_menu_item_mappings(filepath: PathLike, db_session: Session):
     web_menu_item_mappings = {}
-    for row in load_rows(filepath, worksheet_name):
+    for row in load_rows(filepath):
         rule_code = row["rule_code"]
         menu_name = row["menu_name"]
         if menu_name and menu_name != "man":
@@ -617,7 +620,7 @@ def import_web_menu_item_mappings(filepath, db_session, worksheet_name="mappings
     return web_menu_item_mappings
 
 
-def import_website_images_report(filepath, db_session):
+def import_website_images_report(filepath: PathLike, db_session: Session):
     def get_image(row):
         for i in range(1, 5):
             filename = row[f"picture{i}"]
@@ -673,28 +676,34 @@ MODEL_IMPORTS = [
         import_contract_items,
         "contract_items_datagrid"
     ),
+    (
+        WebMenuItem,
+        import_web_menu_items,
+        "web_menu"
+    ),
 ]
 
 
 def import_data(db_session, paths, models=None, force_imports=False):
     import_all_models = models is None
 
-    def file_has_changed(path):
-        file = db_session.query(File).filter(
-            File.path == path
-        ).scalar()
-        modified = datetime.fromtimestamp(os.path.getmtime(path))
-        if file is None:
-            file = File(
-                path=path,
-                modified=modified)
-            db_session.add(file)
-        if file.modified < modified:
-            file.modified = modified
-            return True
-
     for model, function, path_key in MODEL_IMPORTS:
         path = paths[path_key]
         if import_all_models or model in models:
-            if force_imports or file_has_changed(path):
+            if force_imports or file_has_changed(path, db_session):
                 function(path, db_session)
+
+
+def file_has_changed(path, db_session):
+    file = db_session.query(File).filter(
+        File.path == path
+    ).scalar()
+    modified = datetime.fromtimestamp(os.path.getmtime(path))
+    if file is None:
+        file = File(
+            path=path,
+            modified=modified)
+        db_session.add(file)
+    if file.modified < modified:
+        file.modified = modified
+        return True

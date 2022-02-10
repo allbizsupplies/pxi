@@ -1,5 +1,5 @@
 
-from progressbar import progressbar
+from progressbar import progressbar  # type: ignore
 
 
 def progress(iterable, show=False):

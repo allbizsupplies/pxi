@@ -1,7 +1,7 @@
 
 import os
 from os import PathLike
-from PIL import Image
+from PIL import Image  # type: ignore
 import requests
 from requests.exceptions import ConnectionError
 import sys
@@ -75,7 +75,7 @@ def download_image(url: str):
 
 def get_image_urls(inv_item: InventoryItem):
     urls: List[str] = []
-    for supp_item in inv_item.supplier_items:
+    for supp_item in inv_item.supplier_items:  # type: ignore
         supp_code = supp_item.code
         if supp_code in URL_TEMPLATES:
             urls.append(URL_TEMPLATES[supp_code].format(

@@ -1,5 +1,5 @@
 from paramiko import AutoAddPolicy, SSHClient
-from scp import SCPClient
+from scp import SCPClient  # type: ignore
 import sys
 
 

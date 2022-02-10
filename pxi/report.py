@@ -1,7 +1,7 @@
 
 from dataclasses import dataclass
 from os import PathLike
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 from openpyxl.cell import Cell
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font, NamedStyle
@@ -61,8 +61,8 @@ class ReportWriter:
     def write_sheet(
             self,
             name: str,
-            fields: List[ReportField],
-            rows: List[Dict[str, any]]):
+            fields,
+            data: List[Dict[str, Any]]):
         """
         Adds a sheet to the report.
 
@@ -75,7 +75,7 @@ class ReportWriter:
         worksheet = self.workbook.create_sheet(title=name)
 
         # Add the header row.
-        row = list()
+        header_row: List[Cell] = list()
         for field in fields:
             cell = Cell(worksheet, value=field.title)
             # pylint: disable=assigning-non-slot
@@ -84,24 +84,23 @@ class ReportWriter:
                 name=ReportWriter.TYPEFACE,
                 size=ReportWriter.FONT_SIZE,
                 bold=True)
-            row.append(cell)
-        worksheet.append(row)
+            header_row.append(cell)
+        worksheet.append(header_row)
 
         # Add the data rows.
-        for row in rows:
-            row = list()
+        for row_data in data:
+            row: List[Cell] = list()
             for field in fields:
-                cell = Cell(worksheet, value=row[field["name"]])
+                cell = Cell(worksheet, value=row_data[field["name"]])
                 # pylint: disable=assigning-non-slot
                 cell.alignment = Alignment(
                     horizontal=ReportWriter.DEFAULT_ALIGNMENT)
-                if "align" in field.keys():
-                    cell.alignment = Alignment(horizontal=field["align"])
+                cell.alignment = Alignment(horizontal=field.align)
                 cell.font = Font(
                     name=ReportWriter.TYPEFACE,
                     size=ReportWriter.FONT_SIZE)
-                if "number_format" in field.keys():
-                    cell.number_format = field["number_format"]
+                if field.number_format:
+                    cell.number_format = field.number_format
                 row.append(cell)
             worksheet.append(row)
 
@@ -134,7 +133,7 @@ class ReportReader:
             List of rows from the worksheet.
         """
         fieldnames = self.get_fieldnames()
-        rows: List[Dict[str, any]] = []  # The rows from the worksheet.
+        rows: List[Dict[str, Any]] = []  # The rows from the worksheet.
 
         # Iterate over rows until we hit an empty row.
         for cells in self.worksheet.iter_rows(min_row=2):

@@ -205,6 +205,12 @@ def fake_website_images_report_row(values={}):
 
 class ImporterTests(DatabaseTestCase):
 
+    # @patch("pxi.importers")
+    def test_import_data(self):
+        """
+        Imports data.
+        """
+
     @patch("pxi.importers.load_rows")
     def test_import_inventory_items(self, mock_load_rows):
         """
@@ -530,7 +536,7 @@ class ImporterTests(DatabaseTestCase):
         mock_load_spl_rows.assert_called_with(filepath)
         self.assertEqual(len(spl_items), 3)
 
-    @ patch("pxi.importers.load_rows")
+    @patch("pxi.importers.load_rows")
     def test_import_web_menu_items(self, mock_load_rows):
         """
         Import WebMenuItems from metadata spreadsheet.
@@ -540,7 +546,6 @@ class ImporterTests(DatabaseTestCase):
         # for another two, but where the first imported row has the same menu
         # name as first seeded menu item.
         filepath = random_string(20)
-        fake_worksheet_name = random_string(20)
         seeded_web_menu_items = [
             fake_web_menu_item(),
             fake_web_menu_item(),
@@ -556,17 +561,16 @@ class ImporterTests(DatabaseTestCase):
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_web_menu_items(filepath, self.db_session,
-                              worksheet_name=fake_worksheet_name)
+        import_web_menu_items(filepath, self.db_session)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
         # WebMenuItems in the database.
-        mock_load_rows.assert_called_with(filepath, fake_worksheet_name)
+        mock_load_rows.assert_called_with(filepath)
         # pylint:disable=no-member
         web_menu_items = self.db_session.query(WebMenuItem).all()
         self.assertEqual(len(web_menu_items), 3)
 
-    @ patch("pxi.importers.load_rows")
+    @patch("pxi.importers.load_rows")
     def test_import_inventory_web_data_items(self, mock_load_rows):
         """
         Import InventoryWebDataItems from Pronto datagrids.
@@ -622,7 +626,7 @@ class ImporterTests(DatabaseTestCase):
             InventoryWebDataItem).all()
         self.assertEqual(len(inv_web_data_items), 3)
 
-    @ patch("pxi.importers.load_rows")
+    @patch("pxi.importers.load_rows")
     def test_import_web_menu_item_mappings(self, mock_load_rows):
         """
         Import WebMenuItem mappings from metadata spreadsheet.
@@ -632,7 +636,6 @@ class ImporterTests(DatabaseTestCase):
         # WebMenuItem mapping, but where the second row doesn't have a
         # matching WebMenuItem.
         filepath = random_string(20)
-        fake_worksheet_name = random_string(20)
         seeded_web_menu_items = [
             fake_web_menu_item(),
         ]
@@ -648,16 +651,15 @@ class ImporterTests(DatabaseTestCase):
         # Run the import.
         web_menu_item_mappings = import_web_menu_item_mappings(
             filepath,
-            self.db_session,
-            worksheet_name=fake_worksheet_name)
+            self.db_session)
 
         # Expect to import both WebMenuItem mappings.
-        mock_load_rows.assert_called_with(filepath, fake_worksheet_name)
+        mock_load_rows.assert_called_with(filepath)
         # pylint:disable=no-member
         web_menu_items = self.db_session.query(WebMenuItem).all()
         self.assertEqual(len(web_menu_item_mappings), 2)
 
-    @ patch("pxi.importers.load_rows")
+    @patch("pxi.importers.load_rows")
     def test_import_website_images_report(self, mock_load_rows):
         """
         Import product image information from report.

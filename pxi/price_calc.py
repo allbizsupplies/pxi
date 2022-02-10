@@ -189,7 +189,7 @@ def recalculate_contract_prices(
         price_now = price_change.price_region_item.price(0)
         price_diff = price_change.price_diffs[0]
         price_was = price_now - price_diff
-        price_ratio = None
+        price_ratio = Decimal()
         if price_was > 0:
             price_ratio = (price_now / price_was).quantize(price_now)
         elif price_now > 0:
