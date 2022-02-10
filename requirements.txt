@@ -3,6 +3,7 @@ paramiko
 pillow
 progressbar2
 python-dotenv
+pyyaml
 requests
 selenium
 scp
