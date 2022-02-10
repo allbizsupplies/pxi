@@ -249,6 +249,19 @@ def mock_model_imports():
     ]
 
 
+def mock_import_paths():
+    return {
+        "contract_items_datagrid": "path/import/contract_items.xlsx",
+        "inventory_items_datagrid": "path/import/inventory_items.xlsx",
+        "gtin_items_datagrid": "path/import/gtin_items.xlsx",
+        "price_rules_datagrid": "path/import/price_rules.xlsx",
+        "pricelist_datagrid": "path/import/pricelist.xlsx",
+        "supplier_items_datagrid": "path/import/supplier_items.xlsx",
+        "inventory_web_data_items_datagrid": "path/import/inventory_web_data_items.xlsx",
+        "web_menu": "path/import/web_menu.xlsx",
+    }
+
+
 class ImporterTests(DatabaseTestCase):
 
     @patch("pxi.importers.file_has_changed")
@@ -256,29 +269,56 @@ class ImporterTests(DatabaseTestCase):
         """
         Imports data for all models.
         """
-
-        import_paths = {
-            "contract_items_datagrid": "path/import/contract_items.xlsx",
-            "inventory_items_datagrid": "path/import/inventory_items.xlsx",
-            "gtin_items_datagrid": "path/import/gtin_items.xlsx",
-            "price_rules_datagrid": "path/import/price_rules.xlsx",
-            "pricelist_datagrid": "path/import/pricelist.xlsx",
-            "supplier_items_datagrid": "path/import/supplier_items.xlsx",
-            "inventory_web_data_items_datagrid": "path/import/inventory_web_data_items.xlsx",
-            "web_menu": "path/import/web_menu.xlsx",
-        }
+        import_paths = mock_import_paths()
         mock_file_has_changed.return_value = True
 
         model_imports = mock_model_imports()
         with patch("pxi.importers.MODEL_IMPORTS", model_imports):
-            # Import all models.
             import_data(self.db_session, import_paths)
 
+        # Importer checks file has changed before each import.
         self.assertEqual(mock_file_has_changed.call_count, len(import_paths))
         for _, import_function, import_path_key in model_imports:
             import_path = import_paths[import_path_key]
             import_function.assert_called_once_with(
                 import_path, self.db_session)
+
+    def test_force_import_data_for_all_models(self):
+        """
+        Imports all models without checking that files have changed.
+        """
+        import_paths = mock_import_paths()
+
+        model_imports = mock_model_imports()
+        with patch("pxi.importers.MODEL_IMPORTS", model_imports):
+            import_data(self.db_session, import_paths, force_imports=True)
+
+        for _, import_function, import_path_key in model_imports:
+            import_path = import_paths[import_path_key]
+            import_function.assert_called_once_with(
+                import_path, self.db_session)
+
+    @patch("pxi.importers.file_has_changed")
+    def test_import_data_for_single_model(self, mock_file_has_changed):
+        """
+        Imports data for all models.
+        """
+        import_paths = mock_import_paths()
+        mock_file_has_changed.return_value = True
+
+        model_imports = mock_model_imports()
+        with patch("pxi.importers.MODEL_IMPORTS", model_imports):
+            import_data(self.db_session, import_paths, [
+                InventoryItem
+            ])
+
+        # Importer checks file has changed before each import.
+        model, import_function, import_path_key = model_imports[0]
+        self.assertEqual(model, InventoryItem)
+        import_path = import_paths[import_path_key]
+        mock_file_has_changed.assert_called_once_with(
+            import_path, self.db_session)
+        import_function.assert_called_once_with(import_path, self.db_session)
 
     @patch("pxi.importers.load_rows")
     def test_import_inventory_items(self, mock_load_rows):
