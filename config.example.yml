@@ -18,9 +18,11 @@ paths:
     supplier_items_datagrid: "data/import/supplier_items.xlsx"
     inventory_web_data_items_datagrid: "data/import/inventory_web_data_items.xlsx"
 
-    # Inventory metadata is a manually created file containing web sortcodes
-    # and mappings between price rules and web sortcodes.
-    inventory_metadata: "data/import/inventory_metadata.xlsx"
+    # Manually-created list of web menu names.
+    web_menu: "data/import/web_menu.xlsx"
+
+    # Manually-created list of mappings between price rules and web menu names.
+    web_menu_mappings: "data/import/web_menu_mappings.xlsx"
 
     # The Supplier pricelist is a CSV file downloaded from the Pronto server.
     # See docs/generate_spl_guide.md for instructions on how to download this

@@ -279,15 +279,15 @@ class GTINItem(Base):
         return self.conv_factor == 1
 
 
-class WebSortcode(Base):
-    __tablename__ = "web_sortcodes"
+class WebMenuItem(Base):
+    __tablename__ = "web_menu_items"
 
     id = Column(Integer, primary_key=True)
     parent_name = Column(String(255), nullable=False)
     child_name = Column(String(255), nullable=False)
 
     inventory_web_data_items = relationship("InventoryWebDataItem",
-                                            back_populates="web_sortcode")
+                                            back_populates="web_menu_item")
 
     @property
     def name(self):
@@ -298,7 +298,7 @@ class WebSortcode(Base):
     )
 
     def __repr__(self):
-        return f"<WebSortcode(name='{self.name}')>"
+        return f"<WebMenuItem(name='{self.name}')>"
 
 
 class InventoryWebDataItem(Base):
@@ -308,14 +308,14 @@ class InventoryWebDataItem(Base):
     description = Column(String(255))
     inventory_item_id = Column(Integer,
                                ForeignKey("inventory_items.id"), nullable=False)
-    web_sortcode_id = Column(Integer,
-                             ForeignKey("web_sortcodes.id"), nullable=True)
+    web_menu_item_id = Column(Integer,
+                              ForeignKey("web_menu_items.id"), nullable=True)
 
     inventory_item = relationship("InventoryItem",
                                   back_populates="inventory_web_data_item")
 
-    web_sortcode = relationship("WebSortcode",
-                                back_populates="inventory_web_data_items")
+    web_menu_item = relationship("WebMenuItem",
+                                 back_populates="inventory_web_data_items")
 
     def __repr__(self):
         return f"<InventoryWebDataItem(item='{self.inventory_item.code}')>"

@@ -22,7 +22,7 @@ from pxi.exporters import (
 from pxi.price_calc import recalculate_sell_prices
 from pxi.spl_update import SPL_FIELDNAMES
 from tests import PXITestCase
-from tests.fakes import fake_buy_price_change, fake_contract_item, fake_inv_item_image_file, fake_inv_web_data_item, fake_inventory_item, fake_price_region_item, fake_price_rule, fake_sell_price_change, fake_supplier_item, fake_supplier_pricelist_item, fake_warehouse_stock_item, fake_web_sortcode, random_string
+from tests.fakes import fake_buy_price_change, fake_contract_item, fake_inv_item_image_file, fake_inv_web_data_item, fake_inventory_item, fake_price_region_item, fake_price_rule, fake_sell_price_change, fake_supplier_item, fake_supplier_pricelist_item, fake_warehouse_stock_item, fake_web_menu_item, random_string
 
 
 def delete_temporary_file(filepath):
@@ -105,7 +105,7 @@ class ExporterTests(PXITestCase):
         """
         filepath = random_string(20)
         iwd_item = fake_inv_web_data_item(
-            fake_inventory_item(), fake_web_sortcode())
+            fake_inventory_item(), fake_web_menu_item())
         mock_rprtwrtr = mock_rprtwrtr_class.return_value
 
         export_web_data_updates_report(filepath, [iwd_item])
@@ -180,7 +180,7 @@ class ExporterTests(PXITestCase):
         """
         filepath = random_string(20)
         iwd_item = fake_inv_web_data_item(
-            fake_inventory_item(), fake_web_sortcode())
+            fake_inventory_item(), fake_web_menu_item())
         mock_csvwrtr = mock_csvwrtr_class.return_value
 
         with patch("builtins.open", mock_open()) as get_mock_file:

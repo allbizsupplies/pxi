@@ -19,7 +19,7 @@ from pxi.exporters import (
     export_web_data_updates_report,
     export_web_product_menu_data)
 from pxi.image import fetch_images
-from pxi.importers import import_data, import_supplier_pricelist_items, import_web_sortcode_mappings, import_website_images_report
+from pxi.importers import import_data, import_supplier_pricelist_items, import_web_menu_item_mappings, import_website_images_report
 from pxi.models import (
     ContractItem,
     GTINItem,
@@ -29,7 +29,7 @@ from pxi.models import (
     PriceRule,
     SupplierItem,
     WarehouseStockItem,
-    WebSortcode)
+    WebMenuItem)
 from pxi.price_calc import (
     recalculate_contract_prices,
     recalculate_sell_prices)
@@ -232,20 +232,20 @@ class Commands:
             import_paths = self.config["paths"]["import"]
             import_data(self.db_session, import_paths, [
                 InventoryItem,
-                WebSortcode,
+                WebMenuItem,
                 PriceRule,
                 PriceRegionItem,
                 InventoryWebDataItem,
             ], force_imports=options.get("force_imports", False))
 
-            # Import web sortcode mappings.
-            wsc_mappings = import_web_sortcode_mappings(
+            # Import mappings between PriceRules and WebMenuItems.
+            wmi_mappings = import_web_menu_item_mappings(
                 import_paths["inventory_metadata"],
                 self.db_session,
                 worksheet_name="rules")
 
             # Select all InventoryWebDataItems that are related to an active
-            # InventoryItem and PriceRule, but not a WebSortcode.
+            # InventoryItem and PriceRule, but not a WebMenuItem.
             # pylint:disable=no-member
             iwd_items = self.db_session.query(InventoryWebDataItem).join(
                 InventoryWebDataItem.inventory_item
@@ -254,7 +254,7 @@ class Commands:
             ).filter(
                 PriceRegionItem.price_rule_id.isnot(None),
                 PriceRegionItem.code == "",
-                InventoryWebDataItem.web_sortcode == None,
+                InventoryWebDataItem.web_menu_item == None,
                 InventoryItem.condition != ItemCondition.DISCONTINUED,
                 InventoryItem.condition != ItemCondition.INACTIVE,
                 InventoryItem.item_type != ItemType.CROSS_REFERENCE,
@@ -264,7 +264,7 @@ class Commands:
 
             # Update inventory web data and record changes.
             updated_iwd_items = update_product_menu(
-                iwd_items, wsc_mappings, self.db_session)
+                iwd_items, wmi_mappings, self.db_session)
 
             # Export report and data files:
             # - Inventory web data updates report

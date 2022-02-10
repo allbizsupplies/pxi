@@ -26,7 +26,7 @@ from pxi.models import (
     PriceRule,
     SupplierItem,
     WarehouseStockItem,
-    WebSortcode)
+    WebMenuItem)
 
 
 def random_description(length: int = 30):
@@ -235,25 +235,25 @@ def fake_gtin_item(
         conv_factor=values.get("conv_factor", 1))
 
 
-def fake_web_sortcode(values: Dict[str, any] = {}):
+def fake_web_menu_item(values: Dict[str, any] = {}):
     """
-    Makes a fake WebSortcode.
+    Makes a fake WebMenuItem.
     """
-    return WebSortcode(
+    return WebMenuItem(
         parent_name=values.get("parent_name", random_string(20)),
         child_name=values.get("child_name", random_string(20)))
 
 
 def fake_inv_web_data_item(
         inv_item: InventoryItem,
-        web_sortcode: WebSortcode,
+        web_menu_item: WebMenuItem,
         values: Dict[str, any] = {}):
     """
     Makes a fake InventoryWebDataItem.
     """
     return InventoryWebDataItem(
         inventory_item=inv_item,
-        web_sortcode=web_sortcode,
+        web_menu_item=web_menu_item,
         description=values.get("description", random_string(20)))
 
 

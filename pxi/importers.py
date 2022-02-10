@@ -24,7 +24,7 @@ from pxi.models import (
     PriceRule,
     SupplierItem,
     WarehouseStockItem,
-    WebSortcode)
+    WebMenuItem)
 from pxi.spl_update import SPL_FIELDNAMES
 
 
@@ -184,10 +184,10 @@ def import_inventory_web_data_items(filepath, db_session):
     # Get a hashmap of InventoryItems keyed by code.
     inv_items = get_inventory_items(db_session)
 
-    # Get a hashmap of WebSortcodes keyed by name.
-    web_sortcodes = {
-        web_sortcode.name: web_sortcode
-        for web_sortcode in db_session.query(WebSortcode).all()}
+    # Get a hashmap of WebMenuItems keyed by name.
+    web_menu_items = {
+        web_menu_item.name: web_menu_item
+        for web_menu_item in db_session.query(WebMenuItem).all()}
 
     # Create an upserter for InventoryWebDataItems.
     upsert = get_upserter(db_session, InventoryWebDataItem, {
@@ -197,16 +197,16 @@ def import_inventory_web_data_items(filepath, db_session):
     # Update/insert rows as InventoryWebDataItems where InventoryItem exists.
     for row in load_rows(filepath):
         inv_item_code = row["stock_code"]
-        web_sortcode_name = row["menu_name"]
-        has_valid_web_sortcode = web_sortcode_name is None \
-            or web_sortcode_name in web_sortcodes
-        if inv_item_code in inv_items and has_valid_web_sortcode:
-            web_sortcode = None
-            if web_sortcode_name:
-                web_sortcode = web_sortcodes[web_sortcode_name]
+        web_menu_item_name = row["menu_name"]
+        has_valid_web_menu_item = web_menu_item_name is None \
+            or web_menu_item_name in web_menu_items
+        if inv_item_code in inv_items and has_valid_web_menu_item:
+            web_menu_item = None
+            if web_menu_item_name:
+                web_menu_item = web_menu_items[web_menu_item_name]
             updated = upsert(inv_item_code, {
                 "inventory_item": inv_items[inv_item_code],
-                "web_sortcode": web_sortcode,
+                "web_menu_item": web_menu_item,
                 "description": row["description"],
             })
             if updated:
@@ -564,9 +564,9 @@ def import_supplier_pricelist_items(filepath):
     return spl_items.values()
 
 
-def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
+def import_web_menu_items(filepath, db_session, worksheet_name="menu"):
     """
-    Import WebSortcodes from datagrid.
+    Import WebMenuItems from datagrid.
 
     Params:
         filepath: The path to the gtin items datagrid.
@@ -574,12 +574,12 @@ def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
     import_count = 0
     skipped_count = 0
     for row in load_rows(filepath, worksheet_name):
-        web_sortcode = db_session.query(WebSortcode).filter(
-            WebSortcode.parent_name == row["parent_name"],
-            WebSortcode.child_name == row["child_name"],
+        web_menu_item = db_session.query(WebMenuItem).filter(
+            WebMenuItem.parent_name == row["parent_name"],
+            WebMenuItem.child_name == row["child_name"],
         ).scalar()
-        if not web_sortcode:
-            db_session.add(WebSortcode(
+        if not web_menu_item:
+            db_session.add(WebMenuItem(
                 parent_name=row["parent_name"].strip(),
                 child_name=row["child_name"].strip(),
             ))
@@ -590,31 +590,31 @@ def import_web_sortcodes(filepath, db_session, worksheet_name="sortcodes"):
     # Commit the database queries and log the results.
     db_session.commit()
     logging.info(
-        f"Import WebSortcodes: "
+        f"Import WebMenuItems: "
         f"{import_count} inserted, "
         f"{skipped_count} skipped.")
 
 
-def import_web_sortcode_mappings(filepath, db_session, worksheet_name="rules"):
-    web_sortcode_mappings = {}
+def import_web_menu_item_mappings(filepath, db_session, worksheet_name="mappings"):
+    web_menu_item_mappings = {}
     for row in load_rows(filepath, worksheet_name):
         rule_code = row["rule_code"]
         menu_name = row["menu_name"]
         if menu_name and menu_name != "man":
             parent_name, child_name = menu_name.split("/")
-            web_sortcode = db_session.query(WebSortcode).filter(
-                WebSortcode.parent_name == parent_name,
-                WebSortcode.child_name == child_name,
+            web_menu_item = db_session.query(WebMenuItem).filter(
+                WebMenuItem.parent_name == parent_name,
+                WebMenuItem.child_name == child_name,
             ).scalar()
-            web_sortcode_mappings[rule_code] = web_sortcode
+            web_menu_item_mappings[rule_code] = web_menu_item
         else:
-            web_sortcode_mappings[rule_code] = menu_name
+            web_menu_item_mappings[rule_code] = menu_name
 
     # Log the results and return the list of mappings.
     logging.info(
-        f"Import WebSortcode mappings: "
-        f"{len(web_sortcode_mappings)} inserted.")
-    return web_sortcode_mappings
+        f"Import WebMenuItem mappings: "
+        f"{len(web_menu_item_mappings)} inserted.")
+    return web_menu_item_mappings
 
 
 def import_website_images_report(filepath, db_session):

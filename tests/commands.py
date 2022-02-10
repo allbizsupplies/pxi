@@ -13,7 +13,7 @@ from pxi.models import (
     PriceRule,
     SupplierItem,
     WarehouseStockItem,
-    WebSortcode)
+    WebMenuItem)
 from tests import DatabaseTestCase
 from tests.fakes import (
     fake_contract_item,
@@ -27,7 +27,7 @@ from tests.fakes import (
     fake_supplier_item,
     fake_supplier_pricelist_item,
     fake_warehouse_stock_item,
-    fake_web_sortcode)
+    fake_web_menu_item)
 
 
 def get_mock_config():
@@ -333,12 +333,12 @@ class CommandTests(DatabaseTestCase):
     @patch("pxi.commands.export_web_data_updates_report")
     @patch("pxi.commands.export_web_product_menu_data")
     @patch("pxi.commands.update_product_menu")
-    @patch("pxi.commands.import_web_sortcode_mappings")
+    @patch("pxi.commands.import_web_menu_item_mappings")
     @patch("pxi.commands.import_data")
     def test_web_update(
             self,
             mock_import_data,
-            mock_import_web_sortcode_mappings,
+            mock_import_web_menu_item_mappings,
             mock_update_product_menu,
             mock_export_web_product_menu_data,
             mock_export_web_data_updates_report):
@@ -355,19 +355,19 @@ class CommandTests(DatabaseTestCase):
         pr_item = fake_price_region_item(inv_item, price_rule, {
             "code": PriceRegionItem.DEFAULT_REGION_CODE
         })
-        web_sortcode = fake_web_sortcode()
+        web_menu_item = fake_web_menu_item()
         iwd_item = fake_inv_web_data_item(inv_item, None)
         self.seed([
             inv_item,
             price_rule,
             pr_item,
-            web_sortcode,
+            web_menu_item,
             iwd_item,
         ])
-        wsc_mappings = {
-            price_rule.code: web_sortcode,
+        wmi_mappings = {
+            price_rule.code: web_menu_item,
         }
-        mock_import_web_sortcode_mappings.return_value = wsc_mappings
+        mock_import_web_menu_item_mappings.return_value = wmi_mappings
         mock_update_product_menu.return_value = [iwd_item]
 
         command = Commands.web_update(mock_config)
@@ -376,18 +376,18 @@ class CommandTests(DatabaseTestCase):
 
         mock_import_data.assert_called_with(command.db_session, import_paths, [
             InventoryItem,
-            WebSortcode,
+            WebMenuItem,
             PriceRule,
             PriceRegionItem,
             InventoryWebDataItem,
         ], force_imports=False)
-        mock_import_web_sortcode_mappings.assert_called_with(
+        mock_import_web_menu_item_mappings.assert_called_with(
             import_paths["inventory_metadata"],
             command.db_session,
             worksheet_name="rules")
         mock_update_product_menu.assert_called_with(
             [iwd_item],
-            wsc_mappings,
+            wmi_mappings,
             command.db_session)
         mock_export_web_product_menu_data.assert_called_with(
             export_paths["web_product_menu_data"],

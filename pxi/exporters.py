@@ -403,8 +403,8 @@ def export_web_data_updates_report(
             "brand": inv_item.brand,
             "apn": inv_item.apn,
             "description": inv_item.full_description,
-            "menu_parent_name": iwd_item.web_sortcode.parent_name,
-            "menu_child_name": iwd_item.web_sortcode.child_name,
+            "menu_parent_name": iwd_item.web_menu_item.parent_name,
+            "menu_child_name": iwd_item.web_menu_item.child_name,
         }
 
     # Define fields for the web data updates report.
@@ -613,7 +613,7 @@ def export_web_product_menu_data(
         """
         return {
             "item_code": iwd_item.inventory_item.code,
-            "menu_name": iwd_item.web_sortcode.name,
+            "menu_name": iwd_item.web_menu_item.name,
         }
 
     # Define fieldnames for the CSV file.

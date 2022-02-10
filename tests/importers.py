@@ -16,8 +16,8 @@ from pxi.importers import (
     import_supplier_items,
     import_supplier_pricelist_items,
     import_warehouse_stock_items,
-    import_web_sortcodes,
-    import_web_sortcode_mappings,
+    import_web_menu_items,
+    import_web_menu_item_mappings,
     import_website_images_report)
 from pxi.models import (
     ContractItem,
@@ -28,7 +28,7 @@ from pxi.models import (
     PriceRule,
     SupplierItem,
     WarehouseStockItem,
-    WebSortcode)
+    WebMenuItem)
 from tests import DatabaseTestCase
 from tests.fakes import (
     fake_contract_item,
@@ -39,7 +39,7 @@ from tests.fakes import (
     fake_price_rule,
     fake_supplier_item,
     fake_warehouse_stock_item,
-    fake_web_sortcode,
+    fake_web_menu_item,
     random_datetime,
     random_item_code,
     random_price_factor,
@@ -165,14 +165,14 @@ def fake_price_rules_datagrid_row(values={}):
     }
 
 
-def fake_web_sortcodes_row(values={}):
+def fake_web_menu_items_row(values={}):
     return {
         "parent_name": values.get("parent_name", random_string(10)),
         "child_name": values.get("child_name", random_string(10))
     }
 
 
-def fake_web_sortcodes_mappings_row(values={}):
+def fake_web_menu_items_mappings_row(values={}):
     return {
         "rule_code": values.get("rule_code", random_string(4)),
         "menu_name": values.get(
@@ -531,40 +531,40 @@ class ImporterTests(DatabaseTestCase):
         self.assertEqual(len(spl_items), 3)
 
     @ patch("pxi.importers.load_rows")
-    def test_import_web_sortcodes(self, mock_load_rows):
+    def test_import_web_menu_items(self, mock_load_rows):
         """
-        Import WebSortcodes from metadata spreadsheet.
+        Import WebMenuItems from metadata spreadsheet.
         """
 
-        # Seed the database with two WebSortcodes and then mock an import
+        # Seed the database with two WebMenuItems and then mock an import
         # for another two, but where the first imported row has the same menu
-        # name as first seeded sortcode.
+        # name as first seeded menu item.
         filepath = random_string(20)
         fake_worksheet_name = random_string(20)
-        seeded_web_sortcodes = [
-            fake_web_sortcode(),
-            fake_web_sortcode(),
+        seeded_web_menu_items = [
+            fake_web_menu_item(),
+            fake_web_menu_item(),
         ]
-        self.seed(seeded_web_sortcodes)
+        self.seed(seeded_web_menu_items)
         rows = [
-            fake_web_sortcodes_row({
-                "parent_name": seeded_web_sortcodes[0].parent_name,
-                "child_name": seeded_web_sortcodes[0].child_name,
+            fake_web_menu_items_row({
+                "parent_name": seeded_web_menu_items[0].parent_name,
+                "child_name": seeded_web_menu_items[0].child_name,
             }),
-            fake_web_sortcodes_row(),
+            fake_web_menu_items_row(),
         ]
         mock_load_rows.return_value = rows
 
         # Run the import.
-        import_web_sortcodes(filepath, self.db_session,
-                             worksheet_name=fake_worksheet_name)
+        import_web_menu_items(filepath, self.db_session,
+                              worksheet_name=fake_worksheet_name)
 
         # Expect to insert 2 items, update 1, leaving a total of 3
-        # WebSortcodes in the database.
+        # WebMenuItems in the database.
         mock_load_rows.assert_called_with(filepath, fake_worksheet_name)
         # pylint:disable=no-member
-        web_sortcodes = self.db_session.query(WebSortcode).all()
-        self.assertEqual(len(web_sortcodes), 3)
+        web_menu_items = self.db_session.query(WebMenuItem).all()
+        self.assertEqual(len(web_menu_items), 3)
 
     @ patch("pxi.importers.load_rows")
     def test_import_inventory_web_data_items(self, mock_load_rows):
@@ -572,7 +572,7 @@ class ImporterTests(DatabaseTestCase):
         Import InventoryWebDataItems from Pronto datagrids.
         """
 
-        # Seed the database with three InventoryItems, three WebSortcodes and
+        # Seed the database with three InventoryItems, three WebMenuItems and
         # two InventoryWebDataItems, then mock an import for another two
         # InventoryWebDataItems, but where the first imported row has the same
         # item code, as the first seeded InventoryWebDataItem, and the last
@@ -583,29 +583,29 @@ class ImporterTests(DatabaseTestCase):
             fake_inventory_item(),
             fake_inventory_item(),
         ]
-        seeded_web_sortcodes = [
-            fake_web_sortcode(),
-            fake_web_sortcode(),
-            fake_web_sortcode(),
+        seeded_web_menu_items = [
+            fake_web_menu_item(),
+            fake_web_menu_item(),
+            fake_web_menu_item(),
         ]
         seeded_inv_web_data_items = [
             fake_inv_web_data_item(
                 seeded_inv_items[0],
-                seeded_web_sortcodes[0]),
+                seeded_web_menu_items[0]),
             fake_inv_web_data_item(
                 seeded_inv_items[1],
-                seeded_web_sortcodes[1]),
+                seeded_web_menu_items[1]),
         ]
         self.seed(
-            seeded_inv_items + seeded_web_sortcodes + seeded_inv_web_data_items)
+            seeded_inv_items + seeded_web_menu_items + seeded_inv_web_data_items)
         rows = [
             fake_inv_web_data_items_datagrid_row({
                 "stock_code": seeded_inv_items[0].code,
-                "menu_name": seeded_web_sortcodes[0].name,
+                "menu_name": seeded_web_menu_items[0].name,
             }),
             fake_inv_web_data_items_datagrid_row({
                 "stock_code": seeded_inv_items[2].code,
-                "menu_name": seeded_web_sortcodes[2].name,
+                "menu_name": seeded_web_menu_items[2].name,
             }),
             fake_inv_web_data_items_datagrid_row(),
         ]
@@ -623,39 +623,39 @@ class ImporterTests(DatabaseTestCase):
         self.assertEqual(len(inv_web_data_items), 3)
 
     @ patch("pxi.importers.load_rows")
-    def test_import_web_sortcode_mappings(self, mock_load_rows):
+    def test_import_web_menu_item_mappings(self, mock_load_rows):
         """
-        Import WebSortcode mappings from metadata spreadsheet.
+        Import WebMenuItem mappings from metadata spreadsheet.
         """
 
-        # Seed the database with one WebSortcode, and mock an import for two
-        # WebSortcode mapping, but where the second row doesn't have a
-        # matching WebSortcode.
+        # Seed the database with one WebMenuItem, and mock an import for two
+        # WebMenuItem mapping, but where the second row doesn't have a
+        # matching WebMenuItem.
         filepath = random_string(20)
         fake_worksheet_name = random_string(20)
-        seeded_web_sortcodes = [
-            fake_web_sortcode(),
+        seeded_web_menu_items = [
+            fake_web_menu_item(),
         ]
-        self.seed(seeded_web_sortcodes)
+        self.seed(seeded_web_menu_items)
         rows = [
-            fake_web_sortcodes_mappings_row({
-                "menu_name": seeded_web_sortcodes[0].name
+            fake_web_menu_items_mappings_row({
+                "menu_name": seeded_web_menu_items[0].name
             }),
-            fake_web_sortcodes_mappings_row(),
+            fake_web_menu_items_mappings_row(),
         ]
         mock_load_rows.return_value = rows
 
         # Run the import.
-        web_sortcode_mappings = import_web_sortcode_mappings(
+        web_menu_item_mappings = import_web_menu_item_mappings(
             filepath,
             self.db_session,
             worksheet_name=fake_worksheet_name)
 
-        # Expect to import both web sortcode mappings.
+        # Expect to import both WebMenuItem mappings.
         mock_load_rows.assert_called_with(filepath, fake_worksheet_name)
         # pylint:disable=no-member
-        web_sortcodes = self.db_session.query(WebSortcode).all()
-        self.assertEqual(len(web_sortcode_mappings), 2)
+        web_menu_items = self.db_session.query(WebMenuItem).all()
+        self.assertEqual(len(web_menu_item_mappings), 2)
 
     @ patch("pxi.importers.load_rows")
     def test_import_website_images_report(self, mock_load_rows):
