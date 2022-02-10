@@ -9,7 +9,6 @@ from pxi.analysis import (
     MISS_MULTIPLIER
 )
 from tests import DatabaseTestCase
-from tests.fixtures.models import random_inventory_item
 
 
 class AnalysisTests(DatabaseTestCase):

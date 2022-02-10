@@ -11,9 +11,6 @@ from tests.fakes import (
     random_item_code,
     random_string,
     random_uom)
-from tests.fixtures.models import (
-    random_supplier_item,
-    random_inventory_item)
 
 
 class SPLUpdateTests(DatabaseTestCase):
