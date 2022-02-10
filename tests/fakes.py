@@ -1,11 +1,11 @@
 
 from datetime import datetime
 from decimal import Decimal
-from PIL import Image
+from PIL import Image  # type: ignore
 from random import randint, choice as random_choice
 import string
 import time
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from pxi.dataclasses import (
     BuyPriceChange,
@@ -101,7 +101,7 @@ def random_uom(length: int = 4):
     return random_string(length)
 
 
-def fake_inventory_item(values: Dict[str, any] = {}):
+def fake_inventory_item(values: Dict[str, Any] = {}):
     """
     Makes a fake InventoryItem.
     """
@@ -125,7 +125,7 @@ def fake_inventory_item(values: Dict[str, any] = {}):
 
 def fake_contract_item(
         inv_item: InventoryItem,
-        values: Dict[str, any] = {}):
+        values: Dict[str, Any] = {}):
     """
     Makes a fake ContractItem.
     """
@@ -142,7 +142,7 @@ def fake_contract_item(
 
 def fake_warehouse_stock_item(
         inv_item: InventoryItem,
-        values: Dict[str, any] = {}):
+        values: Dict[str, Any] = {}):
     """
     Makes a fake WarehouseStockItem.
     """
@@ -156,7 +156,7 @@ def fake_warehouse_stock_item(
         bulk_location=values.get("bulk_location", random_string(8)))
 
 
-def fake_price_rule(values: Dict[str, any] = {}):
+def fake_price_rule(values: Dict[str, Any] = {}):
     """
     Makes a fake PriceRule.
     """
@@ -182,7 +182,7 @@ def fake_price_rule(values: Dict[str, any] = {}):
 def fake_price_region_item(
         inv_item: InventoryItem,
         price_rule: PriceRule,
-        values: Dict[str, any] = {}):
+        values: Dict[str, Any] = {}):
     """
     Makes a fake PriceRegionitem.
     """
@@ -206,7 +206,7 @@ def fake_price_region_item(
 
 def fake_supplier_item(
         inv_item: InventoryItem,
-        values: Dict[str, any] = {}):
+        values: Dict[str, Any] = {}):
     """
     Makes a fake SupplierItem.
     """
@@ -224,7 +224,7 @@ def fake_supplier_item(
 
 def fake_gtin_item(
         inv_item: InventoryItem,
-        values: Dict[str, any] = {}):
+        values: Dict[str, Any] = {}):
     """
     Makes a fake GTINItem.
     """
@@ -235,7 +235,7 @@ def fake_gtin_item(
         conv_factor=values.get("conv_factor", 1))
 
 
-def fake_web_menu_item(values: Dict[str, any] = {}):
+def fake_web_menu_item(values: Dict[str, Any] = {}):
     """
     Makes a fake WebMenuItem.
     """
@@ -247,7 +247,7 @@ def fake_web_menu_item(values: Dict[str, any] = {}):
 def fake_inv_web_data_item(
         inv_item: InventoryItem,
         web_menu_item: WebMenuItem,
-        values: Dict[str, any] = {}):
+        values: Dict[str, Any] = {}):
     """
     Makes a fake InventoryWebDataItem.
     """
@@ -259,7 +259,7 @@ def fake_inv_web_data_item(
 
 def fake_supplier_pricelist_item(
         supp_item: SupplierItem,
-        values: Dict[str, any] = {}):
+        values: Dict[str, Any] = {}):
     """
     Makes a fake SupplierPricelistItem.
     """
@@ -278,7 +278,7 @@ def fake_supplier_pricelist_item(
 
 def fake_sell_price_change(
         pr_item: PriceRegionItem,
-        values: Dict[str, any] = {}):
+        values: Dict[str, Any] = {}):
     """
     Makes a fake SellPriceChange.
     """
@@ -295,7 +295,7 @@ def fake_sell_price_change(
 
 def fake_buy_price_change(
         supp_item: SupplierItem,
-        values: Dict[str, any] = {}):
+        values: Dict[str, Any] = {}):
     """
     Makes a fake BuyPriceChange.
     """
@@ -307,7 +307,7 @@ def fake_buy_price_change(
 
 def fake_inv_item_image_file(
         inv_item: InventoryItem,
-        values: Dict[str, any] = {}):
+        values: Dict[str, Any] = {}):
     """
     Makes a fake InventoryItemImageFile.
     """
@@ -316,7 +316,7 @@ def fake_inv_item_image_file(
         values.get("filename", random_string(20)))
 
 
-def fake_image(size: Tuple[int] = (1000, 1000)):
+def fake_image(size: Tuple[int, int] = (1000, 1000)):
     """
     Makes a fake PIL Image.
     """
