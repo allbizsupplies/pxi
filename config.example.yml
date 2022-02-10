@@ -8,19 +8,23 @@ paths:
   # Paths to imported files.
   import:
     # Datagrids are Excel spreadsheets exported from Pronto datagrids.
-    # See README.md for instructions on how to export these files from
-    # Pronto.
+    # See docs/datagrid_export_guide.md for instructions on how to export these
+    # files from Pronto.
     contract_items_datagrid: "data/import/contract_items.xlsx" #
     inventory_items_datagrid: "data/import/inventory_items.xlsx"
     gtin_items_datagrid: "data/import/gtin_items.xlsx"
     price_rules_datagrid: "data/import/price_rules.xlsx"
     pricelist_datagrid: "data/import/pricelist.xlsx"
-    inventory_metadata: "data/import/inventory_metadata.xlsx"
     supplier_items_datagrid: "data/import/supplier_items.xlsx"
     inventory_web_data_items_datagrid: "data/import/inventory_web_data_items.xlsx"
 
+    # Inventory metadata is a manually created file containing web sortcodes
+    # and mappings between price rules and web sortcodes.
+    inventory_metadata: "data/import/inventory_metadata.xlsx"
+
     # The Supplier pricelist is a CSV file downloaded from the Pronto server.
-    # See README.md for instructions on how to download this file.
+    # See docs/generate_spl_guide.md for instructions on how to download this
+    # file.
     supplier_pricelist: "data/import/supplier_pricelist.csv"
 
     # TODO update this key and default filepath.
