@@ -216,7 +216,7 @@ class SupplierItem(Base):
     code = Column(String(10), nullable=False)
     inventory_item_id = Column(Integer,
                                ForeignKey("inventory_items.id"), nullable=False)
-    item_code = Column(String(2), nullable=False)
+    item_code = Column(String(20))
     priority = Column(Integer, nullable=False)
     uom = Column(String(4), nullable=False)
     conv_factor = Column(String(14), nullable=False)
