@@ -515,10 +515,10 @@ def load_spl_rows(filepath: PathLike):
         filepath: The path to the supplier pricelist file.
 
     Returns:
-        The DictReader for the supplier pricelist file.
+        The list of rows in the supplier pricelist file.
     """
     with open(filepath, "r", encoding="iso8859-14") as file:
-        return csv.DictReader(file, SPL_FIELDNAMES)
+        return list(csv.DictReader(file, SPL_FIELDNAMES))
 
 
 def import_supplier_pricelist_items(filepath: PathLike):
@@ -539,19 +539,21 @@ def import_supplier_pricelist_items(filepath: PathLike):
     # and supplier code as a previous item then the new item will take its
     # place. The previous item is counted as an overridden record.
     for row in load_spl_rows(filepath):
-        spl_item = SupplierPricelistItem(
-            item_code=row["item_code"],
-            supp_code=row["supplier_code"],
-            supp_item_code=row["supp_item_code"],
-            supp_uom=row["supp_uom"],
-            supp_conv_factor=Decimal(row["supp_conv_factor"]),
-            supp_eoq=row["supp_eoq"],
-            supp_sell_uom=row["supp_sell_uom"],
-            supp_price=Decimal(row["supp_price_1"]).quantize(Decimal("0.01")),
-        )
-        if spl_item.supp_uom == "":
+        is_invalid = row["supp_uom"] == "" or row["supp_conv_factor"] == ""
+        if is_invalid:
             invalid_count += 1
         else:
+            spl_item = SupplierPricelistItem(
+                item_code=row["item_code"],
+                supp_code=row["supplier_code"],
+                supp_item_code=row["supp_item_code"],
+                supp_uom=row["supp_uom"],
+                supp_conv_factor=Decimal(row["supp_conv_factor"]),
+                supp_eoq=row["supp_eoq"],
+                supp_sell_uom=row["supp_sell_uom"],
+                supp_price=Decimal(row["supp_price_1"]).quantize(
+                    Decimal("0.01")),
+            )
             key = f"{spl_item.supp_code}--{spl_item.item_code}"
             if key not in spl_items:
                 spl_items[key] = spl_item
