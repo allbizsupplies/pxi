@@ -50,7 +50,7 @@ paths:
     # pricelists are files that can be uploaded to the Pronto server to be
     # imported using Pronto functions. See README.md for instructions on how
     # to upload these files and import them.
-    updated_supplier_pricelist: "data/export/supplier_pricelist.csv"
+    supplier_pricelist: "data/export/supplier_pricelist.csv"
     pricelist: "data/export/pricelist.csv"
 
     # Web product menu data contains the menu locations for products, and is

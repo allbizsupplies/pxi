@@ -51,7 +51,7 @@ The following files are all Excel (`xlsx`) reports intended to be viewed by you,
 
 The `tickets_list` file is a plain text file containing a list of codes. You can open this file in Notepad (or any other plain text editor), copy the list of codes, and paste them into the Rapid Entry mode in Shelf Putaway Labels. This is the quickest way to generate new shelf tickets only for the items that are on the shelf and have a price change.
 
-There are two CSV files that can imported into Pronto, `pricelist` and `updated_supplier_pricelist`. PXI must upload these files using the `upload_pricelist` and `upload_spl` functions, as these files cannot be imported unless they are first copied to the Pronto server.
+There are two CSV files that can imported into Pronto, `pricelist` and `supplier_pricelist`. PXI must upload these files using the `upload_pricelist` and `upload_spl` functions, as these files cannot be imported unless they are first copied to the Pronto server.
 
 The `web_product_menu_data` is a pipe separated CSV that must be manually imported into Pronto using the eChoice dealer data import function.
 
