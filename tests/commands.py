@@ -1,6 +1,6 @@
 
 import io
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 from pxi.commands import Commands, commands, get_command
 from pxi.enum import ItemCondition, ItemType
@@ -159,7 +159,7 @@ class CommandTests(DatabaseTestCase):
             self.assertIn(command.__doc__.strip(), line)
 
     @patch("pxi.commands.get_scp_client")
-    def test_command_download_spl(self, mock_get_scp_client):
+    def test_command_download_spl_ssh(self, mock_get_scp_client):
         """
         download_spl command downloads supplier pricelist usingn SCP.
         """
@@ -173,6 +173,24 @@ class CommandTests(DatabaseTestCase):
         mock_scp_client.get.assert_called_with(
             mock_config["paths"]["remote"]["supplier_pricelist"],
             mock_config["paths"]["import"]["supplier_pricelist"])
+
+    @patch("requests.get")
+    def test_command_download_spl_https(self, mock_requests_get):
+        """
+        download_spl command downloads supplier pricelist usingn HTTPS.
+        """
+        mock_config = get_mock_config()
+        mock_config["paths"]["remote"]["supplier_pricelist"] = (
+            "https://path/remote/supplier_pricelist")
+
+        with patch("builtins.open", mock_open()) as get_mock_file:
+            Commands.download_spl(mock_config)()
+            mock_file = get_mock_file()
+
+        mock_requests_get.assert_called_with(
+            mock_config["paths"]["remote"]["supplier_pricelist"])
+        mock_file.write.assert_called_with(
+            mock_requests_get.return_value.content)
 
     @patch("pxi.commands.get_scp_client")
     def test_command_upload_spl(self, mock_get_scp_client):

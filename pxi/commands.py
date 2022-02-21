@@ -2,6 +2,8 @@ import asyncio
 from datetime import datetime
 from decimal import Decimal
 import logging
+import os
+import requests
 from time import perf_counter
 
 from pxi.database import get_session
@@ -394,11 +396,16 @@ class Commands:
             config = self.config["ssh"]
             src = self.config["paths"]["remote"]["supplier_pricelist"]
             dest = self.config["paths"]["import"]["supplier_pricelist"]
-            scp_client = get_scp_client(
-                config["hostname"],
-                config["username"],
-                config["password"])
-            scp_client.get(src, dest)
+            if src.startswith("https://"):
+                response = requests.get(src)
+                with open(dest, "wb") as file:
+                    file.write(response.content)
+            else:
+                scp_client = get_scp_client(
+                    config["hostname"],
+                    config["username"],
+                    config["password"])
+                scp_client.get(src, dest)
 
             # Log results.
             logging.info(f"Downloaded SPL to {dest}")
