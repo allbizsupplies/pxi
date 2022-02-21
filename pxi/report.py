@@ -107,7 +107,7 @@ class ReportWriter:
         # Apply column widths.
         for i, field in enumerate(fields):
             column_index = get_column_letter(i + 1)
-            worksheet.column_dimensions[column_index].width = field["width"]
+            worksheet.column_dimensions[column_index].width = field.width
 
     def save(self):
         """
