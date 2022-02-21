@@ -535,12 +535,23 @@ def import_supplier_pricelist_items(filepath: PathLike):
     invalid_count = 0  # The number of invalid records.
     spl_items = {}     # Hashmap of SPL items keyed by supp code and item code.
 
+    def is_invalid_row(row):
+        if row["supp_uom"] == "":
+            return True
+        if row["supp_conv_factor"] == "":
+            return True
+        if row["supplier_code"] == "":
+            return True
+        return False
+
     # Collect supplier pricelist items. If an item has the same item code
     # and supplier code as a previous item then the new item will take its
     # place. The previous item is counted as an overridden record.
     for row in load_spl_rows(filepath):
-        is_invalid = row["supp_uom"] == "" or row["supp_conv_factor"] == ""
-        if is_invalid:
+        is_header_row = row["supplier_code"] == "Supplier Code"
+        if is_header_row:
+            pass
+        elif is_invalid_row(row):
             invalid_count += 1
         else:
             spl_item = SupplierPricelistItem(
