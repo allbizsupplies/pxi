@@ -28,6 +28,14 @@ def main():
     with open(args.config) as file:
         config = yaml.safe_load(file)
 
+    # Get the command and display an error if it doesn't exist.
+    command = get_command(args.command)
+    if command is None:
+        print("Error: Command does not exist: " + args.command)
+        logging.error("Command does not exist: " + args.command)
+        return
+    command_name = command.__name__
+
     # Configure logging level and verbosity.
     logging_level = logging.DEBUG if args.debug else logging.INFO
     if args.verbose:
@@ -37,21 +45,21 @@ def main():
     else:
         logging.basicConfig(
             filename=config["paths"]["logging"],
-            format="%(asctime)s %(levelname)s: %(message)s",
+            format=f"%(asctime)s %(levelname)s: {command_name} => %(message)s",
             level=logging_level)
 
-    # Run the command if it exists; display an error if it doesn't.
-    command = get_command(args.command)
-    if command:
-        print(f"pxi: {command.__name__}")
-        command(config)(force_imports=args.force_imports)
+    # Execute the command.
+    print(f"pxi: {command_name}")
+    logging.info(f"Started")
+    command(config)(force_imports=args.force_imports)
 
-        # Log the command execution time.
-        duration = (perf_counter() - start_at) * 1000
-        logging.info(f"Command: {command.__name__} ({int(duration)}ms)")
-    else:
-        print("Error: Command does not exist: " + args.command)
-        logging.error("Command does not exist: " + args.command)
+    # Log the command execution time.
+    duration = (perf_counter() - start_at)
+    duration_units = "s"
+    if duration < 1:
+        duration = duration * 1000
+        duration_units = "ms"
+    logging.info(f"Completed ({int(duration)}{duration_units})")
 
 
 def get_args():
