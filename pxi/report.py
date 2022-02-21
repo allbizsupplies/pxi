@@ -91,7 +91,7 @@ class ReportWriter:
         for row_data in data:
             row: List[Cell] = list()
             for field in fields:
-                cell = Cell(worksheet, value=row_data[field["name"]])
+                cell = Cell(worksheet, value=row_data[field.name])
                 # pylint: disable=assigning-non-slot
                 cell.alignment = Alignment(
                     horizontal=ReportWriter.DEFAULT_ALIGNMENT)
