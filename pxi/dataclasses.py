@@ -43,7 +43,7 @@ class BuyPriceChange:
 
     @property
     def price_diff(self):
-        return self.price_was - self.price_now
+        return self.price_now - self.price_was
 
     @property
     def price_diff_abs(self):
