@@ -8,6 +8,11 @@ from tests.exporters import ExporterTests
 from tests.image import ImageFetchingTests, ImageFormattingTests
 from tests.importers import ImporterTests
 from tests.price_calc import PriceCalcTests
+from tests.report import (
+    ReportFieldTests,
+    NumberFieldTests,
+    StringFieldTests,
+    ReportWriterTests)
 from tests.spl_update import SPLUpdateTests
 from tests.web_update import WebUpdateTests
 
@@ -21,9 +26,13 @@ testcases = [
     ImageFetchingTests,
     ImageFormattingTests,
     ImporterTests,
+    NumberFieldTests,
     PriceCalcTests,
+    ReportFieldTests,
+    ReportWriterTests,
     SellPriceChangeTests,
     SPLUpdateTests,
+    StringFieldTests,
     WebUpdateTests,
 ]
 
