@@ -13,6 +13,7 @@ from tests.report import (
     NumberFieldTests,
     StringFieldTests,
     ReportWriterTests)
+from tests.scp import SCPClientTests
 from tests.spl_update import SPLUpdateTests
 from tests.web_update import WebUpdateTests
 
@@ -30,6 +31,7 @@ testcases = [
     PriceCalcTests,
     ReportFieldTests,
     ReportWriterTests,
+    SCPClientTests,
     SellPriceChangeTests,
     SPLUpdateTests,
     StringFieldTests,
