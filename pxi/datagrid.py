@@ -3,28 +3,41 @@ import re
 from openpyxl import load_workbook
 
 
-def load_rows(filepath, worksheet_name=None):
-    """Read data from XLSX datagrid."""
-    workbook = load_workbook(filename=filepath, read_only=True)
-    # Use the first worksheet by default.
-    if worksheet_name is None:
-        worksheet_name = workbook.get_sheet_names()[0]
-    worksheet = workbook[worksheet_name]
-    fieldnames = get_fieldnames(worksheet)
+def read_rows(worksheet):
+    """
+    Read rows from worksheet.
+    """
     rows = []
+    fieldnames = get_fieldnames(worksheet)
     for row in worksheet.iter_rows(min_row=2):
         if row[0].value is None:
-            break
+            return rows
         values = dict()
         for i, fieldname in enumerate(fieldnames):
             values[fieldname] = row[i].value
         rows.append(values)
+    return rows
+
+
+def load_rows(filepath, worksheet_name=None):
+    """
+    Read data from XLSX datagrid.
+    """
+    workbook = load_workbook(filename=filepath, read_only=True)
+
+    # Use the first worksheet by default.
+    if worksheet_name is None:
+        worksheet_name = workbook.get_sheet_names()[0]
+    worksheet = workbook[worksheet_name]
+    rows = read_rows(worksheet)
     workbook.close()
     return rows
 
 
 def get_fieldnames(worksheet):
-    """Parse snakecase fieldnames from first row of sheet."""
+    """
+    Parse snakecase fieldnames from first row of sheet.
+    """
     fieldnames = []
     col_index = 0
     while True:
