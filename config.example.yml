@@ -43,6 +43,7 @@ paths:
     supplier_price_changes_report: "data/export/supplier_price_changes_report.xlsx"
     gtin_report: "data/export/gtin_report.xlsx"
     web_data_updates_report: "data/export/web_data_updates_report.xlsx"
+    missing_images_report: "data/export/missing_images_report.xlsx"
 
     # The tickets list is a plain text file that contains a list of codes that
     # can be pasted into the rapid entry dialog for shelf putaway labels.
