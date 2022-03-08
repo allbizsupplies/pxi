@@ -8,13 +8,15 @@ from pxi.image import (
     CANVAS_IMAGE_FILEPATH,
     MAX_IMAGE_HEIGHT,
     MAX_IMAGE_WIDTH,
+    PIM_URL_TEMPLATE,
     SUPP_URL_TEMPLATES,
     convert_image_to_rgb,
     download_image,
     fetch_image,
     fetch_images,
     format_image,
-    get_image_urls,
+    get_pim_image_url,
+    get_supplier_image_urls,
     place_image_centred_on_canvas,
     shrink_image_to_target,
     shrink_target_to_image)
@@ -28,7 +30,33 @@ from tests.fakes import (
 
 class ImageFetchingTests(DatabaseTestCase):
 
-    def test_get_image_urls(self):
+    def test_get_pim_image_url(self):
+        item_codes = [
+            (
+                "123456",
+                PIM_URL_TEMPLATE.format(
+                    item_code="123456",
+                    filename="123456.jpg")
+            ),
+            (
+                "123456S",
+                PIM_URL_TEMPLATE.format(
+                    item_code="123456",
+                    filename="123456.jpg")
+            ),
+            (
+                "ALL-123456S",
+                None
+            ),
+        ]
+
+        for item_code, expected_url in item_codes:
+            inv_item = fake_inventory_item({
+                "code": item_code
+            })
+            self.assertEqual(get_pim_image_url(inv_item), expected_url)
+
+    def test_get_supplier_image_urls(self):
         inv_item = fake_inventory_item()
         supp_items = []
         for supp_code in SUPP_URL_TEMPLATES:
@@ -46,12 +74,12 @@ class ImageFetchingTests(DatabaseTestCase):
                 item_code_lowercase=supp_item.item_code.lower())
                 for url_template in url_templates]
 
-        urls = get_image_urls(inv_item)
+        urls = get_supplier_image_urls(inv_item)
 
         for expected_url in expected_urls:
             self.assertIn(expected_url, urls)
 
-    def test_get_image_urls_ignores_missing_supp_item_code(self):
+    def test_get_suppler_image_urls_ignores_missing_supp_item_code(self):
         inv_item = fake_inventory_item()
         supp_items = []
         for supp_code in SUPP_URL_TEMPLATES:
@@ -62,7 +90,7 @@ class ImageFetchingTests(DatabaseTestCase):
                 }))
         inv_item.supplier_items = supp_items
 
-        urls = get_image_urls(inv_item)
+        urls = get_supplier_image_urls(inv_item)
 
         self.assertEqual(len(urls), 0)
 

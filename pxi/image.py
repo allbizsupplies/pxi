@@ -84,10 +84,19 @@ def download_image(url: str):
     return None
 
 
-def get_image_urls(inv_item: InventoryItem):
-    urls: List[str] = []
+def get_pim_image_url(inv_item: InventoryItem):
+    matches = re.match(r"^[0-9]+", inv_item.code)
+    if matches is not None:
+        item_code = matches[0]
+        filename = f"{item_code}.jpg"
+        return PIM_URL_TEMPLATE.format(
+            item_code=item_code,
+            filename=filename)
+    return None
 
-    # Get supplier image URLs.
+
+def get_supplier_image_urls(inv_item: InventoryItem):
+    urls: List[str] = []
     for supp_item in inv_item.supplier_items:  # type: ignore
         supp_code = supp_item.code
         supp_item_code = supp_item.item_code
@@ -99,6 +108,18 @@ def get_image_urls(inv_item: InventoryItem):
                 urls.append(url_template.format(
                     item_code=supp_item_code,
                     item_code_lowercase=supp_item_code.lower()))
+    return urls
+
+
+def get_image_urls(inv_item: InventoryItem):
+    urls: List[str] = []
+
+    # Get PIM image URL.
+    pim_image_url = get_pim_image_url(inv_item)
+    if pim_image_url:
+        urls.append(pim_image_url)
+
+    urls += get_supplier_image_urls(inv_item)
     return urls
 
 
