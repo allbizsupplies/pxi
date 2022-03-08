@@ -40,11 +40,15 @@ class ImageFetchingTests(DatabaseTestCase):
         urls = get_image_urls(inv_item)
 
         for supp_item in inv_item.supplier_items:
-            self.assertIn(
-                URL_TEMPLATES[supp_item.code].format(
-                    item_code=supp_item.item_code,
-                    item_code_lowercase=supp_item.item_code.lower()),
-                urls)
+            url_templates = URL_TEMPLATES[supp_item.code]
+            if type(url_templates) is str:
+                url_templates = [url_templates]
+            expected_urls = [url_template.format(
+                item_code=supp_item.item_code,
+                item_code_lowercase=supp_item.item_code.lower())
+                for url_template in url_templates]
+            for expected_url in expected_urls:
+                self.assertIn(expected_url, urls)
 
     def test_get_image_urls_ignores_missing_supp_item_code(self):
         inv_item = fake_inventory_item()
@@ -61,7 +65,7 @@ class ImageFetchingTests(DatabaseTestCase):
 
         self.assertEqual(len(urls), 0)
 
-    @patch("requests.get")
+    @ patch("requests.get")
     def test_get_image_data_from_url(self, mock_get):
         url = random_string(20)
         mock_response = MagicMock()
@@ -73,7 +77,7 @@ class ImageFetchingTests(DatabaseTestCase):
         mock_get.assert_called_with(url)
         self.assertEqual(content, mock_response.content)
 
-    @patch("requests.get")
+    @ patch("requests.get")
     def test_return_no_image_when_response_404(self, mock_get):
         url = random_string(20)
         mock_response = MagicMock()
@@ -85,7 +89,7 @@ class ImageFetchingTests(DatabaseTestCase):
         mock_get.assert_called_with(url)
         self.assertEqual(content, None)
 
-    @patch("requests.get")
+    @ patch("requests.get")
     def test_return_no_image_when_conn_error(self, mock_get):
         url = random_string(20)
         mock_get.side_effect = ConnectionError()
@@ -95,8 +99,8 @@ class ImageFetchingTests(DatabaseTestCase):
         mock_get.assert_called_with(url)
         self.assertEqual(content, None)
 
-    @patch("pxi.image.download_image")
-    @patch("pxi.image.get_image_urls")
+    @ patch("pxi.image.download_image")
+    @ patch("pxi.image.get_image_urls")
     def test_fetch_image(self, mock_get_image_urls, mock_download_image):
         inv_item = fake_inventory_item()
         url = random_string(20)
@@ -108,10 +112,10 @@ class ImageFetchingTests(DatabaseTestCase):
         mock_download_image.assert_called_with(url)
         self.assertEqual(result, mock_download_image.return_value)
 
-    @patch("pxi.image.format_image")
-    @patch("pxi.image.fetch_image")
-    @patch("os.mkdir")
-    @patch("os.path")
+    @ patch("pxi.image.format_image")
+    @ patch("pxi.image.fetch_image")
+    @ patch("os.mkdir")
+    @ patch("os.path")
     def test_fetch_images(
             self,
             mock_os_path,

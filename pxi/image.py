@@ -27,7 +27,13 @@ URL_TEMPLATES = {
     "ELA": "https://eliteagencies.com.au/wp-content/uploads/{item_code}.jpg",
     "JSH": "https://www.jshayes.com.au/productimages/{item_code}.jpg",
     "LEA": "https://www.leadersystems.com.au/Images/{item_code}.jpg",
-    "GNS": "http://webconnect.groupnews.com.au/prodlarge/{item_code}.jpg",
+    "GNS": [
+        "http://webconnect.groupnews.com.au/prodlarge/{item_code}.jpg",
+        (
+            "https://webconnect.groupnews.com.au/Images/GroupNews/ItemImages/"
+            "medium_{item_code}.jpg"
+        ),
+    ],
     "RAS": "http://www.razorstat.com.au/images/{item_code}.jpg",
 }
 
@@ -79,9 +85,13 @@ def get_image_urls(inv_item: InventoryItem):
         supp_code = supp_item.code
         supp_item_code = supp_item.item_code
         if supp_item_code and supp_code in URL_TEMPLATES:
-            urls.append(URL_TEMPLATES[supp_code].format(
-                item_code=supp_item_code,
-                item_code_lowercase=supp_item_code.lower()))
+            url_templates = URL_TEMPLATES[supp_code]
+            if type(url_templates) is str:
+                url_templates = [url_templates]
+            for url_template in url_templates:
+                urls.append(url_template.format(
+                    item_code=supp_item_code,
+                    item_code_lowercase=supp_item_code.lower()))
     return urls
 
 
