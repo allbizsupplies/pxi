@@ -364,15 +364,9 @@ class Commands:
                 SupplierItem,
             ], force_imports=options.get("force_imports", False))
 
-            # Import image filenames.
-            images = import_missing_images_report(
+            # Get InventoryItems without an image.
+            inv_items_no_image = import_missing_images_report(
                 import_paths["missing_images_report"], self.db_session)
-
-            # Select InventoryItems without an image.
-            inv_items_no_image = []
-            for inv_item, filename in images:
-                if filename is None:
-                    inv_items_no_image.append(inv_item)
 
             # Fetch images for InventoryItems.
             export_paths = self.config["paths"]["export"]

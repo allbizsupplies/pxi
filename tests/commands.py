@@ -471,8 +471,7 @@ class CommandTests(DatabaseTestCase):
             inv_item,
             supp_item,
         ])
-        mock_import_missing_images_report.return_value = [
-            (inv_item, None)]
+        mock_import_missing_images_report.return_value = [inv_item]
 
         command = Commands.fetch_images(mock_config)
         command.db_session = self.db_session
