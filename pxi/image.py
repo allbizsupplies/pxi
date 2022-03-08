@@ -1,6 +1,7 @@
 
 import os
 from os import PathLike
+import re
 from PIL import Image  # type: ignore
 import requests
 from requests.exceptions import ConnectionError
@@ -18,8 +19,12 @@ MAX_IMAGE_HEIGHT = 1000
 
 CANVAS_IMAGE_FILEPATH = "pxi/blank.jpg"
 
+PIM_URL_TEMPLATE = (
+    "https://pim.officechoice.com.au/dealer-uat/imageItemServer/"
+    "{item_code}/{filename}")
+
 # Known URL patterns, keyed by supplier code.
-URL_TEMPLATES = {
+SUPP_URL_TEMPLATES = {
     "ACO": "https://www.accobrands.com.au/pa_images/Detail/{item_code}.jpg",
     "BAN": "https://hamelinbrands.com.au/products/images/{item_code}.jpg",
     "CSS": "https://dc1240h7n7gpb.cloudfront.net/resources/static/main/image/{item_code_lowercase}.jpg",
@@ -81,11 +86,13 @@ def download_image(url: str):
 
 def get_image_urls(inv_item: InventoryItem):
     urls: List[str] = []
+
+    # Get supplier image URLs.
     for supp_item in inv_item.supplier_items:  # type: ignore
         supp_code = supp_item.code
         supp_item_code = supp_item.item_code
-        if supp_item_code and supp_code in URL_TEMPLATES:
-            url_templates = URL_TEMPLATES[supp_code]
+        if supp_item_code and supp_code in SUPP_URL_TEMPLATES:
+            url_templates = SUPP_URL_TEMPLATES[supp_code]
             if type(url_templates) is str:
                 url_templates = [url_templates]
             for url_template in url_templates:

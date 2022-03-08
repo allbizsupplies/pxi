@@ -8,7 +8,7 @@ from pxi.image import (
     CANVAS_IMAGE_FILEPATH,
     MAX_IMAGE_HEIGHT,
     MAX_IMAGE_WIDTH,
-    URL_TEMPLATES,
+    SUPP_URL_TEMPLATES,
     convert_image_to_rgb,
     download_image,
     fetch_image,
@@ -31,29 +31,30 @@ class ImageFetchingTests(DatabaseTestCase):
     def test_get_image_urls(self):
         inv_item = fake_inventory_item()
         supp_items = []
-        for supp_code in URL_TEMPLATES:
+        for supp_code in SUPP_URL_TEMPLATES:
             supp_items.append(fake_supplier_item(inv_item, {
                 "code": supp_code,
             }))
         inv_item.supplier_items = supp_items
-
-        urls = get_image_urls(inv_item)
-
+        expected_urls = []
         for supp_item in inv_item.supplier_items:
-            url_templates = URL_TEMPLATES[supp_item.code]
+            url_templates = SUPP_URL_TEMPLATES[supp_item.code]
             if type(url_templates) is str:
                 url_templates = [url_templates]
-            expected_urls = [url_template.format(
+            expected_urls += [url_template.format(
                 item_code=supp_item.item_code,
                 item_code_lowercase=supp_item.item_code.lower())
                 for url_template in url_templates]
-            for expected_url in expected_urls:
-                self.assertIn(expected_url, urls)
+
+        urls = get_image_urls(inv_item)
+
+        for expected_url in expected_urls:
+            self.assertIn(expected_url, urls)
 
     def test_get_image_urls_ignores_missing_supp_item_code(self):
         inv_item = fake_inventory_item()
         supp_items = []
-        for supp_code in URL_TEMPLATES:
+        for supp_code in SUPP_URL_TEMPLATES:
             supp_items.append(
                 fake_supplier_item(inv_item, {
                     "code": supp_code,
