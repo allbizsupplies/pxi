@@ -46,6 +46,21 @@ class ImageFetchingTests(DatabaseTestCase):
                     item_code_lowercase=supp_item.item_code.lower()),
                 urls)
 
+    def test_get_image_urls_ignores_missing_supp_item_code(self):
+        inv_item = fake_inventory_item()
+        supp_items = []
+        for supp_code in URL_TEMPLATES:
+            supp_items.append(
+                fake_supplier_item(inv_item, {
+                    "code": supp_code,
+                    "item_code": None,
+                }))
+        inv_item.supplier_items = supp_items
+
+        urls = get_image_urls(inv_item)
+
+        self.assertEqual(len(urls), 0)
+
     @patch("requests.get")
     def test_get_image_data_from_url(self, mock_get):
         url = random_string(20)

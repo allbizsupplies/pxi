@@ -77,10 +77,11 @@ def get_image_urls(inv_item: InventoryItem):
     urls: List[str] = []
     for supp_item in inv_item.supplier_items:  # type: ignore
         supp_code = supp_item.code
-        if supp_code in URL_TEMPLATES:
+        supp_item_code = supp_item.item_code
+        if supp_item_code and supp_code in URL_TEMPLATES:
             urls.append(URL_TEMPLATES[supp_code].format(
-                item_code=supp_item.item_code,
-                item_code_lowercase=supp_item.item_code.lower()))
+                item_code=supp_item_code,
+                item_code_lowercase=supp_item_code.lower()))
     return urls
 
 
