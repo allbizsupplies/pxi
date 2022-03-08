@@ -21,7 +21,7 @@ from pxi.exporters import (
     export_web_data_updates_report,
     export_web_product_menu_data)
 from pxi.image import fetch_images
-from pxi.importers import import_data, import_supplier_pricelist_items, import_web_menu_item_mappings, import_website_images_report
+from pxi.importers import import_data, import_supplier_pricelist_items, import_web_menu_item_mappings, import_missing_images_report
 from pxi.models import (
     ContractItem,
     GTINItem,
@@ -365,8 +365,8 @@ class Commands:
             ], force_imports=options.get("force_imports", False))
 
             # Import image filenames.
-            images = import_website_images_report(
-                import_paths["website_images_report"], self.db_session)
+            images = import_missing_images_report(
+                import_paths["missing_images_report"], self.db_session)
 
             # Select InventoryItems without an image.
             inv_items_no_image = []
@@ -381,7 +381,7 @@ class Commands:
 
             # Export report on fetched images.
             export_downloaded_images_report(
-                export_paths["website_images_report"],
+                export_paths["missing_images_report"],
                 fetched_images)
 
     class download_spl(CommandBase):

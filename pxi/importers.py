@@ -633,29 +633,21 @@ def import_web_menu_item_mappings(filepath: PathLike, db_session: Session):
     return web_menu_item_mappings
 
 
-def import_website_images_report(filepath: PathLike, db_session: Session):
-    def get_image(row):
-        for i in range(1, 5):
-            filename = row[f"picture{i}"]
-            if filename:
-                return filename
-
-    images_data = []
+def import_missing_images_report(filepath: PathLike, db_session: Session):
+    inv_items_no_image = []
     for row in load_rows(filepath):
-        item_code = str(row["productcode"])
+        item_code = str(row["item_code"])
         inventory_item = db_session.query(InventoryItem).filter(
             InventoryItem.code == item_code
         ).scalar()
-        if not inventory_item:
-            continue
-        images_data.append(
-            (inventory_item, get_image(row)))
+        if inventory_item:
+            inv_items_no_image.append(inventory_item)
 
-    # Log the results and return the list of images.
+    # Log the results and return the list of inventory items.
     logging.info(
-        f"Import website image data: "
-        f"{len(images_data)} loaded.")
-    return images_data
+        f"Import missing images list: "
+        f"{len(inv_items_no_image)} loaded.")
+    return inv_items_no_image
 
 
 # import functions and files for each model.

@@ -19,7 +19,7 @@ from pxi.importers import (
     import_warehouse_stock_items,
     import_web_menu_items,
     import_web_menu_item_mappings,
-    import_website_images_report)
+    import_missing_images_report)
 from pxi.models import (
     ContractItem,
     InventoryItem,
@@ -194,13 +194,9 @@ def fake_supplier_pricelist_row(values={}):
     }
 
 
-def fake_website_images_report_row(values={}):
+def fake_missing_images_report_row(values={}):
     return {
-        "productcode": values.get("productcode", random_item_code()),
-        "picture1": values.get("picture1", random_string(20)),
-        "picture2": values.get("picture2"),
-        "picture3": values.get("picture3"),
-        "picture4": values.get("picture4"),
+        "item_code": values.get("item_code", random_item_code()),
     }
 
 
@@ -769,9 +765,9 @@ class ImporterTests(DatabaseTestCase):
         self.assertEqual(len(web_menu_item_mappings), 2)
 
     @patch("pxi.importers.load_rows")
-    def test_import_website_images_report(self, mock_load_rows):
+    def test_import_missing_images_report(self, mock_load_rows):
         """
-        Import product image information from report.
+        Import list of items with missing product image.
         """
 
         # Seed the database with one InventoryItem, and mock an import of two
@@ -782,19 +778,18 @@ class ImporterTests(DatabaseTestCase):
         inv_item = fake_inventory_item()
         self.seed([inv_item])
         rows = [
-            fake_website_images_report_row({
-                "productcode": inv_item.code,
-                "picture1": image_filename,
+            fake_missing_images_report_row({
+                "item_code": inv_item.code,
             }),
         ]
         mock_load_rows.return_value = rows
 
         # Run the import.
-        images_data = import_website_images_report(
+        images_data = import_missing_images_report(
             filepath, self.db_session)
 
         # Expect to import one image data record.
         mock_load_rows.assert_called_with(filepath)
         # pylint:disable=no-member
         self.assertEqual(len(images_data), 1)
-        self.assertEqual(images_data[0], (inv_item, image_filename))
+        self.assertEqual(images_data[0], inv_item)

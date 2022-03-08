@@ -35,7 +35,7 @@ The `inventory_metadata` file must be created manually.
 
 The `supplier_pricelist` is downloaded from the Pronto server. However, if you are unable to use PXI's `download_spl` command to fetch this file from the Pronto server, you can also download it manually from Office Choice PIM.
 
-The `website_images_report` needs to be created manually.
+The `missing_images_report` needs to be created manually. This report must be a spreadsheet with a single sheet, containing a column with header "Item Code" or "item_code", and the column should contain a list of item codes with no product image online.
 
 ### `paths.export`
 

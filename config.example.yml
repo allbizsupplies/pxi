@@ -24,13 +24,15 @@ paths:
     # Manually-created list of mappings between price rules and web menu names.
     web_menu_mappings: "data/import/web_menu_mappings.xlsx"
 
-    # The Supplier pricelist is a CSV file downloaded from the Pronto server.
+    # The supplier pricelist is a CSV file downloaded from the Pronto server.
     # See docs/generate_spl_guide.md for instructions on how to download this
     # file.
     supplier_pricelist: "data/import/supplier_pricelist.csv"
 
-    # TODO update this key and default filepath.
-    website_images_report: "data/import/website_images_report.xlsx"
+    # The missing images list must be a spreadsheet with a single sheet,
+    # containing a column with header "Item Code" or "item_code", and the
+    # column should contain a list of item codes with no product image online.
+    missing_images_report: "data/import/missing_images_report.xlsx"
 
   # Paths to exported files.
   export:

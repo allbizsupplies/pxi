@@ -38,7 +38,7 @@ def get_mock_config():
                 "inventory_metadata": "path/import/inventory_metadata",
                 "pricelist": "path/import/pricelist",
                 "supplier_pricelist": "path/import/supplier_pricelist",
-                "website_images_report": "path/import/website_images_report",
+                "missing_images_report": "path/import/missing_images_report",
             },
             "export": {
                 "contract_item_task": "path/export/contract_item_task",
@@ -52,7 +52,7 @@ def get_mock_config():
                 "tickets_list": "path/export/tickets_list",
                 "web_product_menu_data": "path/export/web_product_menu_data",
                 "web_data_updates_report": "path/export/web_data_updates_report",
-                "website_images_report": "path/export/website_images_report",
+                "missing_images_report": "path/export/missing_images_report",
             },
             "remote": {
                 "pricelist": "path/remote/pricelist",
@@ -449,12 +449,12 @@ class CommandTests(DatabaseTestCase):
 
     @patch("pxi.commands.export_downloaded_images_report")
     @patch("pxi.commands.fetch_images")
-    @patch("pxi.commands.import_website_images_report")
+    @patch("pxi.commands.import_missing_images_report")
     @patch("pxi.commands.import_data")
     def test_fetch_images(
             self,
             mock_import_data,
-            mock_import_website_images_report,
+            mock_import_missing_images_report,
             mock_fetch_images,
             mock_export_downloaded_images_report):
         """
@@ -471,7 +471,7 @@ class CommandTests(DatabaseTestCase):
             inv_item,
             supp_item,
         ])
-        mock_import_website_images_report.return_value = [
+        mock_import_missing_images_report.return_value = [
             (inv_item, None)]
 
         command = Commands.fetch_images(mock_config)
@@ -482,12 +482,12 @@ class CommandTests(DatabaseTestCase):
             InventoryItem,
             SupplierItem,
         ], force_imports=False)
-        mock_import_website_images_report.assert_called_with(
-            import_paths["website_images_report"],
+        mock_import_missing_images_report.assert_called_with(
+            import_paths["missing_images_report"],
             command.db_session)
         mock_fetch_images.assert_called_with(
             export_paths["images_dir"],
             [inv_item])
         mock_export_downloaded_images_report.assert_called_with(
-            export_paths["website_images_report"],
+            export_paths["missing_images_report"],
             mock_fetch_images.return_value)
