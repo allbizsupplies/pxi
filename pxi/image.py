@@ -131,7 +131,7 @@ def format_image(filepath, target_width, target_height):
     # Shrink the image to fit within the target bounds if it is too big.
     is_too_big = orig_width > target_width or orig_height > target_height
     if is_too_big:
-        shrink_image_to_target(image, target_width, target_height)
+        image = shrink_image_to_target(image, target_width, target_height)
 
     # Shrink the target box (while maintaining aspect ration) if the image
     # is smaller than the target box along both axes.

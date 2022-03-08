@@ -185,11 +185,12 @@ class ImageFormattingTests(DatabaseTestCase):
             ((200, 100), (100, 100), (100, 50)),
             # Shrink image to fit height.
             ((100, 200), (100, 100), (50, 100)),
+            # Shrink image to fit width and height.
+            ((200, 200), (100, 100), (100, 100)),
         ]
         for original_size, target_size, output_size in sizes:
             resized_image = shrink_image_to_target(
                 fake_image(original_size), target_size[0], target_size[1])
-
             self.assertEqual(resized_image.size, output_size)
 
     def test_shrink_target_to_image(self):
@@ -263,7 +264,8 @@ class ImageFormattingTests(DatabaseTestCase):
         mock_shrink_image_to_target.assert_called_with(
             image, target_width, target_height)
         mock_place_image_centred_on_canvas.assert_called_with(
-            image, CANVAS_IMAGE_FILEPATH, target_width, target_height)
+            mock_shrink_image_to_target.return_value,
+            CANVAS_IMAGE_FILEPATH, target_width, target_height)
         mock_convert_image_to_rgb.assert_called_with(
             mock_place_image_centred_on_canvas.return_value)
 
