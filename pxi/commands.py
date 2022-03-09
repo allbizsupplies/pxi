@@ -24,7 +24,11 @@ from pxi.exporters import (
     export_web_data_updates_report,
     export_web_product_menu_data)
 from pxi.image import fetch_images
-from pxi.importers import import_data, import_supplier_pricelist_items, import_web_menu_item_mappings, import_missing_images_report
+from pxi.importers import (
+    import_data,
+    import_supplier_pricelist_items,
+    import_web_menu_item_mappings,
+    import_missing_images_report)
 from pxi.models import (
     ContractItem,
     GTINItem,
