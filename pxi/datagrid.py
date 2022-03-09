@@ -1,55 +1,62 @@
 
 import re
-from openpyxl import load_workbook
+from typing import Any, Dict, List
+from openpyxl import Workbook, load_workbook
+from openpyxl.worksheet.worksheet import Worksheet
 
 
-def read_rows(worksheet):
+DatagridRow = Dict[str, Any]
+
+
+def load_rows(filepath, worksheet_name: str | None = None):
+    """
+    Read data from XLSX datagrid.
+    """
+    workbook: Workbook = load_workbook(filename=filepath, read_only=True)
+
+    # Use the first worksheet by default.
+    if worksheet_name is None:
+        worksheet_name = str(workbook.get_sheet_names()[0])
+    worksheet: Worksheet = workbook[worksheet_name]
+    rows = read_rows(worksheet)
+    workbook.close()
+    return rows
+
+
+def read_rows(worksheet: Worksheet):
     """
     Read rows from worksheet.
     """
-    rows = []
+    rows: List[DatagridRow] = []
     fieldnames = get_fieldnames(worksheet)
     for row in worksheet.iter_rows(min_row=2):
         if row[0].value is None:
             return rows
-        values = dict()
+        values: DatagridRow = {}
         for i, fieldname in enumerate(fieldnames):
             values[fieldname] = row[i].value
         rows.append(values)
     return rows
 
 
-def load_rows(filepath, worksheet_name=None):
-    """
-    Read data from XLSX datagrid.
-    """
-    workbook = load_workbook(filename=filepath, read_only=True)
-
-    # Use the first worksheet by default.
-    if worksheet_name is None:
-        worksheet_name = workbook.get_sheet_names()[0]
-    worksheet = workbook[worksheet_name]
-    rows = read_rows(worksheet)
-    workbook.close()
-    return rows
-
-
-def get_fieldnames(worksheet):
+def get_fieldnames(worksheet: Worksheet):
     """
     Parse snakecase fieldnames from first row of sheet.
     """
-    fieldnames = []
+    fieldnames: List[str] = []
     col_index = 0
-    while True:
+    reached_last_column = False
+    while not reached_last_column:
         value = worksheet.cell(1, col_index + 1).value
-        # Stop as soon as we hit an empty cell.
         if value is None:
-            return fieldnames
-        fieldnames.append(snakecase(value))
-        col_index += 1
+            reached_last_column = True
+        else:
+            fieldnames.append(snakecase(value))
+            col_index += 1
+    return fieldnames
 
 
-def snakecase(value):
+def snakecase(value: str):
     value = value.strip()
     value = value.lower()
     value = re.sub(r"[/ =:-]", "_", value)
