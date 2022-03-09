@@ -3,10 +3,13 @@ from datetime import datetime
 from decimal import Decimal
 import logging
 import os
+import re
+from typing import Dict, List
 import requests
 from time import perf_counter
 
 from pxi.database import get_session
+from pxi.dataclasses import BuyPriceChange
 from pxi.enum import ItemCondition, ItemType
 from pxi.exporters import (
     export_contract_item_task,
@@ -199,11 +202,21 @@ class Commands:
             ], force_imports=options.get("force_imports", False))
 
             # Import SupplierPricelistItems.
-            spl_items = import_supplier_pricelist_items(
+            supp_items = import_supplier_pricelist_items(
                 import_paths["supplier_pricelist"])
 
-            # Update supplier prices and record changes.
-            bp_changes = update_supplier_items(spl_items, self.db_session)
+            # Update supplier prices and record BuyPriceChanges.
+            bp_changes = update_supplier_items(
+                supp_items, self.db_session)
+
+            supp_item_bins: Dict[str, List[SupplierItem]] = {}
+            # Sort SupplierItems into bins keyed by supplier code.
+            for bp_change in bp_changes:
+                supp_item = bp_change.supplier_item
+                supp_code = supp_item.code
+                if supp_code not in supp_item_bins:
+                    supp_item_bins[supp_code] = []
+                supp_item_bins[supp_code].append(supp_item)
 
             # Export report and data files:
             # - Supplier price changes report
@@ -212,10 +225,11 @@ class Commands:
             export_supplier_price_changes_report(
                 export_paths["supplier_price_changes_report"],
                 bp_changes)
-            export_supplier_pricelist(
-                export_paths["supplier_pricelist"], [
-                    bp_change.supplier_item
-                    for bp_change in bp_changes])
+            for supp_code, supp_items in supp_item_bins.items():
+                export_supplier_pricelist(
+                    export_paths["supplier_pricelist"].format(
+                        supp_code=supp_code),
+                    supp_items)
 
             # Log results.
             logging.info(
@@ -404,26 +418,45 @@ class Commands:
             # Log results.
             logging.info(f"Downloaded SPL to {dest}")
 
-    class upload_spl(CommandBase):
+    class upload_spls(CommandBase):
         """
-        Upload supplier pricelist to remote server.
+        Upload supplier pricelists to remote server.
         """
-        aliases = ["uspl"]
+        aliases = ["uspls"]
 
         def execute(self, options):
 
-            # Upload the file using SCP.
             config = self.config["ssh"]
-            src = self.config["paths"]["export"]["supplier_pricelist"]
-            dest = self.config["paths"]["remote"]["supplier_pricelist_import"]
+            src_template = self.config["paths"]["export"]["supplier_pricelist"]
+            dest_template = self.config["paths"]["remote"]["supplier_pricelist_import"]
+
+            # Search for SPL files in the src directory and collect the
+            # supplier codes found in those filenames.
+            src_dirname = os.path.dirname(src_template)
+            src_filename_pattern = os.path.basename(src_template).replace(
+                "{supp_code}",
+                "([A-Z]{3})"
+            )
+            supp_codes = []
+            for filename in os.listdir(src_dirname):
+                matches = re.compile(src_filename_pattern).match(filename)
+                if matches is not None:
+                    supp_codes.append(matches[1])
+
+            # Upload the SPL for each supplier code.
             scp_client = get_scp_client(
                 config["hostname"],
                 config["username"],
                 config["password"])
-            scp_client.put(src, dest)
+            for supp_code in supp_codes:
+                src = src_template.format(supp_code=supp_code)
+                dest = dest_template.format(supp_code=supp_code)
+                scp_client.put(src, dest)
 
-            # Log results.
-            logging.info(f"Uploaded SPL to {config['hostname']}:{dest}")
+                # Log the upload.
+                print(f"- {supp_code}")
+                logging.info(
+                    f"Uploaded {supp_code} SPL to {config['hostname']}:{dest}")
 
     class upload_pricelist(CommandBase):
         """

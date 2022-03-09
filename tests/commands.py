@@ -1,6 +1,6 @@
 
 import io
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import call, MagicMock, mock_open, patch
 
 from pxi.commands import Commands, commands, get_command
 from pxi.enum import ItemCondition, ItemType
@@ -27,7 +27,8 @@ from tests.fakes import (
     fake_supplier_item,
     fake_supplier_pricelist_item,
     fake_warehouse_stock_item,
-    fake_web_menu_item)
+    fake_web_menu_item,
+    random_string)
 
 
 def get_mock_config():
@@ -47,7 +48,7 @@ def get_mock_config():
                 "pricelist": "path/export/pricelist",
                 "price_changes_report": "path/export/price_changes_report",
                 "product_price_task": "path/export/product_price_task",
-                "supplier_pricelist": "path/export/supplier_pricelist",
+                "supplier_pricelist": "path/export/supplier_pricelist_{supp_code}",
                 "supplier_price_changes_report": "path/export/supplier_price_changes_report",
                 "tickets_list": "path/export/tickets_list",
                 "web_product_menu_data": "path/export/web_product_menu_data",
@@ -97,7 +98,7 @@ class CommandTests(DatabaseTestCase):
             Commands.missing_gtin,
             Commands.price_calc,
             Commands.upload_pricelist,
-            Commands.upload_spl,
+            Commands.upload_spls,
             Commands.web_update,
         ]
 
@@ -125,9 +126,9 @@ class CommandTests(DatabaseTestCase):
             ("upload_pricelist", Commands.upload_pricelist),
             ("upload-pricelist", Commands.upload_pricelist),
             ("upl", Commands.upload_pricelist),
-            ("upload_spl", Commands.upload_spl),
-            ("upload-spl", Commands.upload_spl),
-            ("uspl", Commands.upload_spl),
+            ("upload_spls", Commands.upload_spls),
+            ("upload-spls", Commands.upload_spls),
+            ("uspls", Commands.upload_spls),
             ("generate_spl", Commands.generate_spl),
             ("generate-spl", Commands.generate_spl),
             ("gspl", Commands.generate_spl),
@@ -192,21 +193,41 @@ class CommandTests(DatabaseTestCase):
         mock_file.write.assert_called_with(
             mock_requests_get.return_value.content)
 
+    @patch("os.listdir")
+    @patch("os.path")
     @patch("pxi.commands.get_scp_client")
-    def test_command_upload_spl(self, mock_get_scp_client):
+    def test_command_upload_spls(
+            self,
+            mock_get_scp_client,
+            mock_os_path,
+            mock_os_listdir):
         """
-        download_spl command uploads supplier pricelist usingn SCP.
+        upload_spls command uploads supplier pricelists usingn SCP.
         """
         mock_config = get_mock_config()
+        filename = "supplier_pricelist_{supp_code}.csv"
+        export_path = f"export/path/{filename}"
+        remote_path = f"remote/path/{filename}"
+        mock_config["paths"]["export"]["supplier_pricelist"] = export_path
+        mock_config["paths"]["remote"]["supplier_pricelist_import"] = remote_path
+        supp_code = random_string(3)
+        mock_os_path.dirname.return_value = "export/path"
+        mock_os_path.basename.return_value = filename
+        mock_os_listdir.return_value = [
+            filename.format(supp_code=supp_code),
+            random_string(20),
+        ]
         mock_scp_client = MagicMock()
         mock_get_scp_client.return_value = mock_scp_client
 
-        Commands.upload_spl(mock_config)()
+        Commands.upload_spls(mock_config)()
 
+        mock_os_path.dirname.assert_called_with(export_path)
+        mock_os_listdir.assert_called_with(mock_os_path.dirname.return_value)
         mock_get_scp_client.assert_called_with(*mock_config["ssh"].values())
         mock_scp_client.put.assert_called_with(
-            mock_config["paths"]["export"]["supplier_pricelist"],
-            mock_config["paths"]["remote"]["supplier_pricelist_import"])
+            export_path.format(supp_code=supp_code),
+            remote_path.format(supp_code=supp_code))
 
     @patch("pxi.commands.get_scp_client")
     def test_command_upload_pricelist(self, mock_get_scp_client):
@@ -232,7 +253,7 @@ class CommandTests(DatabaseTestCase):
     @patch("pxi.commands.recalculate_contract_prices")
     @patch("pxi.commands.recalculate_sell_prices")
     @patch("pxi.commands.import_data")
-    def test_price_calc(
+    def test_command_price_calc(
             self,
             mock_import_data,
             mock_recalculate_sell_prices,
@@ -304,7 +325,7 @@ class CommandTests(DatabaseTestCase):
     @patch("pxi.commands.update_supplier_items")
     @patch("pxi.commands.import_supplier_pricelist_items")
     @patch("pxi.commands.import_data")
-    def test_generate_spl(
+    def test_command_generate_spl(
             self,
             mock_import_data,
             mock_import_supplier_pricelist_items,
@@ -345,15 +366,81 @@ class CommandTests(DatabaseTestCase):
             export_paths["supplier_price_changes_report"],
             [price_change])
         mock_export_supplier_pricelist.assert_called_with(
-            export_paths["supplier_pricelist"],
+            export_paths["supplier_pricelist"].format(
+                supp_code=supp_item.code),
             [supp_item])
+
+    @patch("pxi.commands.export_supplier_pricelist")
+    @patch("pxi.commands.export_supplier_price_changes_report")
+    @patch("pxi.commands.update_supplier_items")
+    @patch("pxi.commands.import_supplier_pricelist_items")
+    @patch("pxi.commands.import_data")
+    def test_command_generate_spl_with_multiple_spl_items_per_inv_item(
+            self,
+            mock_import_data,
+            mock_import_supplier_pricelist_items,
+            mock_update_supplier_items,
+            mock_export_supplier_price_changes_report,
+            mock_export_supplier_pricelist):
+        """
+        generate_spl command imports data, generates SPL, exports reports/data.
+        """
+        mock_config = get_mock_config()
+        import_paths = mock_config["paths"]["import"]
+        export_paths = mock_config["paths"]["export"]
+
+        inv_item_1 = fake_inventory_item()
+        inv_item_2 = fake_inventory_item()
+        supp_item_1a = fake_supplier_item(inv_item_1)
+        supp_item_1b = fake_supplier_item(inv_item_1)
+        spl_item_1a = fake_supplier_pricelist_item(supp_item_1a)
+        spl_item_1b = fake_supplier_pricelist_item(supp_item_1b)
+        bp_change_1a = fake_buy_price_change(supp_item_1a)
+        bp_change_1b = fake_buy_price_change(supp_item_1b)
+        self.seed([
+            inv_item_1,
+            supp_item_1a,
+            supp_item_1b,
+        ])
+        spl_items = [spl_item_1a, spl_item_1b]
+        bp_changes = [bp_change_1a, bp_change_1b]
+        mock_import_supplier_pricelist_items.return_value = spl_items
+        mock_update_supplier_items.return_value = bp_changes
+
+        command = Commands.generate_spl(mock_config)
+        command.db_session = self.db_session
+        command()
+
+        mock_import_data.assert_called_with(command.db_session, import_paths, [
+            InventoryItem,
+            SupplierItem,
+        ], force_imports=False)
+        mock_import_supplier_pricelist_items.assert_called_with(
+            import_paths["supplier_pricelist"])
+        mock_update_supplier_items.assert_called_with(
+            spl_items, command.db_session)
+        mock_export_supplier_price_changes_report.assert_called_with(
+            export_paths["supplier_price_changes_report"],
+            bp_changes)
+        mock_export_supplier_pricelist.assert_has_calls([
+            call(
+                export_paths["supplier_pricelist"].format(
+                    supp_code=supp_item_1a.code),
+                [supp_item_1a]
+            ),
+            call(
+                export_paths["supplier_pricelist"].format(
+                    supp_code=supp_item_1b.code),
+                [supp_item_1b]
+            ),
+        ])
 
     @patch("pxi.commands.export_web_data_updates_report")
     @patch("pxi.commands.export_web_product_menu_data")
     @patch("pxi.commands.update_product_menu")
     @patch("pxi.commands.import_web_menu_item_mappings")
     @patch("pxi.commands.import_data")
-    def test_web_update(
+    def test_command_web_update(
             self,
             mock_import_data,
             mock_import_web_menu_item_mappings,
@@ -416,7 +503,7 @@ class CommandTests(DatabaseTestCase):
 
     @patch("pxi.commands.export_gtin_report")
     @patch("pxi.commands.import_data")
-    def test_missing_gtin(
+    def test_command_missing_gtin(
             self,
             mock_import_data,
             mock_export_gtin_report):
@@ -451,7 +538,7 @@ class CommandTests(DatabaseTestCase):
     @patch("pxi.commands.fetch_images")
     @patch("pxi.commands.import_missing_images_report")
     @patch("pxi.commands.import_data")
-    def test_fetch_images(
+    def test_command_fetch_images(
             self,
             mock_import_data,
             mock_import_missing_images_report,
