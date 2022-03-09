@@ -67,7 +67,7 @@ PXI needs to know where to find or put several files on the Pronto server.
 
 `supplier_pricelist` is the location of the SPL file provided by Office Choice. This path doesn't need to be changed unless Office Choice change the location of the file.
 
-PXI needs to put two CSB files, `pricelist` and `supplier_pricelist_import`, in your home folder on the server. Your home folder has the form `/home/PRONTO_USERNAME`, where `PRONTO_USERNAME` is the username you use to log into the Pronto Thin Client.
+PXI needs to put two CSV files, `pricelist` and `supplier_pricelist_import`, in your home folder on the server. Your home folder has the form `/home/PRONTO_USERNAME`, where `PRONTO_USERNAME` is the username you use to log into the Pronto Thin Client.
 
 ## SSH settings
 
