@@ -1,8 +1,10 @@
 from decimal import Decimal
+from typing import List, Set
 from sqlalchemy import or_
+from sqlalchemy.orm.session import Session
 
 from pxi.models import SupplierItem, InventoryItem
-from pxi.dataclasses import BuyPriceChange
+from pxi.dataclasses import BuyPriceChange, SupplierPricelistItem
 
 
 SPL_FIELDNAMES = [
@@ -60,12 +62,14 @@ SPL_FIELDNAMES = [
 ]
 
 
-def update_supplier_items(spl_items, db_session):
+def update_supplier_items(
+        spl_items: List[SupplierPricelistItem],
+        db_session: Session):
     """
     Updates price on SupplierItems and reports on price changes and UOM errors.
     """
-    price_changes = []  # The list of price changes.
-    updated_supp_item_keys = set()  # The supp items that have been updated.
+    price_changes: List[BuyPriceChange] = []
+    updated_supp_item_keys: Set[str] = set()
 
     # Update SupplierItem prices and validate UOM and conversion factor.
     for spl_item in spl_items:
