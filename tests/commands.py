@@ -36,7 +36,7 @@ def get_mock_config():
         "paths": {
             "database": ":memory:",
             "import": {
-                "inventory_metadata": "path/import/inventory_metadata",
+                "web_menu_mappings": "path/import/web_menu_mappings",
                 "pricelist": "path/import/pricelist",
                 "supplier_pricelist": "path/import/supplier_pricelist",
                 "missing_images_report": "path/import/missing_images_report",
@@ -487,9 +487,8 @@ class CommandTests(DatabaseTestCase):
             InventoryWebDataItem,
         ], force_imports=False)
         mock_import_web_menu_item_mappings.assert_called_with(
-            import_paths["inventory_metadata"],
-            command.db_session,
-            worksheet_name="rules")
+            import_paths["web_menu_mappings"],
+            command.db_session)
         mock_update_product_menu.assert_called_with(
             [iwd_item],
             wmi_mappings,

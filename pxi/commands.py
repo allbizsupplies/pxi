@@ -260,9 +260,8 @@ class Commands:
 
             # Import mappings between PriceRules and WebMenuItems.
             wmi_mappings = import_web_menu_item_mappings(
-                import_paths["inventory_metadata"],
-                self.db_session,
-                worksheet_name="rules")
+                import_paths["web_menu_mappings"],
+                self.db_session)
 
             # Select all InventoryWebDataItems that are related to an active
             # InventoryItem and PriceRule, but not a WebMenuItem.
