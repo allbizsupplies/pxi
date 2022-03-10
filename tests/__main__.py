@@ -3,6 +3,7 @@ import unittest
 
 from tests.analysis import AnalysisTests
 from tests.commands import CommandTests
+from tests.config import ConfigTests
 from tests.dataclasses import BuyPriceChangeTests, SellPriceChangeTests
 from tests.exporters import ExporterTests
 from tests.image import ImageFetchingTests, ImageFormattingTests
@@ -23,6 +24,7 @@ testcases = [
     AnalysisTests,
     BuyPriceChangeTests,
     CommandTests,
+    ConfigTests,
     ExporterTests,
     ImageFetchingTests,
     ImageFormattingTests,

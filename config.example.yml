@@ -6,7 +6,7 @@ paths:
   logging: "data/log.txt"
 
   # Paths to imported files.
-  import:
+  imports:
     # Datagrids are Excel spreadsheets exported from Pronto datagrids.
     # See docs/datagrid_export_guide.md for instructions on how to export these
     # files from Pronto.
@@ -35,7 +35,7 @@ paths:
     missing_images_report: "data/import/missing_images_report.xlsx"
 
   # Paths to exported files.
-  export:
+  exports:
     # Reports are XLSX files intended to be opened and viewed by the user after
     # running a command. Export these somewhere easily accessible.
     downloaded_images_report: "data/export/downloaded_images_report.xlsx"
@@ -85,7 +85,7 @@ paths:
 
     # The upload destination for supplier pricelist to be imported.
     # The filename must contain {supp_code}.
-    supplier_pricelist_import: "/home/PRONTO_USERNAME/supplier_pricelist_{supp_code}.csv"
+    supplier_pricelist_imports: "/home/PRONTO_USERNAME/supplier_pricelist_{supp_code}.csv"
 
 # SSH configuration to connect to Pronto.
 ssh:

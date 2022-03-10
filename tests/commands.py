@@ -35,13 +35,13 @@ def get_mock_config():
     return {
         "paths": {
             "database": ":memory:",
-            "import": {
+            "imports": {
                 "web_menu_mappings": "path/import/web_menu_mappings",
                 "pricelist": "path/import/pricelist",
                 "supplier_pricelist": "path/import/supplier_pricelist",
                 "missing_images_report": "path/import/missing_images_report",
             },
-            "export": {
+            "exports": {
                 "contract_item_task": "path/export/contract_item_task",
                 "gtin_report": "path/export/gtin_report",
                 "images_dir": "path/export/images_dir",
@@ -173,7 +173,7 @@ class CommandTests(DatabaseTestCase):
         mock_get_scp_client.assert_called_with(*mock_config["ssh"].values())
         mock_scp_client.get.assert_called_with(
             mock_config["paths"]["remote"]["supplier_pricelist"],
-            mock_config["paths"]["import"]["supplier_pricelist"])
+            mock_config["paths"]["imports"]["supplier_pricelist"])
 
     @patch("requests.get")
     def test_command_download_spl_https(self, mock_requests_get):
@@ -208,7 +208,7 @@ class CommandTests(DatabaseTestCase):
         filename = "supplier_pricelist_{supp_code}.csv"
         export_path = f"export/path/{filename}"
         remote_path = f"remote/path/{filename}"
-        mock_config["paths"]["export"]["supplier_pricelist"] = export_path
+        mock_config["paths"]["exports"]["supplier_pricelist"] = export_path
         mock_config["paths"]["remote"]["supplier_pricelist_import"] = remote_path
         supp_code = random_string(3)
         mock_os_path.dirname.return_value = "export/path"
@@ -242,7 +242,7 @@ class CommandTests(DatabaseTestCase):
 
         mock_get_scp_client.assert_called_with(*mock_config["ssh"].values())
         mock_scp_client.put.assert_called_with(
-            mock_config["paths"]["export"]["pricelist"],
+            mock_config["paths"]["exports"]["pricelist"],
             mock_config["paths"]["remote"]["pricelist"])
 
     @patch("pxi.commands.export_tickets_list")
@@ -268,8 +268,8 @@ class CommandTests(DatabaseTestCase):
         reports/data.
         """
         mock_config = get_mock_config()
-        import_paths = mock_config["paths"]["import"]
-        export_paths = mock_config["paths"]["export"]
+        import_paths = mock_config["paths"]["imports"]
+        export_paths = mock_config["paths"]["exports"]
 
         inv_item = fake_inventory_item()
         con_item = fake_contract_item(inv_item)
@@ -336,8 +336,8 @@ class CommandTests(DatabaseTestCase):
         generate_spl command imports data, generates SPL, exports reports/data.
         """
         mock_config = get_mock_config()
-        import_paths = mock_config["paths"]["import"]
-        export_paths = mock_config["paths"]["export"]
+        import_paths = mock_config["paths"]["imports"]
+        export_paths = mock_config["paths"]["exports"]
 
         inv_item = fake_inventory_item()
         supp_item = fake_supplier_item(inv_item)
@@ -386,8 +386,8 @@ class CommandTests(DatabaseTestCase):
         generate_spl command imports data, generates SPL, exports reports/data.
         """
         mock_config = get_mock_config()
-        import_paths = mock_config["paths"]["import"]
-        export_paths = mock_config["paths"]["export"]
+        import_paths = mock_config["paths"]["imports"]
+        export_paths = mock_config["paths"]["exports"]
 
         inv_item_1 = fake_inventory_item()
         inv_item_2 = fake_inventory_item()
@@ -452,8 +452,8 @@ class CommandTests(DatabaseTestCase):
         exports reports and data.
         """
         mock_config = get_mock_config()
-        import_paths = mock_config["paths"]["import"]
-        export_paths = mock_config["paths"]["export"]
+        import_paths = mock_config["paths"]["imports"]
+        export_paths = mock_config["paths"]["exports"]
 
         inv_item = fake_inventory_item()
         price_rule = fake_price_rule()
@@ -510,8 +510,8 @@ class CommandTests(DatabaseTestCase):
         missing_gtin command imports data, reports items missing GTIN.
         """
         mock_config = get_mock_config()
-        import_paths = mock_config["paths"]["import"]
-        export_paths = mock_config["paths"]["export"]
+        import_paths = mock_config["paths"]["imports"]
+        export_paths = mock_config["paths"]["exports"]
 
         inv_item = fake_inventory_item()
         gtin_item = fake_gtin_item(inv_item, {
@@ -548,8 +548,8 @@ class CommandTests(DatabaseTestCase):
         """
 
         mock_config = get_mock_config()
-        import_paths = mock_config["paths"]["import"]
-        export_paths = mock_config["paths"]["export"]
+        import_paths = mock_config["paths"]["imports"]
+        export_paths = mock_config["paths"]["exports"]
 
         inv_item = fake_inventory_item()
         supp_item = fake_supplier_item(inv_item)

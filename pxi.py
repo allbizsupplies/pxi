@@ -4,9 +4,9 @@ from argparse import ArgumentParser
 import sys
 import logging
 from time import perf_counter
-import yaml
 
 from pxi.commands import get_command
+from pxi.config import load_config
 
 # Suppress warnings.
 if not sys.warnoptions:
@@ -25,8 +25,7 @@ def main():
     args = get_args()
 
     # Load config.
-    with open(args.config) as file:
-        config = yaml.safe_load(file)
+    config = load_config(args.config)
 
     # Get the command and display an error if it doesn't exist.
     command = get_command(args.command)

@@ -4,10 +4,10 @@ from decimal import Decimal
 import logging
 import os
 from os import PathLike
-from typing import Any, Dict, Type
+from typing import Any, Callable, Dict, List, Literal, Tuple, Type
 from sqlalchemy.orm.session import Session
-import time
 
+from pxi.config import ImportPathsConfig
 from pxi.dataclasses import SupplierPricelistItem
 from pxi.datagrid import load_rows
 from pxi.enum import (
@@ -650,12 +650,28 @@ def import_missing_images_report(filepath: PathLike, db_session: Session):
     return inv_items_no_image
 
 
+ImportPath = Literal[
+    "contract_items_datagrid",
+    "inventory_items_datagrid",
+    "inventory_web_data_items_datagrid",
+    "gtin_items_datagrid",
+    "price_rules_datagrid",
+    "pricelist_datagrid",
+    "supplier_items_datagrid",
+    "supplier_pricelist",
+    "web_menu",
+    "web_menu_mappings",
+    "missing_images_report",
+]
+ModelImport = Tuple[Type[Base], Callable, ImportPath]
+
+
 # import functions and files for each model.
 # Each item in the list is a tuplc containing the following values:
 # - The model class.
 # - The import function.
 # - The name of the import file in the config.
-MODEL_IMPORTS = [
+MODEL_IMPORTS: List[ModelImport] = [
     (
         InventoryItem,
         import_inventory_items,
@@ -699,7 +715,14 @@ MODEL_IMPORTS = [
 ]
 
 
-def import_data(db_session, paths, models=None, force_imports=False):
+def import_data(
+        db_session: Session,
+        paths: ImportPathsConfig,
+        models=None,
+        force_imports: bool = False):
+    """
+    Imports data for given models, or all models if none given.
+    """
     import_all_models = models is None
 
     for model, function, path_key in MODEL_IMPORTS:

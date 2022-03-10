@@ -15,7 +15,7 @@ Example configuration for imported files. This tells PXI where to find the datag
 
 ```yaml
 paths:
-  import:
+  imports:
     contract_items_datagrid: "data/import/contract_items.xlsx" #
     inventory_items_datagrid: "data/import/inventory_items.xlsx"
     gtin_items_datagrid: "data/import/gtin_items.xlsx"

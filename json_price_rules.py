@@ -15,10 +15,10 @@ def to_dict(row):
 def main():
     with open("config.yml") as file:
         config = yaml.safe_load(file)
-    datagrid_filepath = config["paths"]["import"]["price_rules_datagrid"]
+    datagrid_filepath = config["paths"]["imports"]["price_rules_datagrid"]
     rows = load_rows(datagrid_filepath)
     data = [to_dict(row) for row in rows]
-    json_filepath = config["paths"]["export"]["price_rules_json"]
+    json_filepath = config["paths"]["exports"]["price_rules_json"]
     with open(json_filepath, "w") as file:
         json.dump(data, file)
 

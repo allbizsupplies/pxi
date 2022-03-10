@@ -3,11 +3,13 @@ from datetime import datetime
 from decimal import Decimal
 import logging
 import os
+from pathlib import Path
 import re
 from typing import Dict, List
 import requests
 from time import perf_counter
 
+from pxi.config import Config
 from pxi.database import get_session
 from pxi.dataclasses import BuyPriceChange
 from pxi.enum import ItemCondition, ItemType
@@ -52,9 +54,9 @@ class CommandBase:
     Base class for commands. stores config and is callable.
     """
 
-    def __init__(self, config):
+    def __init__(self, config: Config):
         self.config = config
-        self.db_session = get_session(config["paths"]["database"])
+        self.db_session = get_session(Path(config["paths"]["database"]))
 
     def __call__(self, **options):
         self.execute(options)
@@ -89,7 +91,7 @@ class Commands:
         def execute(self, options):
 
             # Import all data related to PriceRegionItems and ContractItems.
-            import_data(self.db_session, self.config["paths"]["import"], [
+            import_data(self.db_session, self.config["paths"]["imports"], [
                 InventoryItem,
                 WarehouseStockItem,
                 PriceRule,
@@ -165,7 +167,7 @@ class Commands:
             #   - update_product_price
             #   - update_contract_item
             # - Tickets list (a plain text list of item codes)
-            export_paths = self.config["paths"]["export"]
+            export_paths = self.config["paths"]["exports"]
             export_price_changes_report(
                 export_paths["price_changes_report"],
                 price_changes)
@@ -199,7 +201,7 @@ class Commands:
         def execute(self, options):
 
             # Import all data related to SupplierItems.
-            import_paths = self.config["paths"]["import"]
+            import_paths = self.config["paths"]["imports"]
             import_data(self.db_session, import_paths, [
                 InventoryItem,
                 SupplierItem,
@@ -225,7 +227,7 @@ class Commands:
             # Export report and data files:
             # - Supplier price changes report
             # - Pronto-format supplier pricelist
-            export_paths = self.config["paths"]["export"]
+            export_paths = self.config["paths"]["exports"]
             export_supplier_price_changes_report(
                 export_paths["supplier_price_changes_report"],
                 bp_changes)
@@ -249,7 +251,7 @@ class Commands:
         def execute(self, options):
 
             # Import all data related to SupplierItems.
-            import_paths = self.config["paths"]["import"]
+            import_paths = self.config["paths"]["imports"]
             import_data(self.db_session, import_paths, [
                 InventoryItem,
                 WebMenuItem,
@@ -288,7 +290,7 @@ class Commands:
             # Export report and data files:
             # - Inventory web data updates report
             # - Pronto-format web product menu data
-            export_paths = self.config["paths"]["export"]
+            export_paths = self.config["paths"]["exports"]
             export_web_product_menu_data(
                 export_paths["web_product_menu_data"],
                 updated_iwd_items)
@@ -310,7 +312,7 @@ class Commands:
         def execute(self, options):
 
             # Import all data related to GTINItems.
-            import_paths = self.config["paths"]["import"]
+            import_paths = self.config["paths"]["imports"]
             import_data(self.db_session, import_paths, [
                 InventoryItem,
                 GTINItem,
@@ -360,7 +362,7 @@ class Commands:
                         continue  # Yuck!
 
             # Export GTIN report to file.
-            export_paths = self.config["paths"]["export"]
+            export_paths = self.config["paths"]["exports"]
             export_gtin_report(
                 export_paths["gtin_report"],
                 inv_items_no_gtin,
@@ -375,7 +377,7 @@ class Commands:
         def execute(self, options):
 
             # Import all data related to SupplierItems.
-            import_paths = self.config["paths"]["import"]
+            import_paths = self.config["paths"]["imports"]
             import_data(self.db_session, import_paths, [
                 InventoryItem,
                 SupplierItem,
@@ -386,7 +388,7 @@ class Commands:
                 import_paths["missing_images_report"], self.db_session)
 
             # Fetch images for InventoryItems.
-            export_paths = self.config["paths"]["export"]
+            export_paths = self.config["paths"]["exports"]
             fetched_images = fetch_images(
                 export_paths["images_dir"], inv_items_no_image)
 
@@ -406,7 +408,7 @@ class Commands:
             # Download the file using SCP.
             config = self.config["ssh"]
             src = self.config["paths"]["remote"]["supplier_pricelist"]
-            dest = self.config["paths"]["import"]["supplier_pricelist"]
+            dest = self.config["paths"]["imports"]["supplier_pricelist"]
             if src.startswith("https://"):
                 response = requests.get(src)
                 with open(dest, "wb") as file:
@@ -430,7 +432,7 @@ class Commands:
         def execute(self, options):
 
             config = self.config["ssh"]
-            src_template = self.config["paths"]["export"]["supplier_pricelist"]
+            src_template = self.config["paths"]["exports"]["supplier_pricelist"]
             dest_template = self.config["paths"]["remote"]["supplier_pricelist_import"]
 
             # Search for SPL files in the src directory and collect the
@@ -471,7 +473,7 @@ class Commands:
 
             # Upload the file using SCP.
             config = self.config["ssh"]
-            src = self.config["paths"]["export"]["pricelist"]
+            src = self.config["paths"]["exports"]["pricelist"]
             dest = self.config["paths"]["remote"]["pricelist"]
             scp_client = get_scp_client(
                 config["hostname"],
