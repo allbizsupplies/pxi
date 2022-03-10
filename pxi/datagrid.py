@@ -17,7 +17,7 @@ def load_rows(filepath, worksheet_name: str | None = None):
     # Use the first worksheet by default.
     if worksheet_name is None:
         worksheet_name = str(workbook.get_sheet_names()[0])
-    worksheet: Worksheet = workbook[worksheet_name]
+    worksheet: Worksheet = workbook.get_sheet_by_name(worksheet_name)
     rows = read_rows(worksheet)
     workbook.close()
     return rows
@@ -57,6 +57,9 @@ def get_fieldnames(worksheet: Worksheet):
 
 
 def snakecase(value: str):
+    """
+    Converts datagrid header to snakecase.
+    """
     value = value.strip()
     value = value.lower()
     value = re.sub(r"[/ =:-]", "_", value)

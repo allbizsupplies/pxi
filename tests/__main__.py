@@ -5,6 +5,7 @@ from tests.analysis import AnalysisTests
 from tests.commands import CommandTests
 from tests.config import ConfigTests
 from tests.dataclasses import BuyPriceChangeTests, SellPriceChangeTests
+from tests.datagrid import DatagridTests
 from tests.exporters import ExporterTests
 from tests.image import ImageFetchingTests, ImageFormattingTests
 from tests.importers import ImporterTests
@@ -25,6 +26,7 @@ testcases = [
     BuyPriceChangeTests,
     CommandTests,
     ConfigTests,
+    DatagridTests,
     ExporterTests,
     ImageFetchingTests,
     ImageFormattingTests,
