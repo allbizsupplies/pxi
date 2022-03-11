@@ -18,7 +18,8 @@ from pxi.exporters import (
     export_supplier_price_changes_report,
     export_tickets_list,
     export_web_data_updates_report,
-    export_web_product_menu_data)
+    export_web_product_menu_data,
+    remove_exported_supplier_pricelists)
 from pxi.price_calc import recalculate_sell_prices
 from pxi.spl_update import SPL_FIELDNAMES
 from tests import PXITestCase
@@ -201,3 +202,27 @@ class ExporterTests(PXITestCase):
             mock_file = get_mock_file()
 
         mock_csvwrtr.writerows.assert_called()
+
+    @patch("os.unlink")
+    @patch("os.listdir")
+    def test_remove_exported_supplier_pricelists(
+            self,
+            mock_os_listdir,
+            mock_os_unlink):
+        """
+        Deletes files matching supplier pricelist export path pattern.
+        """
+        export_path = "path/export/supplier_pricelist_{supp_code}.csv"
+        export_dir = os.path.dirname(export_path)
+        supp_code = random_string(3)
+        spl_filename = f"supplier_pricelist_{supp_code}.csv"
+        mock_os_listdir.return_value = [
+            spl_filename,
+            random_string(20),
+        ]
+
+        remove_exported_supplier_pricelists(export_path)
+
+        mock_os_listdir.assert_called_with(export_dir)
+        mock_os_unlink.assert_called_with(os.path.join(
+            export_dir, spl_filename))

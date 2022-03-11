@@ -332,6 +332,7 @@ class CommandTests(DatabaseTestCase):
 
     @patch("pxi.commands.export_supplier_pricelist")
     @patch("pxi.commands.export_supplier_price_changes_report")
+    @patch("pxi.commands.remove_exported_supplier_pricelists")
     @patch("pxi.commands.update_supplier_items")
     @patch("pxi.commands.import_supplier_pricelist_items")
     @patch("pxi.commands.import_data")
@@ -340,6 +341,7 @@ class CommandTests(DatabaseTestCase):
             mock_import_data,
             mock_import_supplier_pricelist_items,
             mock_update_supplier_items,
+            mock_remove_exported_supplier_pricelists,
             mock_export_supplier_price_changes_report,
             mock_export_supplier_pricelist):
         """
@@ -372,6 +374,8 @@ class CommandTests(DatabaseTestCase):
             import_paths["supplier_pricelist"])
         mock_update_supplier_items.assert_called_with(
             [spl_item], command.db_session)
+        mock_remove_exported_supplier_pricelists.assert_called_with(
+            export_paths["supplier_pricelist"])
         mock_export_supplier_price_changes_report.assert_called_with(
             export_paths["supplier_price_changes_report"],
             [price_change])
@@ -382,6 +386,7 @@ class CommandTests(DatabaseTestCase):
 
     @patch("pxi.commands.export_supplier_pricelist")
     @patch("pxi.commands.export_supplier_price_changes_report")
+    @patch("pxi.commands.remove_exported_supplier_pricelists")
     @patch("pxi.commands.update_supplier_items")
     @patch("pxi.commands.import_supplier_pricelist_items")
     @patch("pxi.commands.import_data")
@@ -390,6 +395,7 @@ class CommandTests(DatabaseTestCase):
             mock_import_data,
             mock_import_supplier_pricelist_items,
             mock_update_supplier_items,
+            mock_remove_exported_supplier_pricelists,
             mock_export_supplier_price_changes_report,
             mock_export_supplier_pricelist):
         """
@@ -429,6 +435,8 @@ class CommandTests(DatabaseTestCase):
             import_paths["supplier_pricelist"])
         mock_update_supplier_items.assert_called_with(
             spl_items, command.db_session)
+        mock_remove_exported_supplier_pricelists.assert_called_with(
+            export_paths["supplier_pricelist"])
         mock_export_supplier_price_changes_report.assert_called_with(
             export_paths["supplier_price_changes_report"],
             bp_changes)

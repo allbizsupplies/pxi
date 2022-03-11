@@ -24,7 +24,8 @@ from pxi.exporters import (
     export_supplier_pricelist,
     export_tickets_list,
     export_web_data_updates_report,
-    export_web_product_menu_data)
+    export_web_product_menu_data,
+    remove_exported_supplier_pricelists)
 from pxi.image import fetch_images
 from pxi.importers import (
     import_data,
@@ -231,6 +232,8 @@ class Commands:
             export_supplier_price_changes_report(
                 export_paths["supplier_price_changes_report"],
                 bp_changes)
+            remove_exported_supplier_pricelists(
+                export_paths["supplier_pricelist"])
             for supp_code, supp_items in supp_item_bins.items():
                 export_supplier_pricelist(
                     export_paths["supplier_pricelist"].format(

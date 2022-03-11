@@ -3,6 +3,8 @@ from datetime import date
 from decimal import Decimal
 import logging
 from os import PathLike
+import os
+import re
 from typing import Dict, List
 
 from pxi.dataclasses import BuyPriceChange, InventoryItemImageFile, SellPriceChange
@@ -628,3 +630,22 @@ def export_web_product_menu_data(
             file, fieldnames, delimiter="|", quoting=csv.QUOTE_NONE)
         writer.writerows(
             [inventory_item_to_row(iwd_item) for iwd_item in iwd_items])
+
+
+def remove_exported_supplier_pricelists(filepath_template: str):
+    export_dirname = os.path.dirname(filepath_template)
+    spl_filename_pattern = os.path.basename(filepath_template).replace(
+        "{supp_code}",
+        "([A-Z]{3})"
+    )
+
+    # Collect SPL filepaths.
+    spl_filenames = []
+    for filename in os.listdir(export_dirname):
+        matches = re.compile(spl_filename_pattern).match(filename)
+        if matches is not None:
+            spl_filenames.append(filename)
+
+    # Remove SPL files.
+    for spl_filename in spl_filenames:
+        os.unlink(os.path.join(export_dirname, spl_filename))
