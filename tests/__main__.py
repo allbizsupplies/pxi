@@ -10,6 +10,7 @@ from tests.exporters import ExporterTests
 from tests.image import ImageFetchingTests, ImageFormattingTests
 from tests.importers import ImporterTests
 from tests.price_calc import PriceCalcTests
+from tests.remote import RemoteTests
 from tests.report import (
     ReportFieldTests,
     NumberFieldTests,
@@ -34,6 +35,7 @@ testcases = [
     NumberFieldTests,
     PriceCalcTests,
     ReportFieldTests,
+    RemoteTests,
     ReportWriterTests,
     SCPClientTests,
     SellPriceChangeTests,
