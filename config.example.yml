@@ -85,7 +85,7 @@ paths:
 
     # The upload destination for supplier pricelist to be imported.
     # The filename must contain {supp_code}.
-    supplier_pricelist_imports: "/home/PRONTO_USERNAME/supplier_pricelist_{supp_code}.csv"
+    supplier_pricelist_import: "/home/PRONTO_USERNAME/supplier_pricelist_{supp_code}.csv"
 
 # SSH configuration to connect to Pronto.
 ssh:

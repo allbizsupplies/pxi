@@ -37,7 +37,7 @@ class ExportPathsConfig(TypedDict):
 class RemotePathsConfig(TypedDict):
     supplier_pricelist: str
     pricelist: str
-    supplier_pricelist_imports: str
+    supplier_pricelist_import: str
 
 
 class PathsConfig(TypedDict):
