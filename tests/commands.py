@@ -35,9 +35,17 @@ from tests.fakes import (
 def get_mock_config() -> Config:
     return {
         "paths": {
+            "logging": "path/logging",
             "imports": {
+                "contract_items_datagrid": "path/import/contract_items_datagrid",
+                "inventory_items_datagrid": "path/import/inventory_items_datagrid",
+                "inventory_web_data_items_datagrid": "path/import/inventory_web_data_items_datagrid",
+                "gtin_items_datagrid": "path/import/gtin_items_datagrid",
+                "price_rules_datagrid": "path/import/price_rules_datagrid",
+                "supplier_items_datagrid": "path/import/supplier_items_datagrid",
+                "pricelist_datagrid": "path/import/pricelist_datagrid",
+                "web_menu": "path/import/web_menu",
                 "web_menu_mappings": "path/import/web_menu_mappings",
-                "pricelist": "path/import/pricelist",
                 "supplier_pricelist": "path/import/supplier_pricelist",
                 "missing_images_report": "path/import/missing_images_report",
             },
@@ -47,6 +55,7 @@ def get_mock_config() -> Config:
                 "images_dir": "path/export/images_dir",
                 "pricelist": "path/export/pricelist",
                 "price_changes_report": "path/export/price_changes_report",
+                "price_rules_json": "path/export/price_rules_json",
                 "product_price_task": "path/export/product_price_task",
                 "supplier_pricelist": "path/export/supplier_pricelist_{supp_code}",
                 "supplier_price_changes_report": "path/export/supplier_price_changes_report",
@@ -54,6 +63,7 @@ def get_mock_config() -> Config:
                 "web_product_menu_data": "path/export/web_product_menu_data",
                 "web_data_updates_report": "path/export/web_data_updates_report",
                 "missing_images_report": "path/export/missing_images_report",
+                "downloaded_images_report": "path/export/downloaded_images_report",
             },
             "remote": {
                 "pricelist": "path/remote/pricelist",
