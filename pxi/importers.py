@@ -507,6 +507,42 @@ def import_gtin_items(filepath: PathLike, db_session: Session):
         f"{skipped_count} skipped.")
 
 
+def import_web_menu_items(filepath: PathLike, db_session: Session):
+    """
+    Import WebMenuItems from datagrid.
+
+    Params:
+        filepath: The path to the gtin items datagrid.
+        db_session: The database session.
+    """
+    inserted_count = 0  # The number of new records inserted.
+    updated_count = 0   # The number of existing records updated.
+
+    # Create an upserter for WebMenuItem.
+    upsert = get_upserter(db_session, WebMenuItem, {
+        wm_items.name: wm_items
+        for wm_items in db_session.query(WebMenuItem).all()})
+
+    # Update/insert rows as WebMenuItems.
+    for row in load_rows(filepath):
+        key = f"{row['parent_name']}/{row['child_name']}"
+        updated = upsert(key, {
+            "parent_name": row["parent_name"],
+            "child_name": row["child_name"],
+        })
+        if updated:
+            updated_count += 1
+        else:
+            inserted_count += 1
+
+    # Commit the database queries and log the results.
+    db_session.commit()
+    logging.info(
+        f"Import WebMenuItem: "
+        f"{inserted_count} inserted, "
+        f"{updated_count} updated,")
+
+
 def load_spl_rows(filepath: PathLike):
     """
     Loads the rows from a supplier pricelist file.
@@ -578,37 +614,6 @@ def import_supplier_pricelist_items(filepath: PathLike):
         f"{invalid_count} invalid, "
         f"{skipped_count} skipped.")
     return spl_items.values()
-
-
-def import_web_menu_items(filepath: PathLike, db_session: Session):
-    """
-    Import WebMenuItems from datagrid.
-
-    Params:
-        filepath: The path to the gtin items datagrid.
-    """
-    import_count = 0
-    skipped_count = 0
-    for row in load_rows(filepath):
-        web_menu_item = db_session.query(WebMenuItem).filter(
-            WebMenuItem.parent_name == row["parent_name"],
-            WebMenuItem.child_name == row["child_name"],
-        ).scalar()
-        if not web_menu_item:
-            db_session.add(WebMenuItem(
-                parent_name=row["parent_name"].strip(),
-                child_name=row["child_name"].strip(),
-            ))
-            import_count += 1
-        else:
-            skipped_count += 1
-
-    # Commit the database queries and log the results.
-    db_session.commit()
-    logging.info(
-        f"Import WebMenuItems: "
-        f"{import_count} inserted, "
-        f"{skipped_count} skipped.")
 
 
 def import_web_menu_item_mappings(filepath: PathLike, db_session: Session):
@@ -718,8 +723,7 @@ MODEL_IMPORTS: List[ModelImport] = [
 def import_data(
         db_session: Session,
         paths: ImportPathsConfig,
-        models=None,
-        force_imports: bool = False):
+        models=None):
     """
     Imports data for given models, or all models if none given.
     """
@@ -728,20 +732,4 @@ def import_data(
     for model, function, path_key in MODEL_IMPORTS:
         path = paths[path_key]
         if import_all_models or model in models:
-            if force_imports or file_has_changed(path, db_session):
-                function(path, db_session)
-
-
-def file_has_changed(path, db_session):
-    file = db_session.query(File).filter(
-        File.path == path
-    ).scalar()
-    modified = datetime.fromtimestamp(os.path.getmtime(path))
-    if file is None:
-        file = File(
-            path=path,
-            modified=modified)
-        db_session.add(file)
-    if file.modified < modified:
-        file.modified = modified
-        return True
+            function(path, db_session)

@@ -50,7 +50,7 @@ def main():
     # Execute the command.
     print(f"pxi: {command_name}")
     logging.info(f"Started")
-    command(config)(force_imports=args.force_imports)
+    command(config)()
 
     # Log the command execution time.
     duration = (perf_counter() - start_at)
@@ -86,9 +86,6 @@ def get_args():
     parser.add_argument("--verbose",
                         help="print logs to terminal",
                         dest="verbose", action="store_true")
-    parser.add_argument("--force-imports",
-                        help="force all data to be imported",
-                        dest="force_imports", action="store_true")
     return parser.parse_args()
 
 

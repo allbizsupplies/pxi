@@ -56,7 +56,7 @@ class CommandBase:
 
     def __init__(self, config: Config):
         self.config = config
-        self.db_session = get_session(Path(config["paths"]["database"]))
+        self.db_session = get_session(":memory:")
 
     def __call__(self, **options):
         self.execute(options)
@@ -97,7 +97,7 @@ class Commands:
                 PriceRule,
                 PriceRegionItem,
                 ContractItem,
-            ], force_imports=options.get("force_imports", False))
+            ])
 
             # Select all PriceRegionItems that have a PriceRule and belong
             # to an active InventoryItem.
@@ -205,7 +205,7 @@ class Commands:
             import_data(self.db_session, import_paths, [
                 InventoryItem,
                 SupplierItem,
-            ], force_imports=options.get("force_imports", False))
+            ])
 
             # Import SupplierPricelistItems.
             supp_items = import_supplier_pricelist_items(
@@ -258,7 +258,7 @@ class Commands:
                 PriceRule,
                 PriceRegionItem,
                 InventoryWebDataItem,
-            ], force_imports=options.get("force_imports", False))
+            ])
 
             # Import mappings between PriceRules and WebMenuItems.
             wmi_mappings = import_web_menu_item_mappings(
@@ -316,7 +316,7 @@ class Commands:
             import_data(self.db_session, import_paths, [
                 InventoryItem,
                 GTINItem,
-            ], force_imports=options.get("force_imports", False))
+            ])
 
             # Select all active, stocked InventoryItems besides those from
             # brands that don't have barcodes.
@@ -381,7 +381,7 @@ class Commands:
             import_data(self.db_session, import_paths, [
                 InventoryItem,
                 SupplierItem,
-            ], force_imports=options.get("force_imports", False))
+            ])
 
             # Get InventoryItems without an image.
             inv_items_no_image = import_missing_images_report(

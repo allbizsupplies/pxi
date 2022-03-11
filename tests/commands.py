@@ -2,6 +2,7 @@
 import io
 from unittest.mock import call, MagicMock, mock_open, patch
 
+from pxi.config import Config
 from pxi.commands import Commands, commands, get_command
 from pxi.enum import ItemCondition, ItemType
 from pxi.models import (
@@ -31,10 +32,9 @@ from tests.fakes import (
     random_string)
 
 
-def get_mock_config():
+def get_mock_config() -> Config:
     return {
         "paths": {
-            "database": ":memory:",
             "imports": {
                 "web_menu_mappings": "path/import/web_menu_mappings",
                 "pricelist": "path/import/pricelist",
@@ -299,7 +299,7 @@ class CommandTests(DatabaseTestCase):
             PriceRule,
             PriceRegionItem,
             ContractItem,
-        ], force_imports=False)
+        ])
         mock_recalculate_sell_prices.assert_called_with(
             [pr_item], command.db_session)
         mock_recalculate_contract_prices.assert_called_with(
@@ -357,7 +357,7 @@ class CommandTests(DatabaseTestCase):
         mock_import_data.assert_called_with(command.db_session, import_paths, [
             InventoryItem,
             SupplierItem,
-        ], force_imports=False)
+        ])
         mock_import_supplier_pricelist_items.assert_called_with(
             import_paths["supplier_pricelist"])
         mock_update_supplier_items.assert_called_with(
@@ -414,7 +414,7 @@ class CommandTests(DatabaseTestCase):
         mock_import_data.assert_called_with(command.db_session, import_paths, [
             InventoryItem,
             SupplierItem,
-        ], force_imports=False)
+        ])
         mock_import_supplier_pricelist_items.assert_called_with(
             import_paths["supplier_pricelist"])
         mock_update_supplier_items.assert_called_with(
@@ -485,7 +485,7 @@ class CommandTests(DatabaseTestCase):
             PriceRule,
             PriceRegionItem,
             InventoryWebDataItem,
-        ], force_imports=False)
+        ])
         mock_import_web_menu_item_mappings.assert_called_with(
             import_paths["web_menu_mappings"],
             command.db_session)
@@ -529,7 +529,7 @@ class CommandTests(DatabaseTestCase):
         mock_import_data.assert_called_with(command.db_session, import_paths, [
             InventoryItem,
             GTINItem,
-        ], force_imports=False)
+        ])
         mock_export_gtin_report.assert_called_with(
             export_paths["gtin_report"], [inv_item], [])
 
@@ -566,7 +566,7 @@ class CommandTests(DatabaseTestCase):
         mock_import_data.assert_called_with(command.db_session, import_paths, [
             InventoryItem,
             SupplierItem,
-        ], force_imports=False)
+        ])
         mock_import_missing_images_report.assert_called_with(
             import_paths["missing_images_report"],
             command.db_session)

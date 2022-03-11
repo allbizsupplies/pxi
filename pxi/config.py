@@ -41,7 +41,6 @@ class RemotePathsConfig(TypedDict):
 
 
 class PathsConfig(TypedDict):
-    database: str
     logging: str
     imports: ImportPathsConfig
     exports: ExportPathsConfig
