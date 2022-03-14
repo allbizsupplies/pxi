@@ -169,21 +169,21 @@ class CommandTests(DatabaseTestCase):
             self.assertIn(command.__name__, line)
             self.assertIn(command.__doc__.strip(), line)
 
-    @patch("pxi.commands.get_scp_client")
-    def test_command_download_spl_ssh(self, mock_get_scp_client):
+    @patch("pxi.commands.download_files")
+    def test_command_download_spl_ssh(self, mock_download_files):
         """
         download_spl command downloads supplier pricelist usingn SCP.
         """
         mock_config = get_mock_config()
-        mock_scp_client = MagicMock()
-        mock_get_scp_client.return_value = mock_scp_client
 
         Commands.download_spl(mock_config)()
 
-        mock_get_scp_client.assert_called_with(*mock_config["ssh"].values())
-        mock_scp_client.get.assert_called_with(
-            mock_config["paths"]["remote"]["supplier_pricelist"],
-            mock_config["paths"]["imports"]["supplier_pricelist"])
+        mock_download_files.assert_called_with(
+            mock_config["ssh"],
+            [
+                (mock_config["paths"]["remote"]["supplier_pricelist"],
+                 mock_config["paths"]["imports"]["supplier_pricelist"])
+            ])
 
     @patch("requests.get")
     def test_command_download_spl_https(self, mock_requests_get):
@@ -205,10 +205,10 @@ class CommandTests(DatabaseTestCase):
 
     @patch("os.listdir")
     @patch("os.path")
-    @patch("pxi.commands.get_scp_client")
+    @patch("pxi.commands.upload_files")
     def test_command_upload_spls(
             self,
-            mock_get_scp_client,
+            mock_upload_files,
             mock_os_path,
             mock_os_listdir):
         """
@@ -228,32 +228,35 @@ class CommandTests(DatabaseTestCase):
             random_string(20),
         ]
         mock_scp_client = MagicMock()
-        mock_get_scp_client.return_value = mock_scp_client
 
         Commands.upload_spls(mock_config)()
 
         mock_os_path.dirname.assert_called_with(export_path)
         mock_os_listdir.assert_called_with(mock_os_path.dirname.return_value)
-        mock_get_scp_client.assert_called_with(*mock_config["ssh"].values())
-        mock_scp_client.put.assert_called_with(
-            export_path.format(supp_code=supp_code),
-            remote_path.format(supp_code=supp_code))
+        mock_upload_files.assert_called_with(
+            mock_config["ssh"],
+            [
+                (export_path.format(supp_code=supp_code),
+                 remote_path.format(supp_code=supp_code))
+            ]
+        )
 
-    @patch("pxi.commands.get_scp_client")
-    def test_command_upload_pricelist(self, mock_get_scp_client):
+    @patch("pxi.commands.upload_files")
+    def test_command_upload_pricelist(self, mock_upload_files):
         """
         download_spl command uploads pricelist usingn SCP.
         """
         mock_config = get_mock_config()
         mock_scp_client = MagicMock()
-        mock_get_scp_client.return_value = mock_scp_client
 
         Commands.upload_pricelist(mock_config)()
 
-        mock_get_scp_client.assert_called_with(*mock_config["ssh"].values())
-        mock_scp_client.put.assert_called_with(
-            mock_config["paths"]["exports"]["pricelist"],
-            mock_config["paths"]["remote"]["pricelist"])
+        mock_upload_files.assert_called_with(
+            mock_config["ssh"],
+            [
+                (mock_config["paths"]["exports"]["pricelist"],
+                 mock_config["paths"]["remote"]["pricelist"])
+            ])
 
     @patch("pxi.commands.export_tickets_list")
     @patch("pxi.commands.export_contract_item_task")

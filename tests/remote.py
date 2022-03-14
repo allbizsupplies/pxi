@@ -61,7 +61,7 @@ class RemoteTests(TestCase):
         ]
         mock_scp_client = mock_get_scp_client.return_value
 
-        upload_files(files, ssh_config)
+        upload_files(ssh_config, files)
 
         mock_get_scp_client.assert_called_with(ssh_config)
         mock_scp_client.put.assert_has_calls([
@@ -79,7 +79,7 @@ class RemoteTests(TestCase):
         ]
         mock_scp_client = mock_get_scp_client.return_value
 
-        download_files(files, ssh_config)
+        download_files(ssh_config, files)
 
         mock_get_scp_client.assert_called_with(ssh_config)
         mock_scp_client.get.assert_has_calls([
@@ -97,7 +97,7 @@ class RemoteTests(TestCase):
         ]
         mock_ssh_client = mock_ssh_client_class.return_value
 
-        remove_files(filepaths, ssh_config)
+        remove_files(ssh_config, filepaths)
 
         mock_ssh_client_class.assert_called()
         mock_ssh_client.set_missing_host_key_policy.assert_called()

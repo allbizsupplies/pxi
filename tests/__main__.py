@@ -16,7 +16,6 @@ from tests.report import (
     NumberFieldTests,
     StringFieldTests,
     ReportWriterTests)
-from tests.scp import SCPClientTests
 from tests.spl_update import SPLUpdateTests
 from tests.web_update import WebUpdateTests
 
@@ -37,7 +36,6 @@ testcases = [
     ReportFieldTests,
     RemoteTests,
     ReportWriterTests,
-    SCPClientTests,
     SellPriceChangeTests,
     SPLUpdateTests,
     StringFieldTests,

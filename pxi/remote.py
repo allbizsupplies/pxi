@@ -5,19 +5,19 @@ from typing import List, Tuple
 from pxi.config import SSHConfig
 
 
-def upload_files(paths: List[Tuple[str, str]], ssh_config: SSHConfig):
+def upload_files(ssh_config: SSHConfig, paths: List[Tuple[str, str]]):
     scp_client = get_scp_client(ssh_config)
     for src, dest in paths:
         scp_client.put(src, dest)
 
 
-def download_files(paths: List[Tuple[str, str]], ssh_config: SSHConfig):
+def download_files(ssh_config: SSHConfig, paths: List[Tuple[str, str]]):
     scp_client = get_scp_client(ssh_config)
     for src, dest in paths:
         scp_client.get(src, dest)
 
 
-def remove_files(paths: List[str], ssh_config: SSHConfig):
+def remove_files(ssh_config: SSHConfig, paths: List[str]):
     ssh_client = SSHClient()
     ssh_client.set_missing_host_key_policy(AutoAddPolicy())
     ssh_client.connect(**ssh_config)

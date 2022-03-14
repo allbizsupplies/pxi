@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime
 from decimal import Decimal
+from distutils.command.upload import upload
 import logging
 import os
 from pathlib import Path
@@ -45,7 +46,7 @@ from pxi.models import (
 from pxi.price_calc import (
     recalculate_contract_prices,
     recalculate_sell_prices)
-from pxi.scp import get_scp_client
+from pxi.remote import upload_files, download_files
 from pxi.spl_update import update_supplier_items
 from pxi.web_update import update_product_menu
 
@@ -417,11 +418,9 @@ class Commands:
                 with open(dest, "wb") as file:
                     file.write(response.content)
             else:
-                scp_client = get_scp_client(
-                    config["hostname"],
-                    config["username"],
-                    config["password"])
-                scp_client.get(src, dest)
+                download_files(config, [
+                    (src, dest)
+                ])
 
             # Log results.
             logging.info(f"Downloaded SPL to {dest}")
@@ -452,19 +451,22 @@ class Commands:
                     supp_codes.append(matches[1])
 
             # Upload the SPL for each supplier code.
-            scp_client = get_scp_client(
-                config["hostname"],
-                config["username"],
-                config["password"])
-            for supp_code in supp_codes:
-                src = src_template.format(supp_code=supp_code)
-                dest = dest_template.format(supp_code=supp_code)
-                scp_client.put(src, dest)
+            upload_files(config, [
+                (
+                    src_template.format(supp_code=supp_code),
+                    dest_template.format(supp_code=supp_code)
+                )
+                for supp_code in supp_codes
+            ])
 
-                # Log the upload.
+            # Display a list of uploaded SPLs.
+            for supp_code in supp_codes:
                 print(f"- {supp_code}")
+
+            # Log the uploads.
+            for supp_code in supp_codes:
                 logging.info(
-                    f"Uploaded {supp_code} SPL to {config['hostname']}:{dest}")
+                    f"Uploaded {supp_code} SPL.")
 
     class upload_pricelist(CommandBase):
         """
@@ -478,12 +480,7 @@ class Commands:
             config = self.config["ssh"]
             src = self.config["paths"]["exports"]["pricelist"]
             dest = self.config["paths"]["remote"]["pricelist"]
-            scp_client = get_scp_client(
-                config["hostname"],
-                config["username"],
-                config["password"])
-            scp_client.put(src, dest)
-
+            upload_files(config, [(src, dest)])
             # Log results.
             logging.info(f"Uploaded pricelist to {config['hostname']}:{dest}")
 
