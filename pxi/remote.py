@@ -15,6 +15,16 @@ def upload_files(paths: List[Tuple[str, str]], ssh_config: SSHConfig):
         scp_client.put(src, dest)
 
 
+def download_files(paths: List[str], ssh_config: SSHConfig):
+    scp_client = get_scp_client(
+        ssh_config["hostname"],
+        ssh_config["username"],
+        ssh_config["password"],
+    )
+    for src, dest in paths:
+        scp_client.get(src, dest)
+
+
 def remove_files(paths: List[str], ssh_config: SSHConfig):
     ssh_client = SSHClient()
     ssh_client.set_missing_host_key_policy(AutoAddPolicy())
