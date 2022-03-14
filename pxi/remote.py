@@ -6,21 +6,13 @@ from pxi.config import SSHConfig
 
 
 def upload_files(paths: List[Tuple[str, str]], ssh_config: SSHConfig):
-    scp_client = get_scp_client(
-        ssh_config["hostname"],
-        ssh_config["username"],
-        ssh_config["password"],
-    )
+    scp_client = get_scp_client(ssh_config)
     for src, dest in paths:
         scp_client.put(src, dest)
 
 
-def download_files(paths: List[str], ssh_config: SSHConfig):
-    scp_client = get_scp_client(
-        ssh_config["hostname"],
-        ssh_config["username"],
-        ssh_config["password"],
-    )
+def download_files(paths: List[Tuple[str, str]], ssh_config: SSHConfig):
+    scp_client = get_scp_client(ssh_config)
     for src, dest in paths:
         scp_client.get(src, dest)
 

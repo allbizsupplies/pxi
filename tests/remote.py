@@ -63,10 +63,7 @@ class RemoteTests(TestCase):
 
         upload_files(files, ssh_config)
 
-        mock_get_scp_client.assert_called_with(
-            ssh_config["hostname"],
-            ssh_config["username"],
-            ssh_config["password"])
+        mock_get_scp_client.assert_called_with(ssh_config)
         mock_scp_client.put.assert_has_calls([
             call(src, dest) for src, dest in files])
 
@@ -84,10 +81,7 @@ class RemoteTests(TestCase):
 
         download_files(files, ssh_config)
 
-        mock_get_scp_client.assert_called_with(
-            ssh_config["hostname"],
-            ssh_config["username"],
-            ssh_config["password"])
+        mock_get_scp_client.assert_called_with(ssh_config)
         mock_scp_client.get.assert_has_calls([
             call(src, dest) for src, dest in files])
 
