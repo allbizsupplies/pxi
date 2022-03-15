@@ -1,11 +1,12 @@
 from random import random
 from unittest import TestCase
-from unittest.mock import call, patch
+from unittest.mock import MagicMock, call, patch
 
 from pxi.remote import (
     download_files,
     get_scp_client,
     get_ssh_client,
+    find_files,
     remove_files,
     upload_files)
 from tests.fakes import random_string
@@ -104,3 +105,32 @@ class RemoteTests(TestCase):
         mock_ssh_client.connect.assert_called_with(**ssh_config)
         mock_ssh_client.exec_command.assert_has_calls([
             call(f"rm {filepath}") for filepath in filepaths])
+
+    @patch("pxi.remote.SSHClient")
+    def test_find_files(self, mock_ssh_client_class):
+        dirpath = random_string(20)
+        filename_pattern = f"{random_string(20)}_*.csv"
+        filepath_pattern = f"{dirpath}/{filename_pattern}"
+        filenames = [
+            filename_pattern.replace("*", random_string(3)),
+            filename_pattern.replace("*", random_string(3)),
+        ]
+        ssh_config = {
+            "hostname": random_string(20),
+            "username": random_string(20),
+            "password": random_string(20),
+        }
+        mock_ssh_client = mock_ssh_client_class.return_value
+        mock_ssh_stdout = MagicMock()
+        mock_ssh_stdout.readlines.return_value = filenames
+        mock_ssh_client.exec_command.return_value = (
+            None, mock_ssh_stdout, None)
+
+        result = find_files(ssh_config, filepath_pattern)
+
+        mock_ssh_client_class.assert_called()
+        mock_ssh_client.set_missing_host_key_policy.assert_called()
+        mock_ssh_client.connect.assert_called_with(**ssh_config)
+        mock_ssh_client.exec_command.assert_called_with(
+            f"find {dirpath} -iname \"{filename_pattern}\"")
+        self.assertEqual(result, filenames)

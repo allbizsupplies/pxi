@@ -1,3 +1,4 @@
+import os
 from paramiko import AutoAddPolicy, SSHClient
 from scp import SCPClient  # type: ignore
 from typing import List, Tuple
@@ -23,6 +24,17 @@ def remove_files(ssh_config: SSHConfig, paths: List[str]):
     ssh_client.connect(**ssh_config)
     for path in paths:
         ssh_client.exec_command(f"rm {path}")
+
+
+def find_files(ssh_config: SSHConfig, filepath_pattern: str):
+    dirname = os.path.dirname(filepath_pattern)
+    filename = os.path.basename(filepath_pattern)
+    ssh_client = SSHClient()
+    ssh_client.set_missing_host_key_policy(AutoAddPolicy())
+    ssh_client.connect(**ssh_config)
+    _, stdout, _ = ssh_client.exec_command(
+        f"find {dirname} -iname \"{filename}\"")
+    return [line.strip("\n") for line in stdout.readlines()]
 
 
 def get_scp_client(ssh_config: SSHConfig):
