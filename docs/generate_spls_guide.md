@@ -13,10 +13,14 @@ PXI streamlines this process:
 
 Run `./pxi.py download-spl` to download the supplier pricelist provided by Office Choice.
 
-## Generate new supplier pricelist
+## Generate new supplier pricelists
 
-Run `./pxi.py generate-spl` to generate a new supplier pricelist.
+Run `./pxi.py generate-spls` to generate new supplier pricelists.
 
-## Upload new supplier pricelist.
+## Upload new supplier pricelists
 
-Run `./pxi.py upload-spl` to upload the new supplier pricelist to the Pronto server.
+Run `./pxi.py upload-spls` to upload the new supplier pricelists to the Pronto server.
+
+## List uploaded supplier pricelists
+
+Run `./pxi.py list-uploaded-spls` to list the supplier pricelists that are on the Pronto server.
