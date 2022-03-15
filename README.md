@@ -20,7 +20,7 @@
 1. Clone or download this repository to your computer.
 2. Create the configuration file. See the [configuration guide](docs/configuration_guide.md).
 3. Install Python 3.10 or later.
-4. Install the required Python packages by running `python -m pip install -r requirements` from the installation directory.
+4. Install the required Python packages by running `python -m pip install -r requirement.txt` from the installation directory.
 
 ## Recalculate and import pricelist
 
