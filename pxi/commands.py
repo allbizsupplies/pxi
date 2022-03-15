@@ -46,7 +46,7 @@ from pxi.models import (
 from pxi.price_calc import (
     recalculate_contract_prices,
     recalculate_sell_prices)
-from pxi.remote import upload_files, download_files, find_files
+from pxi.remote import remove_files, upload_files, download_files, find_files
 from pxi.spl_update import update_supplier_items
 from pxi.web_update import update_product_menu
 
@@ -449,6 +449,11 @@ class Commands:
                 matches = re.compile(src_filename_pattern).match(filename)
                 if matches is not None:
                     supp_codes.append(matches[1])
+
+            # Remove existing SPL files from the remote filesystem.
+            remove_files(config, [
+                dest_template.replace("{supp_code}", "*")
+            ])
 
             # Upload the SPL for each supplier code.
             upload_files(config, [

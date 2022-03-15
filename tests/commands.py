@@ -209,10 +209,12 @@ class CommandTests(DatabaseTestCase):
 
     @patch("os.listdir")
     @patch("os.path")
+    @patch("pxi.commands.remove_files")
     @patch("pxi.commands.upload_files")
     def test_command_upload_spls(
             self,
             mock_upload_files,
+            mock_remove_files,
             mock_os_path,
             mock_os_listdir):
         """
@@ -224,6 +226,7 @@ class CommandTests(DatabaseTestCase):
         remote_path = f"remote/path/{filename}"
         mock_config["paths"]["exports"]["supplier_pricelist"] = export_path
         mock_config["paths"]["remote"]["supplier_pricelist_import"] = remote_path
+        remote_path_pattern = remote_path.replace("{supp_code}", "*")
         supp_code = random_string(3)
         mock_os_path.dirname.return_value = "export/path"
         mock_os_path.basename.return_value = filename
@@ -237,6 +240,12 @@ class CommandTests(DatabaseTestCase):
         mock_os_path.dirname.assert_called_with(export_path)
         mock_os_path.basename.assert_called_with(export_path)
         mock_os_listdir.assert_called_with(mock_os_path.dirname.return_value)
+        mock_remove_files.assert_called_with(
+            mock_config["ssh"],
+            [
+                remote_path_pattern
+            ]
+        )
         mock_upload_files.assert_called_with(
             mock_config["ssh"],
             [
