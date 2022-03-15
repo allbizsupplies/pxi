@@ -194,11 +194,11 @@ class Commands:
                 f"ContractItems updated: "
                 f"{len(updated_con_items)}")
 
-    class generate_spl(CommandBase):
+    class generate_spls(CommandBase):
         """
         Generate a SPL for supplier prices that have changed.
         """
-        aliases = ["gspl"]
+        aliases = ["gspls"]
 
         def execute(self, options):
 

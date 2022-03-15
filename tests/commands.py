@@ -103,7 +103,7 @@ class CommandTests(DatabaseTestCase):
         expected_commands = [
             Commands.download_spl,
             Commands.fetch_images,
-            Commands.generate_spl,
+            Commands.generate_spls,
             Commands.help,
             Commands.list_uploaded_spls,
             Commands.missing_gtin,
@@ -143,9 +143,9 @@ class CommandTests(DatabaseTestCase):
             ("upload_spls", Commands.upload_spls),
             ("upload-spls", Commands.upload_spls),
             ("uspls", Commands.upload_spls),
-            ("generate_spl", Commands.generate_spl),
-            ("generate-spl", Commands.generate_spl),
-            ("gspl", Commands.generate_spl),
+            ("generate_spls", Commands.generate_spls),
+            ("generate-spls", Commands.generate_spls),
+            ("gspls", Commands.generate_spls),
             ("web_update", Commands.web_update),
             ("web-update", Commands.web_update),
             ("wu", Commands.web_update),
@@ -375,7 +375,7 @@ class CommandTests(DatabaseTestCase):
     @patch("pxi.commands.update_supplier_items")
     @patch("pxi.commands.import_supplier_pricelist_items")
     @patch("pxi.commands.import_data")
-    def test_command_generate_spl(
+    def test_command_generate_spls(
             self,
             mock_import_data,
             mock_import_supplier_pricelist_items,
@@ -401,7 +401,7 @@ class CommandTests(DatabaseTestCase):
         mock_import_supplier_pricelist_items.return_value = [spl_item]
         mock_update_supplier_items.return_value = [price_change]
 
-        command = Commands.generate_spl(mock_config)
+        command = Commands.generate_spls(mock_config)
         command.db_session = self.db_session
         command()
 
@@ -429,7 +429,7 @@ class CommandTests(DatabaseTestCase):
     @patch("pxi.commands.update_supplier_items")
     @patch("pxi.commands.import_supplier_pricelist_items")
     @patch("pxi.commands.import_data")
-    def test_command_generate_spl_with_multiple_spl_items_per_inv_item(
+    def test_command_generate_spls_with_multiple_spl_items_per_inv_item(
             self,
             mock_import_data,
             mock_import_supplier_pricelist_items,
@@ -462,7 +462,7 @@ class CommandTests(DatabaseTestCase):
         mock_import_supplier_pricelist_items.return_value = spl_items
         mock_update_supplier_items.return_value = bp_changes
 
-        command = Commands.generate_spl(mock_config)
+        command = Commands.generate_spls(mock_config)
         command.db_session = self.db_session
         command()
 
