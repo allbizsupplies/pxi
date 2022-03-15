@@ -105,6 +105,7 @@ class CommandTests(DatabaseTestCase):
             Commands.fetch_images,
             Commands.generate_spl,
             Commands.help,
+            Commands.list_uploaded_spls,
             Commands.missing_gtin,
             Commands.price_calc,
             Commands.upload_pricelist,
@@ -126,6 +127,9 @@ class CommandTests(DatabaseTestCase):
             ("dspl", Commands.download_spl),
             ("help", Commands.help),
             ("h", Commands.help),
+            ("list_uploaded_spls", Commands.list_uploaded_spls),
+            ("list-uploaded-spls", Commands.list_uploaded_spls),
+            ("luspls", Commands.list_uploaded_spls),
             ("missing_gtin", Commands.missing_gtin),
             ("missing-gtin", Commands.missing_gtin),
             ("mg", Commands.missing_gtin),
@@ -227,11 +231,11 @@ class CommandTests(DatabaseTestCase):
             filename.format(supp_code=supp_code),
             random_string(20),
         ]
-        mock_scp_client = MagicMock()
 
         Commands.upload_spls(mock_config)()
 
         mock_os_path.dirname.assert_called_with(export_path)
+        mock_os_path.basename.assert_called_with(export_path)
         mock_os_listdir.assert_called_with(mock_os_path.dirname.return_value)
         mock_upload_files.assert_called_with(
             mock_config["ssh"],
@@ -240,6 +244,29 @@ class CommandTests(DatabaseTestCase):
                  remote_path.format(supp_code=supp_code))
             ]
         )
+
+    @patch("pxi.commands.find_files")
+    def test_command_list_uploaded_spls(self, mock_find_files):
+        """
+        list_uploaded_spls command lists SPL files on the remote filesystem.
+        """
+        mock_config = get_mock_config()
+        filename_template = "supplier_pricelist_{supp_code}.csv"
+        dirpath = "remote/path"
+        filepaths = [
+            f"{dirpath}/{filename_template.format(supp_code=random_string(3))}",
+            f"{dirpath}/{filename_template.format(supp_code=random_string(3))}",
+        ]
+        remote_path = f"{dirpath}/{filename_template}"
+        mock_config["paths"]["remote"]["supplier_pricelist_import"] = remote_path
+        supp_code = random_string(3)
+        filepath_pattern = remote_path.replace("{supp_code}", "*")
+        mock_find_files.return_value = filepaths
+
+        Commands.list_uploaded_spls(mock_config)()
+
+        mock_find_files.assert_called_with(
+            mock_config["ssh"], filepath_pattern)
 
     @patch("pxi.commands.upload_files")
     def test_command_upload_pricelist(self, mock_upload_files):

@@ -46,7 +46,7 @@ from pxi.models import (
 from pxi.price_calc import (
     recalculate_contract_prices,
     recalculate_sell_prices)
-from pxi.remote import upload_files, download_files
+from pxi.remote import upload_files, download_files, find_files
 from pxi.spl_update import update_supplier_items
 from pxi.web_update import update_product_menu
 
@@ -467,6 +467,22 @@ class Commands:
             for supp_code in supp_codes:
                 logging.info(
                     f"Uploaded {supp_code} SPL.")
+
+    class list_uploaded_spls(CommandBase):
+        """
+        List supplier pricelists uploaded to remote server.
+        """
+        aliases = ["luspls"]
+
+        def execute(self, options):
+            config = self.config["ssh"]
+            filepath_template = (
+                self.config["paths"]["remote"]["supplier_pricelist_import"])
+            filepath_pattern = filepath_template.replace("{supp_code}", "*")
+            filepaths = find_files(config, filepath_pattern)
+            print("dir:", os.path.dirname(filepath_template))
+            for filepath in filepaths:
+                print(os.path.basename(filepath))
 
     class upload_pricelist(CommandBase):
         """
