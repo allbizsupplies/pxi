@@ -58,8 +58,9 @@ There are the rules for price adjustments:
 | Prices below $1.00   | Round to the nearest cent.                                                                                 |
 | Prices below $25.00  | Round to the nearest multiple of five cents                                                                |
 | Prices below $99.00  | Round to the nearest five cents, and make a charm price if price is close to a multiple of $1.00           |
-| Prices below $199.00 | Round to the nearest dollar, and make a charm price if price is close to a multiple of ten dollars         |
-| Prices above $199.00 | Round to the nearest ten dollars, and make a charm price if price is close to a multiple of ten dollars.\* |
+| Prices below $299.00 | Round to the nearest dollar, and make a charm price if price is close to a multiple of ten dollars         |
+| Prices below $199.00 | Round to the nearest ten dollars, and make a charm price if price is close to a multiple of ten dollars.   |
+| Prices above $299.00 | Round to the nearest ten dollars, and make a charm price if price is close to a multiple of ten dollars.\* |
 
 **Charm prices** take advantage of left digit bias, the tendency to measure a price based mostly on the left-most digit. For example, $2.95 is very close to $3, but the buyer is think of this price as closer to $2.
 

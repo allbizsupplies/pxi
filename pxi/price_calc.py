@@ -66,6 +66,13 @@ ROUNDING_RULES = [
         "rounding_step": dec("10.00"),
         "charm_rules": [
             (dec("10.00"), dec("1.00"), dec("5.00")),
+        ],
+    },
+    {
+        "min": dec("299.00"),
+        "rounding_step": dec("10.00"),
+        "charm_rules": [
+            (dec("10.00"), dec("1.00"), dec("5.00")),
             (dec("100.00"), dec("1.00"), dec("10.00")),
         ],
     },
