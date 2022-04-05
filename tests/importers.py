@@ -497,17 +497,24 @@ class ImporterTests(DatabaseTestCase):
         Import InventoryWebDataItems from Pronto datagrids.
         """
         filepath = random_string(20)
-        inv_item = fake_inventory_item()
+        inv_items = [
+            fake_inventory_item(),
+            fake_inventory_item(),
+        ]
         wm_item = fake_web_menu_item()
-        self.seed([inv_item, wm_item])
+        self.seed(inv_items + [wm_item])
         mock_load_rows.return_value = [
             fake_inv_web_data_items_datagrid_row({
-                "stock_code": inv_item.code,
+                "stock_code": inv_items[0].code,
                 "menu_name": wm_item.name,
+            }),
+            fake_inv_web_data_items_datagrid_row({
+                "stock_code": inv_items[1].code,
+                "menu_name": None,
             }),
             # These rows should not be imported.
             fake_inv_web_data_items_datagrid_row({
-                "stock_code": inv_item.code,
+                "stock_code": inv_items[0].code,
             }),
             fake_inv_web_data_items_datagrid_row({
                 "menu_name": wm_item.name,
@@ -521,7 +528,7 @@ class ImporterTests(DatabaseTestCase):
         # pylint:disable=no-member
         inv_web_data_items = self.db_session.query(
             InventoryWebDataItem).all()
-        self.assertEqual(len(inv_web_data_items), 1)
+        self.assertEqual(len(inv_web_data_items), 2)
 
     @patch("pxi.importers.load_rows")
     def test_import_web_menu_item_mappings(self, mock_load_rows):

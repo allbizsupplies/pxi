@@ -201,11 +201,12 @@ def import_inventory_web_data_items(filepath: PathLike, db_session: Session):
     for row in load_rows(filepath):
         inv_item_code = row["stock_code"]
         web_menu_item_name = row["menu_name"]
-        has_valid_web_menu_item = web_menu_item_name is None \
-            or web_menu_item_name in web_menu_items
+        has_valid_web_menu_item = (
+            web_menu_item_name is None
+            or web_menu_item_name in web_menu_items)
         if inv_item_code in inv_items and has_valid_web_menu_item:
             web_menu_item = None
-            if web_menu_item_name:
+            if web_menu_item_name is not None:
                 web_menu_item = web_menu_items[web_menu_item_name]
             updated = upsert(inv_item_code, {
                 "inventory_item": inv_items[inv_item_code],
